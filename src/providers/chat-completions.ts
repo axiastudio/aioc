@@ -18,7 +18,7 @@ type PendingToolCall = {
 
 type ChatCompletionMessage = {
   role: "system" | "user" | "assistant" | "tool";
-  content: string | null;
+  content: string | null | Array<Record<string, unknown>>;
   tool_call_id?: string;
   tool_calls?: Array<{
     id: string;
@@ -77,6 +77,77 @@ function stringifySafe(value: unknown): string {
   }
 }
 
+function normalizeContentPart(part: unknown): Record<string, unknown> | null {
+  if (!part || typeof part !== "object") {
+    return null;
+  }
+
+  const record = part as Record<string, unknown>;
+  const partType = typeof record.type === "string" ? record.type : "";
+
+  if (
+    (partType === "input_text" ||
+      partType === "output_text" ||
+      partType === "text") &&
+    typeof record.text === "string"
+  ) {
+    return {
+      type: "text",
+      text: record.text,
+    };
+  }
+
+  if (
+    partType === "image_url" ||
+    partType === "input_audio" ||
+    partType === "refusal" ||
+    partType === "audio" ||
+    partType === "file"
+  ) {
+    return record;
+  }
+
+  if (typeof record.text === "string") {
+    return {
+      type: "text",
+      text: record.text,
+    };
+  }
+
+  return null;
+}
+
+function normalizeMessageContent(
+  content: unknown,
+): string | null | Array<Record<string, unknown>> {
+  if (content === null || typeof content === "undefined") {
+    return null;
+  }
+
+  if (typeof content === "string") {
+    return content;
+  }
+
+  if (Array.isArray(content)) {
+    const normalizedParts = content
+      .map((part) => normalizeContentPart(part))
+      .filter((part): part is Record<string, unknown> => Boolean(part));
+
+    if (normalizedParts.length > 0) {
+      return normalizedParts;
+    }
+
+    return stringifySafe(content);
+  }
+
+  const singlePart = normalizeContentPart(content);
+  if (singlePart) {
+    return [singlePart];
+  }
+
+  return stringifySafe(content);
+}
+
 function toChatMessages(
   items: AgentInputItem[],
   systemPrompt?: string,
@@ -94,7 +165,7 @@ function toChatMessages(
     if (item.type === "message") {
       messages.push({
         role: item.role,
-        content: item.content,
+        content: normalizeMessageContent(item.content as unknown),
       });
       continue;
     }
