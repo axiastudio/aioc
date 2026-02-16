@@ -1,6 +1,7 @@
 export * from "./agent";
 export * from "./config";
 export * from "./errors";
+export * from "./guardrails";
 export * from "./messages";
 export * from "./providers/base";
 export * from "./providers/chat-completions";

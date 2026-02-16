@@ -1,6 +1,10 @@
 import { Agent } from "./agent";
 import { getDefaultProvider } from "./config";
-import { MaxTurnsExceededError, ToolCallError } from "./errors";
+import {
+  MaxTurnsExceededError,
+  OutputGuardrailTripwireTriggered,
+  ToolCallError,
+} from "./errors";
 import { user } from "./messages";
 import { ModelProvider } from "./providers/base";
 import { RunContext } from "./run-context";
@@ -61,6 +65,30 @@ async function executeToolCall<TContext>(
   return definition.execute(validated, runContext);
 }
 
+async function evaluateOutputGuardrails<TContext>(
+  agent: Agent<TContext>,
+  runContext: RunContext<TContext>,
+  history: AgentInputItem[],
+  outputText: string,
+): Promise<void> {
+  for (const guardrail of agent.outputGuardrails) {
+    const output = await guardrail.execute({
+      agent,
+      runContext,
+      outputText,
+      history: [...history],
+    });
+
+    if (output.tripwireTriggered) {
+      throw new OutputGuardrailTripwireTriggered({
+        guardrail: guardrail.name,
+        output,
+        outputText,
+      });
+    }
+  }
+}
+
 async function* runLoop<TContext>(
   state: MutableRunState<TContext>,
   provider: ModelProvider,
@@ -85,15 +113,21 @@ async function* runLoop<TContext>(
     let outputText = "";
     const pendingToolCalls: PendingToolCall[] = [];
     let sawDelta = false;
+    const hasOutputGuardrails = currentAgent.outputGuardrails.length > 0;
+    const bufferedDeltas: string[] = [];
 
     for await (const modelEvent of providerStream) {
       if (modelEvent.type === "delta") {
         sawDelta = true;
         outputText += modelEvent.delta;
-        yield {
-          type: "raw_model_stream_event",
-          data: { delta: modelEvent.delta },
-        };
+        if (hasOutputGuardrails) {
+          bufferedDeltas.push(modelEvent.delta);
+        } else {
+          yield {
+            type: "raw_model_stream_event",
+            data: { delta: modelEvent.delta },
+          };
+        }
         continue;
       }
 
@@ -108,6 +142,22 @@ async function* runLoop<TContext>(
 
       if (!sawDelta && modelEvent.message) {
         outputText = modelEvent.message;
+      }
+    }
+
+    if (hasOutputGuardrails) {
+      await evaluateOutputGuardrails(
+        currentAgent,
+        runContext,
+        state.history,
+        outputText,
+      );
+
+      for (const delta of bufferedDeltas) {
+        yield {
+          type: "raw_model_stream_event",
+          data: { delta },
+        };
       }
     }
 

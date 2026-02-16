@@ -1,4 +1,5 @@
 import { RunContext } from "./run-context";
+import type { OutputGuardrail } from "./guardrails";
 import type { Tool } from "./tool";
 import type { ModelSettings } from "./types";
 
@@ -14,6 +15,7 @@ export interface AgentConfiguration<TContext = unknown> {
   modelSettings?: ModelSettings;
   tools?: Tool<TContext>[];
   handoffs?: Agent<TContext>[];
+  outputGuardrails?: OutputGuardrail<TContext>[];
 }
 
 export class Agent<TContext = unknown> {
@@ -24,6 +26,7 @@ export class Agent<TContext = unknown> {
   modelSettings?: ModelSettings;
   tools: Tool<TContext>[];
   handoffs: Agent<TContext>[];
+  outputGuardrails: OutputGuardrail<TContext>[];
 
   constructor(config: AgentConfiguration<TContext>) {
     this.name = config.name;
@@ -33,6 +36,7 @@ export class Agent<TContext = unknown> {
     this.modelSettings = config.modelSettings;
     this.tools = config.tools ?? [];
     this.handoffs = config.handoffs ?? [];
+    this.outputGuardrails = config.outputGuardrails ?? [];
   }
 
   static create<TContext = unknown>(
