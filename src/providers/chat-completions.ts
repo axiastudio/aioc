@@ -5,9 +5,8 @@ import { ModelProvider, ProviderEvent, ProviderRequest } from "./base";
 
 export interface ChatCompletionsProviderOptions {
   apiKey: string;
-  baseURL?: string;
-  organization?: string;
-  project?: string;
+  baseURL: string;
+  headers?: Record<string, string>;
 }
 
 type PendingToolCall = {
@@ -248,20 +247,14 @@ function buildHeaders(options: ChatCompletionsProviderOptions): HeadersInit {
   const headers: Record<string, string> = {
     Authorization: `Bearer ${options.apiKey}`,
     "Content-Type": "application/json",
+    ...(options.headers ?? {}),
   };
-
-  if (options.organization) {
-    headers["OpenAI-Organization"] = options.organization;
-  }
-  if (options.project) {
-    headers["OpenAI-Project"] = options.project;
-  }
 
   return headers;
 }
 
-function normalizeBaseURL(baseURL?: string): string {
-  return (baseURL ?? "https://api.openai.com/v1").replace(/\/+$/, "");
+function normalizeBaseURL(baseURL: string): string {
+  return baseURL.replace(/\/+$/, "");
 }
 
 async function* parseSseEvents(

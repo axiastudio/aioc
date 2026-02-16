@@ -1,5 +1,4 @@
 import { ModelProvider } from "./providers/base";
-import { ChatCompletionsProvider } from "./providers/chat-completions";
 
 let defaultProvider: ModelProvider | null = null;
 
@@ -14,16 +13,8 @@ export function clearDefaultProvider(): void {
 export function getDefaultProvider(): ModelProvider {
   if (!defaultProvider) {
     throw new Error(
-      "No default provider configured. Call setDefaultProvider() or setDefaultApiKey().",
+      "No default provider configured. Call setDefaultProvider().",
     );
   }
   return defaultProvider;
-}
-
-export function setDefaultApiKey(apiKey: string): void {
-  setDefaultProvider(
-    new ChatCompletionsProvider({
-      apiKey,
-    }),
-  );
 }

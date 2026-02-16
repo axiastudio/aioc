@@ -14,9 +14,9 @@ AIOC is a lightweight internal agent SDK with an IoC-oriented control plane.
 - `Tool`, `tool(...)`
 - `run(...)` with streaming support
 - message helpers `user(...)`, `assistant(...)`, `system(...)`
-- `setDefaultApiKey(...)`, `setDefaultProvider(...)`
+- `setDefaultProvider(...)`
 - error classes including `OutputGuardrailTripwireTriggered`
-- `MistralProvider`
+- `OpenAIProvider`, `MistralProvider`
 
 ## Example smoke test (Mistral)
 

@@ -13,8 +13,9 @@ export type MistralProviderOptions = Omit<
 export class MistralProvider extends ChatCompletionsProvider {
   constructor(options: MistralProviderOptions) {
     super({
-      ...options,
+      apiKey: options.apiKey,
       baseURL: options.baseURL ?? "https://api.mistral.ai/v1",
+      headers: options.headers,
     });
   }
 }
