@@ -1,0 +1,40 @@
+{
+  "name": "@axiastudio/aioc",
+  "version": "0.0.1",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "lint": "eslint ./src --ext .ts",
+    "test:mistral": "tsx src/examples/mistral-smoke.ts"
+  },
+  "keywords": [
+    "agents",
+    "ioc",
+    "orchestration",
+    "mistral"
+  ],
+  "author": "",
+  "license": "ISC",
+  "description": "AIOC internal agent SDK with IoC-oriented orchestration primitives.",
+  "dependencies": {
+    "dotenv": "^17.2.3",
+    "zod": "^3.25.76",
+    "zod-to-json-schema": "^3.24.6"
+  },
+  "devDependencies": {
+    "@eslint/js": "^9.35.0",
+    "@types/node": "^22.15.3",
+    "eslint": "^9.35.0",
+    "eslint-config-prettier": "^10.1.8",
+    "eslint-plugin-import": "^2.32.0",
+    "eslint-plugin-prettier": "^5.5.4",
+    "prettier": "^3.6.2",
+    "tsx": "^4.20.6",
+    "typescript": "^5.9.2",
+    "typescript-eslint": "^8.43.0"
+  }
+}
