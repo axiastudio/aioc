@@ -13,6 +13,7 @@ AIOC is a lightweight internal agent SDK with an IoC-oriented control plane.
 - `Agent`, `RunContext`
 - `Tool`, `tool(...)`
 - `run(...)` with streaming support
+- run logger hook via `run(..., { logger })`
 - message helpers `user(...)`, `assistant(...)`, `system(...)`
 - `setDefaultProvider(...)`
 - error classes including `OutputGuardrailTripwireTriggered`

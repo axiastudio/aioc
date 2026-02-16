@@ -1,4 +1,5 @@
 import type { Agent } from "./agent";
+import type { RunLogger } from "./logger";
 
 export type ModelSettings = Record<string, unknown>;
 export type Role = "user" | "assistant" | "system";
@@ -63,6 +64,7 @@ export type RunStreamEvent<TContext = unknown> =
 export type SharedRunOptions<TContext = unknown> = {
   context?: TContext;
   maxTurns?: number;
+  logger?: RunLogger;
 };
 
 export type StreamRunOptions<TContext = unknown> =

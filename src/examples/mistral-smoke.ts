@@ -3,6 +3,7 @@ import { z } from "zod";
 import {
   Agent,
   MistralProvider,
+  type RunLogger,
   run,
   setDefaultProvider,
   tool,
@@ -42,6 +43,12 @@ async function main() {
     tools: [getUtcTime],
   });
 
+  const logger: RunLogger = {
+    log(event) {
+      process.stdout.write(`[aioc-log] ${JSON.stringify(event)}\n`);
+    },
+  };
+
   const stream = await run(
     agent,
     "Ciao! Dimmi rapidamente cos'e AIOC e poi dammi l'orario UTC corrente.",
@@ -51,6 +58,7 @@ async function main() {
         requestId: "mistral-smoke",
       },
       maxTurns: 8,
+      logger,
     },
   );
 

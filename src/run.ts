@@ -5,8 +5,10 @@ import {
   OutputGuardrailTripwireTriggered,
   ToolCallError,
 } from "./errors";
+import type { RunLogger } from "./logger";
 import { user } from "./messages";
 import { ModelProvider } from "./providers/base";
+import { RunLogEmitter } from "./run-log-emitter";
 import { RunContext } from "./run-context";
 import {
   AgentInputItem,
@@ -70,8 +72,12 @@ async function evaluateOutputGuardrails<TContext>(
   runContext: RunContext<TContext>,
   history: AgentInputItem[],
   outputText: string,
+  logEmitter: RunLogEmitter,
+  turn: number,
 ): Promise<void> {
   for (const guardrail of agent.outputGuardrails) {
+    await logEmitter.outputGuardrailStarted(agent.name, turn, guardrail.name);
+
     const output = await guardrail.execute({
       agent,
       runContext,
@@ -80,12 +86,20 @@ async function evaluateOutputGuardrails<TContext>(
     });
 
     if (output.tripwireTriggered) {
+      await logEmitter.outputGuardrailTriggered(
+        agent.name,
+        turn,
+        guardrail.name,
+        output.reason,
+      );
       throw new OutputGuardrailTripwireTriggered({
         guardrail: guardrail.name,
         output,
         outputText,
       });
     }
+
+    await logEmitter.outputGuardrailPassed(agent.name, turn, guardrail.name);
   }
 }
 
@@ -94,141 +108,193 @@ async function* runLoop<TContext>(
   provider: ModelProvider,
   runContext: RunContext<TContext>,
   maxTurns: number,
+  logger?: RunLogger,
 ): AsyncIterable<RunStreamEvent<TContext>> {
+  const logEmitter = new RunLogEmitter(logger);
+  await logEmitter.runStarted(
+    state.lastAgent.name,
+    maxTurns,
+    state.history.length,
+  );
   yield {
     type: "agent_updated_stream_event",
     agent: state.lastAgent,
   };
+  await logEmitter.agentActivated(state.lastAgent.name, 1);
 
-  for (let turn = 0; turn < maxTurns; turn += 1) {
-    const currentAgent = state.lastAgent;
-    const providerStream = provider.stream({
-      model: currentAgent.model ?? "gpt-4o-mini",
-      systemPrompt: await currentAgent.resolveInstructions(runContext),
-      messages: state.history,
-      tools: currentAgent.tools,
-      modelSettings: currentAgent.modelSettings,
-    });
+  let activeTurn = 0;
 
-    let outputText = "";
-    const pendingToolCalls: PendingToolCall[] = [];
-    let sawDelta = false;
-    const hasOutputGuardrails = currentAgent.outputGuardrails.length > 0;
-    const bufferedDeltas: string[] = [];
+  try {
+    for (let turn = 0; turn < maxTurns; turn += 1) {
+      activeTurn = turn + 1;
+      const currentAgent = state.lastAgent;
+      await logEmitter.turnStarted(currentAgent.name, activeTurn);
 
-    for await (const modelEvent of providerStream) {
-      if (modelEvent.type === "delta") {
-        sawDelta = true;
-        outputText += modelEvent.delta;
-        if (hasOutputGuardrails) {
-          bufferedDeltas.push(modelEvent.delta);
-        } else {
-          yield {
-            type: "raw_model_stream_event",
-            data: { delta: modelEvent.delta },
-          };
+      const providerStream = provider.stream({
+        model: currentAgent.model ?? "gpt-4o-mini",
+        systemPrompt: await currentAgent.resolveInstructions(runContext),
+        messages: state.history,
+        tools: currentAgent.tools,
+        modelSettings: currentAgent.modelSettings,
+      });
+
+      let outputText = "";
+      const pendingToolCalls: PendingToolCall[] = [];
+      let sawDelta = false;
+      const hasOutputGuardrails = currentAgent.outputGuardrails.length > 0;
+      const bufferedDeltas: string[] = [];
+
+      for await (const modelEvent of providerStream) {
+        if (modelEvent.type === "delta") {
+          sawDelta = true;
+          outputText += modelEvent.delta;
+          if (hasOutputGuardrails) {
+            bufferedDeltas.push(modelEvent.delta);
+          } else {
+            yield {
+              type: "raw_model_stream_event",
+              data: { delta: modelEvent.delta },
+            };
+          }
+          continue;
         }
-        continue;
+
+        if (modelEvent.type === "tool_call") {
+          pendingToolCalls.push({
+            callId: modelEvent.callId,
+            name: modelEvent.name,
+            arguments: modelEvent.arguments,
+          });
+          continue;
+        }
+
+        if (!sawDelta && modelEvent.message) {
+          outputText = modelEvent.message;
+        }
       }
 
-      if (modelEvent.type === "tool_call") {
-        pendingToolCalls.push({
-          callId: modelEvent.callId,
-          name: modelEvent.name,
-          arguments: modelEvent.arguments,
-        });
-        continue;
-      }
-
-      if (!sawDelta && modelEvent.message) {
-        outputText = modelEvent.message;
-      }
-    }
-
-    if (hasOutputGuardrails) {
-      await evaluateOutputGuardrails(
-        currentAgent,
-        runContext,
-        state.history,
-        outputText,
-      );
-
-      for (const delta of bufferedDeltas) {
-        yield {
-          type: "raw_model_stream_event",
-          data: { delta },
-        };
-      }
-    }
-
-    if (pendingToolCalls.length > 0) {
-      for (const call of pendingToolCalls) {
-        const callItemArguments = parseArguments(call.arguments);
-        const callItem = {
-          type: "tool_call_item",
-          callId: call.callId,
-          name: call.name,
-          arguments: callItemArguments,
-          rawItem: {
-            type: "function_call",
-            id: call.callId,
-            name: call.name,
-            arguments: call.arguments,
-          },
-        } as const;
-
-        state.history.push(callItem);
-        yield {
-          type: "run_item_stream_event",
-          item: callItem,
-        } as RunItemStreamEvent;
-
-        const toolOutput = await executeToolCall(
+      if (hasOutputGuardrails) {
+        await evaluateOutputGuardrails(
           currentAgent,
-          call,
           runContext,
+          state.history,
+          outputText,
+          logEmitter,
+          activeTurn,
         );
 
-        const outputItem = {
-          type: "tool_call_output_item",
-          callId: call.callId,
-          output: toolOutput,
-          rawItem: {
-            type: "function_call_result",
-            call_id: call.callId,
-            output: toolOutput,
-          },
-        } as const;
-
-        state.history.push(outputItem);
-        yield {
-          type: "run_item_stream_event",
-          item: outputItem,
-        } as RunItemStreamEvent;
+        for (const delta of bufferedDeltas) {
+          yield {
+            type: "raw_model_stream_event",
+            data: { delta },
+          };
+        }
       }
 
-      continue;
+      if (pendingToolCalls.length > 0) {
+        for (const call of pendingToolCalls) {
+          const callItemArguments = parseArguments(call.arguments);
+          const callItem = {
+            type: "tool_call_item",
+            callId: call.callId,
+            name: call.name,
+            arguments: callItemArguments,
+            rawItem: {
+              type: "function_call",
+              id: call.callId,
+              name: call.name,
+              arguments: call.arguments,
+            },
+          } as const;
+
+          state.history.push(callItem);
+          yield {
+            type: "run_item_stream_event",
+            item: callItem,
+          } as RunItemStreamEvent;
+
+          await logEmitter.toolCallStarted(
+            currentAgent.name,
+            activeTurn,
+            call.name,
+            call.callId,
+          );
+
+          let toolOutput: unknown;
+          try {
+            toolOutput = await executeToolCall(currentAgent, call, runContext);
+          } catch (error) {
+            await logEmitter.toolCallFailed(
+              currentAgent.name,
+              activeTurn,
+              call.name,
+              call.callId,
+              error,
+            );
+            throw error;
+          }
+
+          await logEmitter.toolCallCompleted(
+            currentAgent.name,
+            activeTurn,
+            call.name,
+            call.callId,
+          );
+
+          const outputItem = {
+            type: "tool_call_output_item",
+            callId: call.callId,
+            output: toolOutput,
+            rawItem: {
+              type: "function_call_result",
+              call_id: call.callId,
+              output: toolOutput,
+            },
+          } as const;
+
+          state.history.push(outputItem);
+          yield {
+            type: "run_item_stream_event",
+            item: outputItem,
+          } as RunItemStreamEvent;
+        }
+
+        continue;
+      }
+
+      const outputItem: RunMessageOutputItem = {
+        type: "message_output_item",
+        content: outputText,
+      };
+      yield {
+        type: "run_item_stream_event",
+        item: outputItem,
+      };
+
+      state.history.push({
+        type: "message",
+        role: "assistant",
+        content: outputText,
+      });
+
+      await logEmitter.runCompleted(
+        currentAgent.name,
+        activeTurn,
+        outputText.length,
+      );
+
+      return;
     }
 
-    const outputItem: RunMessageOutputItem = {
-      type: "message_output_item",
-      content: outputText,
-    };
-    yield {
-      type: "run_item_stream_event",
-      item: outputItem,
-    };
-
-    state.history.push({
-      type: "message",
-      role: "assistant",
-      content: outputText,
-    });
-
-    return;
+    throw new MaxTurnsExceededError(maxTurns);
+  } catch (error) {
+    await logEmitter.runFailed(
+      state.lastAgent.name,
+      activeTurn || undefined,
+      error,
+    );
+    throw error;
   }
-
-  throw new MaxTurnsExceededError(maxTurns);
 }
 
 export class StreamedRunResult<TContext = unknown> {
@@ -288,7 +354,7 @@ export async function run<TContext = unknown>(
 
   const provider = getDefaultProvider();
   const maxTurns = options.maxTurns ?? 10;
-  const stream = runLoop(state, provider, runContext, maxTurns);
+  const stream = runLoop(state, provider, runContext, maxTurns, options.logger);
 
   if (options.stream === true) {
     return new StreamedRunResult(stream, state);
