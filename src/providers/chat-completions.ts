@@ -56,6 +56,16 @@ type StreamChunk = {
   }>;
 };
 
+type JsonSchemaLike = Record<string, unknown>;
+
+function toJsonSchema(schema: unknown): JsonSchemaLike {
+  const convert = zodToJsonSchema as unknown as (
+    value: unknown,
+    options?: unknown,
+  ) => unknown;
+  return convert(schema, { $refStrategy: "none" }) as JsonSchemaLike;
+}
+
 function stringifySafe(value: unknown): string {
   if (typeof value === "string") {
     return value;
@@ -148,9 +158,7 @@ function toModelSettings(
 
 function toTools<TContext>(tools: Tool<TContext>[]): ChatCompletionTool[] {
   return tools.map((definition) => {
-    const rawSchema = zodToJsonSchema(definition.parameters, {
-      $refStrategy: "none",
-    }) as Record<string, unknown>;
+    const rawSchema = toJsonSchema(definition.parameters);
     const schema = { ...rawSchema };
     delete schema.$schema;
 
