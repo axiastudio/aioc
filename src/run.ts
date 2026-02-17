@@ -52,6 +52,16 @@ function parseArguments(rawArguments: string): unknown {
   }
 }
 
+function resolveAgentModel<TContext>(agent: Agent<TContext>): string {
+  const model = agent.model?.trim();
+  if (!model) {
+    throw new Error(
+      `Agent "${agent.name}" has no model configured. Set "model" explicitly.`,
+    );
+  }
+  return model;
+}
+
 async function executeToolCall<TContext>(
   agent: Agent<TContext>,
   call: PendingToolCall,
@@ -131,7 +141,7 @@ async function* runLoop<TContext>(
       await logEmitter.turnStarted(currentAgent.name, activeTurn);
 
       const providerStream = provider.stream({
-        model: currentAgent.model ?? "gpt-4o-mini",
+        model: resolveAgentModel(currentAgent),
         systemPrompt: await currentAgent.resolveInstructions(runContext),
         messages: state.history,
         tools: currentAgent.tools,
