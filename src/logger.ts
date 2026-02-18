@@ -25,6 +25,15 @@ export type RunLogEvent =
       callId: string;
     })
   | (RunLogEventBase & {
+      type: "tool_policy_evaluated";
+      toolName: string;
+      callId: string;
+      decision: "allow" | "deny";
+      reason: string;
+      policyVersion?: string;
+      metadata?: Record<string, unknown>;
+    })
+  | (RunLogEventBase & {
       type: "tool_call_completed";
       toolName: string;
       callId: string;

@@ -92,6 +92,31 @@ export class RunLogEmitter {
     });
   }
 
+  async toolPolicyEvaluated(
+    agent: string,
+    turn: number,
+    toolName: string,
+    callId: string,
+    decision: "allow" | "deny",
+    reason: string,
+    policyVersion?: string,
+    metadata?: Record<string, unknown>,
+  ): Promise<void> {
+    await this.emit({
+      timestamp: this.createTimestamp(),
+      level: decision === "deny" ? "warn" : "info",
+      type: "tool_policy_evaluated",
+      agent,
+      turn,
+      toolName,
+      callId,
+      decision,
+      reason,
+      policyVersion,
+      metadata,
+    });
+  }
+
   async toolCallCompleted(
     agent: string,
     turn: number,

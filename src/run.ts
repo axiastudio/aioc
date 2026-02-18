@@ -143,6 +143,7 @@ async function executeToolCall<TContext>(
   parsedArguments: unknown,
   runContext: RunContext<TContext>,
   turn: number,
+  logEmitter: RunLogEmitter,
   policies?: PolicyConfiguration<TContext>,
 ): Promise<unknown> {
   const definition = agent.tools.find((tool) => tool.name === call.name);
@@ -157,6 +158,17 @@ async function executeToolCall<TContext>(
     runContext,
     turn,
     policies,
+  );
+
+  await logEmitter.toolPolicyEvaluated(
+    agent.name,
+    turn,
+    call.name,
+    call.callId,
+    policyResult.decision,
+    policyResult.reason,
+    policyResult.policyVersion,
+    policyResult.metadata,
   );
 
   if (policyResult.decision !== "allow") {
@@ -332,6 +344,7 @@ async function* runLoop<TContext>(
               callItemArguments,
               runContext,
               activeTurn,
+              logEmitter,
               policies,
             );
           } catch (error) {

@@ -5,6 +5,7 @@ export type PolicyDecision = "allow" | "deny";
 export interface PolicyResult {
   decision: PolicyDecision;
   reason: string;
+  policyVersion?: string;
   metadata?: Record<string, unknown>;
 }
 
