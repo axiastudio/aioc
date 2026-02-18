@@ -13,6 +13,10 @@ AIOC adopts the following non-negotiable principles:
 - **Bias and misalignment control**: continuous monitoring, dedicated tests, and clear mitigation/escalation mechanisms.
 - **Privacy by design and data minimization**: collect and process only what is strictly necessary, protect sensitive data by default (redaction, encryption, retention limits), and provide auditable controls for access and deletion.
 
+Governance implementation reference:
+
+- `docs/RFC-0001-governance-first-runtime.md`
+
 ## Goals of this first scaffold
 
 - Keep a familiar API.
