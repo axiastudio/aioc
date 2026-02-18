@@ -10,7 +10,8 @@
     "build": "tsc -p tsconfig.json",
     "lint": "eslint ./src --ext .ts",
     "test:mistral": "tsx src/examples/mistral-smoke.ts",
-    "test:guardrail": "tsx src/examples/guardrail-smoke.ts"
+    "test:guardrail": "tsx src/examples/guardrail-smoke.ts",
+    "test:policy": "tsx src/examples/policy-smoke.ts"
   },
   "keywords": [
     "agents",
