@@ -1,7 +1,8 @@
 # RFC-0002: Deterministic Policy Gates for Tools and Handoffs
 
-- Status: Draft
+- Status: Accepted
 - Date: 2026-02-18
+- Accepted on: 2026-02-18
 - Owners: aioc maintainers
 - Depends on: RFC-0001
 
@@ -34,7 +35,7 @@ Out of scope:
 - UI-level approval workflows.
 - Provider-specific policy behavior.
 
-## Policy Contracts (Proposed)
+## Policy Contracts
 
 ```ts
 export type PolicyDecision = "allow" | "deny";
@@ -42,6 +43,7 @@ export type PolicyDecision = "allow" | "deny";
 export interface PolicyResult {
   decision: PolicyDecision;
   reason: string;
+  policyVersion?: string;
   metadata?: Record<string, unknown>;
 }
 
@@ -93,21 +95,25 @@ export interface PolicyConfiguration<TContext = unknown> {
 
 ## Trace Requirements
 
-For each proposal, runtime MUST emit trace fields:
+For each proposal, runtime MUST emit trace fields through:
 
-- `event_type` (`tool_proposal` or `handoff_proposal`)
-- `agent` (or `from_agent`/`to_agent`)
-- `proposal` (tool name or handoff target)
+- `tool_policy_evaluated` for tool proposals
+- `handoff_policy_evaluated` for handoff proposals
+
+Each event carries:
+
+- `agent`
+- `turn`
+- proposal identifiers (`toolName` or `handoffName`, plus `callId`)
 - `decision` (`allow` or `deny`)
 - `reason`
-- `policy_version` (when available)
-- `turn`
+- `policyVersion` (when available)
 - `metadata` (optional structured details)
 
 ## Error Behavior
 
 - Denied tool proposal returns a typed runtime error without executing the tool.
-- Denied handoff proposal keeps current agent active and continues according to run strategy.
+- Denied handoff proposal raises a typed runtime error without transitioning agent.
 - Policy engine failures must never bypass denial.
 
 ## Security and Privacy Notes
@@ -133,3 +139,10 @@ For each proposal, runtime MUST emit trace fields:
 3. Integrate handoff policy checks before any transition.
 4. Add trace events for proposals and decisions.
 5. Add minimal test matrix and block merge on failures.
+
+## Implementation Status
+
+- Policy contracts and default-deny behavior are implemented.
+- Tool and handoff policy gates are enforced in runtime.
+- Decision trace events are emitted for both tools and handoffs.
+- Unit/integration/regression coverage is present and executed in `test:ci`.
