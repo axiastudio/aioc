@@ -2,6 +2,17 @@
 
 AIOC is a lightweight internal agent SDK with an IoC-oriented control plane.
 
+## Project principles
+
+AIOC adopts the following non-negotiable principles:
+
+- **LLM outside the control plane**: critical decisions remain in deterministic components; the LLM supports but does not govern.
+- **End-to-end transparency**: each decision is traceable (inputs, context, prompt/policy version, output).
+- **Verifiable corrigibility**: prompts, policies, and materials are versioned, editable, and comparable before/after changes.
+- **Non-degeneration validation**: each correction must pass regression tests and quality checks.
+- **Bias and misalignment control**: continuous monitoring, dedicated tests, and clear mitigation/escalation mechanisms.
+- **Privacy by design and data minimization**: collect and process only what is strictly necessary, protect sensitive data by default (redaction, encryption, retention limits), and provide auditable controls for access and deletion.
+
 ## Goals of this first scaffold
 
 - Keep a familiar API.
