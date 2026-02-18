@@ -48,3 +48,8 @@ Required env:
 Example source:
 
 - `src/examples/mistral-smoke.ts`
+
+## License
+
+- Project license: `MIT` (`LICENSE`)
+- Third-party notices: `THIRD_PARTY_NOTICES.md`

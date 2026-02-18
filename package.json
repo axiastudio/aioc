@@ -20,7 +20,7 @@
     "mistral"
   ],
   "author": "",
-  "license": "ISC",
+  "license": "MIT",
   "description": "AIOC internal agent SDK with IoC-oriented orchestration primitives.",
   "dependencies": {
     "dotenv": "^17.2.3",
