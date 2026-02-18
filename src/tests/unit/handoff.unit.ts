@@ -1,41 +1,163 @@
 import assert from "node:assert/strict";
 import { z } from "zod";
-import { Agent, run, setDefaultProvider, tool } from "../../index";
+import {
+  Agent,
+  HandoffPolicyDeniedError,
+  type HandoffPolicy,
+  run,
+  setDefaultProvider,
+  tool,
+} from "../../index";
 import { toHandoffToolName } from "../support/handoff-name";
 import { ScriptedProvider } from "../support/scripted-provider";
 
+function createAgents(): {
+  sourceAgent: Agent;
+  targetAgent: Agent;
+  handoffToolName: string;
+} {
+  const targetAgent = new Agent({
+    name: "Target Agent",
+    model: "fake-model",
+  });
+
+  const sourceAgent = new Agent({
+    name: "Source Agent",
+    model: "fake-model",
+    handoffs: [targetAgent],
+  });
+
+  return {
+    sourceAgent,
+    targetAgent,
+    handoffToolName: toHandoffToolName(targetAgent.name),
+  };
+}
+
+function createHandoffTurns(handoffToolName: string) {
+  return [
+    [
+      {
+        type: "tool_call" as const,
+        callId: "handoff-call-1",
+        name: handoffToolName,
+        arguments: JSON.stringify({ reason: "route" }),
+      },
+    ],
+    [{ type: "completed" as const, message: "Handled by target." }],
+  ];
+}
+
 export async function runHandoffUnitTests(): Promise<void> {
   {
-    const targetAgent = new Agent({
-      name: "Target Agent",
-      model: "fake-model",
+    const { sourceAgent, handoffToolName } = createAgents();
+    const allowHandoffPolicy: HandoffPolicy = () => ({
+      decision: "allow",
+      reason: "allow_transition",
     });
-
-    const sourceAgent = new Agent({
-      name: "Source Agent",
-      model: "fake-model",
-      handoffs: [targetAgent],
-    });
-
-    const handoffToolName = toHandoffToolName(targetAgent.name);
 
     setDefaultProvider(
-      new ScriptedProvider([
-        [
-          {
-            type: "tool_call",
-            callId: "handoff-call-1",
-            name: handoffToolName,
-            arguments: JSON.stringify({ reason: "route" }),
-          },
-        ],
-        [{ type: "completed", message: "Handled by target." }],
-      ]),
+      new ScriptedProvider(createHandoffTurns(handoffToolName)),
     );
-
-    const result = await run(sourceAgent, "hello");
+    const result = await run(sourceAgent, "hello", {
+      policies: {
+        handoffPolicy: allowHandoffPolicy,
+      },
+    });
     assert.equal(result.finalOutput, "Handled by target.");
     assert.equal(result.lastAgent.name, "Target Agent");
+  }
+
+  {
+    const { sourceAgent, handoffToolName } = createAgents();
+    setDefaultProvider(
+      new ScriptedProvider(createHandoffTurns(handoffToolName)),
+    );
+
+    await assert.rejects(
+      () => run(sourceAgent, "hello"),
+      (error: unknown) => {
+        assert.ok(error instanceof HandoffPolicyDeniedError);
+        assert.equal(error.result.policyResult.reason, "policy_not_configured");
+        return true;
+      },
+    );
+  }
+
+  {
+    const { sourceAgent, handoffToolName } = createAgents();
+    const denyHandoffPolicy: HandoffPolicy = () => ({
+      decision: "deny",
+      reason: "target_not_allowlisted",
+    });
+
+    setDefaultProvider(
+      new ScriptedProvider(createHandoffTurns(handoffToolName)),
+    );
+    await assert.rejects(
+      () =>
+        run(sourceAgent, "hello", {
+          policies: {
+            handoffPolicy: denyHandoffPolicy,
+          },
+        }),
+      (error: unknown) => {
+        assert.ok(error instanceof HandoffPolicyDeniedError);
+        assert.equal(
+          error.result.policyResult.reason,
+          "target_not_allowlisted",
+        );
+        return true;
+      },
+    );
+  }
+
+  {
+    const { sourceAgent, handoffToolName } = createAgents();
+    const failingHandoffPolicy: HandoffPolicy = () => {
+      throw new Error("policy failed");
+    };
+
+    setDefaultProvider(
+      new ScriptedProvider(createHandoffTurns(handoffToolName)),
+    );
+    await assert.rejects(
+      () =>
+        run(sourceAgent, "hello", {
+          policies: {
+            handoffPolicy: failingHandoffPolicy,
+          },
+        }),
+      (error: unknown) => {
+        assert.ok(error instanceof HandoffPolicyDeniedError);
+        assert.equal(error.result.policyResult.reason, "policy_error");
+        return true;
+      },
+    );
+  }
+
+  {
+    const { sourceAgent, handoffToolName } = createAgents();
+    const invalidHandoffPolicy = (() => ({
+      decision: "allow",
+    })) as unknown as HandoffPolicy;
+
+    setDefaultProvider(
+      new ScriptedProvider(createHandoffTurns(handoffToolName)),
+    );
+    await assert.rejects(
+      () =>
+        run(sourceAgent, "hello", {
+          policies: {
+            handoffPolicy: invalidHandoffPolicy,
+          },
+        }),
+      (error: unknown) => {
+        assert.ok(error instanceof HandoffPolicyDeniedError);
+        assert.equal(error.result.policyResult.reason, "invalid_policy_result");
+        return true;
+      },
+    );
   }
 
   {
@@ -75,7 +197,14 @@ export async function runHandoffUnitTests(): Promise<void> {
       ]),
     );
 
-    const result = await run(sourceAgent, "hello");
+    const result = await run(sourceAgent, "hello", {
+      policies: {
+        handoffPolicy: () => ({
+          decision: "allow",
+          reason: "allow_transition",
+        }),
+      },
+    });
     assert.equal(result.finalOutput, "Handled by target with suffix.");
     assert.equal(result.lastAgent.name, "Target Agent");
   }

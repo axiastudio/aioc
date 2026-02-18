@@ -34,6 +34,16 @@ export type RunLogEvent =
       metadata?: Record<string, unknown>;
     })
   | (RunLogEventBase & {
+      type: "handoff_policy_evaluated";
+      handoffName: string;
+      callId: string;
+      toAgent: string;
+      decision: "allow" | "deny";
+      reason: string;
+      policyVersion?: string;
+      metadata?: Record<string, unknown>;
+    })
+  | (RunLogEventBase & {
       type: "tool_call_completed";
       toolName: string;
       callId: string;

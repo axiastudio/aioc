@@ -117,6 +117,33 @@ export class RunLogEmitter {
     });
   }
 
+  async handoffPolicyEvaluated(
+    agent: string,
+    turn: number,
+    handoffName: string,
+    callId: string,
+    toAgent: string,
+    decision: "allow" | "deny",
+    reason: string,
+    policyVersion?: string,
+    metadata?: Record<string, unknown>,
+  ): Promise<void> {
+    await this.emit({
+      timestamp: this.createTimestamp(),
+      level: decision === "deny" ? "warn" : "info",
+      type: "handoff_policy_evaluated",
+      agent,
+      turn,
+      handoffName,
+      callId,
+      toAgent,
+      decision,
+      reason,
+      policyVersion,
+      metadata,
+    });
+  }
+
   async toolCallCompleted(
     agent: string,
     turn: number,

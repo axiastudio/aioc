@@ -49,3 +49,20 @@ export class ToolCallPolicyDeniedError extends ToolCallError {
     this.result = result;
   }
 }
+
+export interface HandoffPolicyDeniedResult {
+  fromAgent: string;
+  toAgent: string;
+  policyResult: PolicyResult;
+}
+
+export class HandoffPolicyDeniedError extends AIOCError {
+  result: HandoffPolicyDeniedResult;
+
+  constructor(result: HandoffPolicyDeniedResult) {
+    super(
+      `Handoff "${result.fromAgent}" -> "${result.toAgent}" denied by policy: ${result.policyResult.reason}`,
+    );
+    this.result = result;
+  }
+}

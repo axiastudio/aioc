@@ -42,7 +42,16 @@ export async function runHandoffTransitionRegressionTests(): Promise<void> {
     },
   };
 
-  const result = await run(sourceAgent, "hello", { logger });
+  const result = await run(sourceAgent, "hello", {
+    logger,
+    policies: {
+      handoffPolicy: () => ({
+        decision: "allow",
+        reason: "allow_transition",
+        policyVersion: "v1",
+      }),
+    },
+  });
   assert.equal(result.finalOutput, "Done from target.");
   assert.equal(result.lastAgent.name, "Target Agent");
 
@@ -54,4 +63,17 @@ export async function runHandoffTransitionRegressionTests(): Promise<void> {
     .map((event) => event.agent);
 
   assert.deepEqual(activatedAgents, ["Source Agent", "Target Agent"]);
+
+  const handoffPolicyEvent = events.find(
+    (
+      event,
+    ): event is Extract<RunLogEvent, { type: "handoff_policy_evaluated" }> =>
+      event.type === "handoff_policy_evaluated",
+  );
+  assert.ok(handoffPolicyEvent);
+  assert.equal(handoffPolicyEvent.handoffName, handoffToolName);
+  assert.equal(handoffPolicyEvent.callId, "handoff-call-1");
+  assert.equal(handoffPolicyEvent.decision, "allow");
+  assert.equal(handoffPolicyEvent.reason, "allow_transition");
+  assert.equal(handoffPolicyEvent.policyVersion, "v1");
 }

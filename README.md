@@ -30,7 +30,7 @@ Governance implementation reference:
 - agent handoffs via `Agent({ handoffs: [...] })`
 - `run(...)` with streaming support
 - run logger hook via `run(..., { logger })`
-- deterministic policy gates via `run(..., { policies })` (tool execution is default-deny without explicit allow policy)
+- deterministic policy gates via `run(..., { policies })` (tool execution and handoff transitions are default-deny without explicit allow policy)
 - message helpers `user(...)`, `assistant(...)`, `system(...)`
 - `setDefaultProvider(...)`
 - error classes including `OutputGuardrailTripwireTriggered`

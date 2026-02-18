@@ -1,6 +1,7 @@
 import { Agent } from "./agent";
 import { getDefaultProvider } from "./config";
 import {
+  HandoffPolicyDeniedError,
   MaxTurnsExceededError,
   OutputGuardrailTripwireTriggered,
   ToolCallError,
@@ -173,6 +174,40 @@ async function evaluateToolPolicy<TContext>(
       toolName: call.name,
       rawArguments: call.arguments,
       parsedArguments,
+      runContext,
+      turn,
+    });
+  } catch (error) {
+    return createDeniedPolicyResult("policy_error", toErrorMetadata(error));
+  }
+
+  if (!isPolicyResult(rawResult)) {
+    return createDeniedPolicyResult("invalid_policy_result");
+  }
+
+  return rawResult;
+}
+
+async function evaluateHandoffPolicy<TContext>(
+  fromAgent: Agent<TContext>,
+  toAgent: Agent<TContext>,
+  call: PendingToolCall,
+  handoffPayload: unknown,
+  runContext: RunContext<TContext>,
+  turn: number,
+  policies?: PolicyConfiguration<TContext>,
+): Promise<PolicyResult> {
+  const policy = policies?.handoffPolicy;
+  if (!policy) {
+    return createDeniedPolicyResult("policy_not_configured");
+  }
+
+  let rawResult: unknown;
+  try {
+    rawResult = await policy({
+      fromAgentName: fromAgent.name,
+      toAgentName: toAgent.name,
+      handoffPayload,
       runContext,
       turn,
     });
@@ -391,6 +426,36 @@ async function* runLoop<TContext>(
           let toolOutput: unknown;
           try {
             if (handoffTarget) {
+              const handoffPolicyResult = await evaluateHandoffPolicy(
+                currentAgent,
+                handoffTarget,
+                call,
+                callItemArguments,
+                runContext,
+                activeTurn,
+                policies,
+              );
+
+              await logEmitter.handoffPolicyEvaluated(
+                currentAgent.name,
+                activeTurn,
+                call.name,
+                call.callId,
+                handoffTarget.name,
+                handoffPolicyResult.decision,
+                handoffPolicyResult.reason,
+                handoffPolicyResult.policyVersion,
+                handoffPolicyResult.metadata,
+              );
+
+              if (handoffPolicyResult.decision !== "allow") {
+                throw new HandoffPolicyDeniedError({
+                  fromAgent: currentAgent.name,
+                  toAgent: handoffTarget.name,
+                  policyResult: handoffPolicyResult,
+                });
+              }
+
               toolOutput = {
                 handoffTo: handoffTarget.name,
                 accepted: true,
