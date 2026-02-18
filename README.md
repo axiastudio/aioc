@@ -49,6 +49,13 @@ Example source:
 
 - `src/examples/mistral-smoke.ts`
 
+## Test Commands
+
+- `npm run test:unit`
+- `npm run test:integration`
+- `npm run test:regression`
+- `npm run test:ci`
+
 ## License
 
 - Project license: `MIT` (`LICENSE`)
