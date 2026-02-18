@@ -27,6 +27,7 @@ Governance implementation reference:
 
 - `Agent`, `RunContext`
 - `Tool`, `tool(...)`
+- agent handoffs via `Agent({ handoffs: [...] })`
 - `run(...)` with streaming support
 - run logger hook via `run(..., { logger })`
 - deterministic policy gates via `run(..., { policies })` (tool execution is default-deny without explicit allow policy)

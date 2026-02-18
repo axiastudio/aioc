@@ -12,6 +12,7 @@ import type { PolicyConfiguration, PolicyResult } from "./policy";
 import { ModelProvider } from "./providers/base";
 import { RunLogEmitter } from "./run-log-emitter";
 import { RunContext } from "./run-context";
+import type { Tool } from "./tool";
 import {
   AgentInputItem,
   IndividualRunOptions,
@@ -21,6 +22,7 @@ import {
   RunStreamEvent,
   StreamRunOptions,
 } from "./types";
+import { z } from "zod";
 
 type PendingToolCall = {
   callId: string;
@@ -32,6 +34,8 @@ type MutableRunState<TContext> = {
   history: AgentInputItem[];
   lastAgent: Agent<TContext>;
 };
+
+type HandoffRegistry<TContext> = Map<string, Agent<TContext>>;
 
 function normalizeInput(input: string | AgentInputItem[]): AgentInputItem[] {
   if (typeof input === "string") {
@@ -62,6 +66,52 @@ function resolveAgentModel<TContext>(agent: Agent<TContext>): string {
     );
   }
   return model;
+}
+
+function sanitizeToolSegment(input: string): string {
+  const sanitized = input
+    .trim()
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "_")
+    .replace(/^_+|_+$/g, "");
+  return sanitized || "agent";
+}
+
+function buildTurnTools<TContext>(agent: Agent<TContext>): {
+  providerTools: Tool<TContext>[];
+  handoffRegistry: HandoffRegistry<TContext>;
+} {
+  const handoffRegistry: HandoffRegistry<TContext> = new Map();
+  const handoffTools: Tool<TContext>[] = [];
+  const reservedNames = new Set(agent.tools.map((tool) => tool.name));
+
+  for (const handoffAgent of agent.handoffs) {
+    const baseName = `handoff_to_${sanitizeToolSegment(handoffAgent.name)}`;
+    let toolName = baseName;
+    let suffix = 2;
+
+    while (reservedNames.has(toolName) || handoffRegistry.has(toolName)) {
+      toolName = `${baseName}_${suffix}`;
+      suffix += 1;
+    }
+
+    handoffRegistry.set(toolName, handoffAgent);
+    reservedNames.add(toolName);
+
+    handoffTools.push({
+      name: toolName,
+      description: handoffAgent.handoffDescription
+        ? `Handoff to agent "${handoffAgent.name}". ${handoffAgent.handoffDescription}`
+        : `Handoff to agent "${handoffAgent.name}".`,
+      parameters: z.object({}).passthrough(),
+      execute: () => ({ handoffTo: handoffAgent.name }),
+    });
+  }
+
+  return {
+    providerTools: [...agent.tools, ...handoffTools],
+    handoffRegistry,
+  };
 }
 
 function toErrorMetadata(error: unknown): Record<string, unknown> {
@@ -245,12 +295,13 @@ async function* runLoop<TContext>(
       activeTurn = turn + 1;
       const currentAgent = state.lastAgent;
       await logEmitter.turnStarted(currentAgent.name, activeTurn);
+      const { providerTools, handoffRegistry } = buildTurnTools(currentAgent);
 
       const providerStream = provider.stream({
         model: resolveAgentModel(currentAgent),
         systemPrompt: await currentAgent.resolveInstructions(runContext),
         messages: state.history,
-        tools: currentAgent.tools,
+        tools: providerTools,
         modelSettings: currentAgent.modelSettings,
       });
 
@@ -336,17 +387,27 @@ async function* runLoop<TContext>(
             call.callId,
           );
 
+          const handoffTarget = handoffRegistry.get(call.name);
           let toolOutput: unknown;
           try {
-            toolOutput = await executeToolCall(
-              currentAgent,
-              call,
-              callItemArguments,
-              runContext,
-              activeTurn,
-              logEmitter,
-              policies,
-            );
+            if (handoffTarget) {
+              toolOutput = {
+                handoffTo: handoffTarget.name,
+                accepted: true,
+                payload: callItemArguments,
+              };
+              state.lastAgent = handoffTarget;
+            } else {
+              toolOutput = await executeToolCall(
+                currentAgent,
+                call,
+                callItemArguments,
+                runContext,
+                activeTurn,
+                logEmitter,
+                policies,
+              );
+            }
           } catch (error) {
             await logEmitter.toolCallFailed(
               currentAgent.name,
@@ -381,6 +442,14 @@ async function* runLoop<TContext>(
             type: "run_item_stream_event",
             item: outputItem,
           } as RunItemStreamEvent;
+
+          if (handoffTarget) {
+            yield {
+              type: "agent_updated_stream_event",
+              agent: state.lastAgent,
+            };
+            await logEmitter.agentActivated(state.lastAgent.name, activeTurn);
+          }
         }
 
         continue;

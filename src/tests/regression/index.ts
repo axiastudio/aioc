@@ -1,7 +1,9 @@
+import { runHandoffTransitionRegressionTests } from "./handoff-transition.regression";
 import { runPolicyDefaultDenyRegressionTests } from "./policy-default-deny.regression";
 
 async function main(): Promise<void> {
   await runPolicyDefaultDenyRegressionTests();
+  await runHandoffTransitionRegressionTests();
   process.stdout.write("Regression tests passed.\n");
 }
 
