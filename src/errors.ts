@@ -1,4 +1,5 @@
 import type { GuardrailFunctionOutput } from "./guardrails";
+import type { PolicyResult } from "./policy";
 
 export class AIOCError extends Error {
   constructor(message: string) {
@@ -32,3 +33,19 @@ export class OutputGuardrailTripwireTriggered extends AIOCError {
 }
 
 export class ToolCallError extends AIOCError {}
+
+export interface ToolCallPolicyDeniedResult {
+  toolName: string;
+  policyResult: PolicyResult;
+}
+
+export class ToolCallPolicyDeniedError extends ToolCallError {
+  result: ToolCallPolicyDeniedResult;
+
+  constructor(result: ToolCallPolicyDeniedResult) {
+    super(
+      `Tool "${result.toolName}" denied by policy: ${result.policyResult.reason}`,
+    );
+    this.result = result;
+  }
+}

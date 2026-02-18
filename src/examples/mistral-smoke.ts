@@ -4,6 +4,7 @@ import {
   Agent,
   MistralProvider,
   type RunLogger,
+  type ToolPolicy,
   run,
   setDefaultProvider,
   tool,
@@ -49,6 +50,14 @@ async function main() {
     },
   };
 
+  const toolPolicy: ToolPolicy = ({ toolName }) => ({
+    decision: toolName === "get_utc_time" ? "allow" : "deny",
+    reason:
+      toolName === "get_utc_time"
+        ? "smoke_allowlisted_tool"
+        : "tool_not_allowlisted",
+  });
+
   const stream = await run(
     agent,
     "Ciao! Dimmi rapidamente cos'e AIOC e poi dammi l'orario UTC corrente.",
@@ -59,6 +68,9 @@ async function main() {
       },
       maxTurns: 8,
       logger,
+      policies: {
+        toolPolicy,
+      },
     },
   );
 

@@ -4,9 +4,11 @@ import {
   MaxTurnsExceededError,
   OutputGuardrailTripwireTriggered,
   ToolCallError,
+  ToolCallPolicyDeniedError,
 } from "./errors";
 import type { RunLogger } from "./logger";
 import { user } from "./messages";
+import type { PolicyConfiguration, PolicyResult } from "./policy";
 import { ModelProvider } from "./providers/base";
 import { RunLogEmitter } from "./run-log-emitter";
 import { RunContext } from "./run-context";
@@ -62,17 +64,108 @@ function resolveAgentModel<TContext>(agent: Agent<TContext>): string {
   return model;
 }
 
+function toErrorMetadata(error: unknown): Record<string, unknown> {
+  if (error instanceof Error) {
+    return {
+      errorName: error.name,
+      errorMessage: error.message,
+    };
+  }
+  return {
+    errorName: "Error",
+    errorMessage: String(error),
+  };
+}
+
+function createDeniedPolicyResult(
+  reason: string,
+  metadata?: Record<string, unknown>,
+): PolicyResult {
+  return {
+    decision: "deny",
+    reason,
+    metadata,
+  };
+}
+
+function isPolicyResult(value: unknown): value is PolicyResult {
+  if (typeof value !== "object" || value === null) {
+    return false;
+  }
+
+  const candidate = value as Partial<PolicyResult>;
+  const validDecision =
+    candidate.decision === "allow" || candidate.decision === "deny";
+  return (
+    validDecision &&
+    typeof candidate.reason === "string" &&
+    candidate.reason.trim().length > 0
+  );
+}
+
+async function evaluateToolPolicy<TContext>(
+  agent: Agent<TContext>,
+  call: PendingToolCall,
+  parsedArguments: unknown,
+  runContext: RunContext<TContext>,
+  turn: number,
+  policies?: PolicyConfiguration<TContext>,
+): Promise<PolicyResult> {
+  const policy = policies?.toolPolicy;
+  if (!policy) {
+    return createDeniedPolicyResult("policy_not_configured");
+  }
+
+  let rawResult: unknown;
+  try {
+    rawResult = await policy({
+      agentName: agent.name,
+      toolName: call.name,
+      rawArguments: call.arguments,
+      parsedArguments,
+      runContext,
+      turn,
+    });
+  } catch (error) {
+    return createDeniedPolicyResult("policy_error", toErrorMetadata(error));
+  }
+
+  if (!isPolicyResult(rawResult)) {
+    return createDeniedPolicyResult("invalid_policy_result");
+  }
+
+  return rawResult;
+}
+
 async function executeToolCall<TContext>(
   agent: Agent<TContext>,
   call: PendingToolCall,
+  parsedArguments: unknown,
   runContext: RunContext<TContext>,
+  turn: number,
+  policies?: PolicyConfiguration<TContext>,
 ): Promise<unknown> {
   const definition = agent.tools.find((tool) => tool.name === call.name);
   if (!definition) {
     throw new ToolCallError(`Tool "${call.name}" is not registered.`);
   }
 
-  const parsedArguments = parseArguments(call.arguments);
+  const policyResult = await evaluateToolPolicy(
+    agent,
+    call,
+    parsedArguments,
+    runContext,
+    turn,
+    policies,
+  );
+
+  if (policyResult.decision !== "allow") {
+    throw new ToolCallPolicyDeniedError({
+      toolName: call.name,
+      policyResult,
+    });
+  }
+
   const validated = definition.parameters.parse(parsedArguments);
   return definition.execute(validated, runContext);
 }
@@ -119,6 +212,7 @@ async function* runLoop<TContext>(
   runContext: RunContext<TContext>,
   maxTurns: number,
   logger?: RunLogger,
+  policies?: PolicyConfiguration<TContext>,
 ): AsyncIterable<RunStreamEvent<TContext>> {
   const logEmitter = new RunLogEmitter(logger);
   await logEmitter.runStarted(
@@ -232,7 +326,14 @@ async function* runLoop<TContext>(
 
           let toolOutput: unknown;
           try {
-            toolOutput = await executeToolCall(currentAgent, call, runContext);
+            toolOutput = await executeToolCall(
+              currentAgent,
+              call,
+              callItemArguments,
+              runContext,
+              activeTurn,
+              policies,
+            );
           } catch (error) {
             await logEmitter.toolCallFailed(
               currentAgent.name,
@@ -364,7 +465,14 @@ export async function run<TContext = unknown>(
 
   const provider = getDefaultProvider();
   const maxTurns = options.maxTurns ?? 10;
-  const stream = runLoop(state, provider, runContext, maxTurns, options.logger);
+  const stream = runLoop(
+    state,
+    provider,
+    runContext,
+    maxTurns,
+    options.logger,
+    options.policies,
+  );
 
   if (options.stream === true) {
     return new StreamedRunResult(stream, state);
