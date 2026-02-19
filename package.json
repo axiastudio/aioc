@@ -14,6 +14,7 @@
     "test:regression": "npm run build && node dist/tests/regression/index.js",
     "test:ci": "npm run lint && npm run build && node dist/tests/unit/index.js && node dist/tests/integration/index.js && node dist/tests/regression/index.js",
     "example:hello-run": "tsx src/examples/hello-run.ts",
+    "example:tool-run": "tsx src/examples/tool-run.ts",
     "test:mistral": "tsx src/examples/mistral-smoke.ts",
     "test:guardrail": "tsx src/examples/guardrail-smoke.ts",
     "test:policy": "tsx src/examples/policy-smoke.ts"
