@@ -34,25 +34,18 @@ Governance implementation reference:
 - run logger hook via `run(..., { logger })`
 - deterministic policy gates via `run(..., { policies })` (tool execution and handoff transitions are default-deny without explicit allow policy)
 - policy helpers `allow(...)` and `deny(...)` for deterministic policy results
+- provider setup helpers `setupMistral(...)`, `setupOpenAI(...)`, `setupProvider(...)`
 - run record hook via `run(..., { record })` for external persistence/audit adapters
 - message helpers `user(...)`, `assistant(...)`, `system(...)`
 - `setDefaultProvider(...)`
 - error classes including `OutputGuardrailTripwireTriggered`
 - `OpenAIProvider`, `MistralProvider`
 
-## Example smoke test (Mistral)
+Provider setup notes:
 
-```bash
-npm run test:mistral -w @axiastudio/aioc
-```
-
-Required env:
-
-- `MISTRAL_API_KEY`
-
-Example source:
-
-- `src/examples/mistral-smoke.ts`
+- `setupMistral()` reads `MISTRAL_API_KEY` from env if no `apiKey` is passed.
+- `setupOpenAI()` reads `OPENAI_API_KEY` from env if no `apiKey` is passed.
+- `setupProvider("mistral" | "openai", ...)` provides a single entrypoint.
 
 ## Test Commands
 

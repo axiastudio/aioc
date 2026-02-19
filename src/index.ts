@@ -5,6 +5,7 @@ export * from "./guardrails";
 export * from "./logger";
 export * from "./messages";
 export * from "./policy";
+export * from "./provider-setup";
 export * from "./providers/base";
 export * from "./providers/chat-completions";
 export * from "./providers/mistral";
