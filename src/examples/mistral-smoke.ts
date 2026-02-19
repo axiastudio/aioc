@@ -2,27 +2,15 @@ import "dotenv/config";
 import { z } from "zod";
 import {
   Agent,
-  MistralProvider,
   type RunLogger,
   type ToolPolicy,
   run,
-  setDefaultProvider,
+  setupMistral,
   tool,
 } from "../index";
 
 async function main() {
-  const apiKey = process.env.MISTRAL_API_KEY;
-  if (!apiKey) {
-    throw new Error(
-      "Missing MISTRAL_API_KEY. Export it before running this script.",
-    );
-  }
-
-  setDefaultProvider(
-    new MistralProvider({
-      apiKey,
-    }),
-  );
+  setupMistral();
 
   const getUtcTime = tool({
     name: "get_utc_time",
