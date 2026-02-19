@@ -8,32 +8,19 @@ async function main(): Promise<void> {
   const agent = new Agent({
     name: "Hello run agent",
     model: "mistral-small-latest",
-    instructions: "Reply in one short sentence and explain what AIOC is.",
+    instructions: "You only respond in haikus.",
   });
 
-  // stream: true lets us print deltas while the model is generating.
-  const stream = await run(agent, "What is AIOC?", {
-    stream: true,
-    maxTurns: 4,
-    context: {
-      requestId: "hello-run",
-    },
-  });
-
-  for await (const event of stream.toStream()) {
-    if (event.type === "raw_model_stream_event") {
-      process.stdout.write(event.data.delta ?? "");
-    }
-  }
-
-  process.stdout.write(
-    `\n\nCompleted. Last agent: ${stream.lastAgent.name}. History items: ${stream.history.length}\n`,
+  // Default behavior: non-stream run (stream defaults to false).
+  const result = await run(
+    agent,
+    "Tell me about recursion in programming. Quickly responding with a single answer is fine.",
   );
+
+  process.stdout.write(`${result.finalOutput}\n`);
 }
 
 main().catch((error) => {
-  const message =
-    error instanceof Error ? `${error.name}: ${error.message}` : String(error);
-  process.stderr.write(`${message}\n`);
+  process.stderr.write(`${String(error)}\n`);
   process.exit(1);
 });

@@ -46,6 +46,7 @@ Provider setup notes:
 - `setupMistral()` reads `MISTRAL_API_KEY` from env if no `apiKey` is passed.
 - `setupOpenAI()` reads `OPENAI_API_KEY` from env if no `apiKey` is passed.
 - `setupProvider("mistral" | "openai", ...)` provides a single entrypoint.
+- `run(...)` defaults to non-stream mode (`stream: false`).
 
 ## Test Commands
 

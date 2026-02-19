@@ -22,6 +22,7 @@ import type { Tool } from "./tool";
 import {
   AgentInputItem,
   IndividualRunOptions,
+  NonStreamRunOptions,
   RunItemStreamEvent,
   RunMessageOutputItem,
   RunResult,
@@ -641,7 +642,7 @@ export async function run<TContext = unknown>(
 export async function run<TContext = unknown>(
   startingAgent: Agent<TContext>,
   input: string | AgentInputItem[],
-  options?: IndividualRunOptions<TContext>,
+  options?: NonStreamRunOptions<TContext>,
 ): Promise<RunResult<TContext>>;
 
 export async function run<TContext = unknown>(
