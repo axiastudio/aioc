@@ -16,6 +16,8 @@ AIOC adopts the following non-negotiable principles:
 Governance implementation reference:
 
 - `docs/RFC-0001-governance-first-runtime.md`
+- `docs/RFC-0002-policy-gates-for-tools-and-handoffs.md`
+- `docs/RFC-0003-run-record-audit-trail-and-persistence.md`
 
 ## Goals of this first scaffold
 
@@ -31,6 +33,7 @@ Governance implementation reference:
 - `run(...)` with streaming support
 - run logger hook via `run(..., { logger })`
 - deterministic policy gates via `run(..., { policies })` (tool execution and handoff transitions are default-deny without explicit allow policy)
+- run record hook via `run(..., { record })` for external persistence/audit adapters
 - message helpers `user(...)`, `assistant(...)`, `system(...)`
 - `setDefaultProvider(...)`
 - error classes including `OutputGuardrailTripwireTriggered`

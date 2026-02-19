@@ -5,6 +5,7 @@
 - Accepted on: 2026-02-18
 - Owners: aioc maintainers
 - Depends on: RFC-0001
+- Related: RFC-0003
 
 ## Context
 
@@ -34,6 +35,7 @@ Out of scope:
 - Full handoff orchestration implementation.
 - UI-level approval workflows.
 - Provider-specific policy behavior.
+- Run-level persistence schema and storage adapters (covered by RFC-0003).
 
 ## Policy Contracts
 
