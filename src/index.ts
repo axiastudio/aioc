@@ -10,6 +10,7 @@ export * from "./providers/chat-completions";
 export * from "./providers/mistral";
 export * from "./providers/openai";
 export * from "./run";
+export * from "./run-record";
 export * from "./run-context";
 export * from "./tool";
 export * from "./types";
