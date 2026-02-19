@@ -35,6 +35,7 @@ Governance implementation reference:
 - deterministic policy gates via `run(..., { policies })` (tool execution and handoff transitions are default-deny without explicit allow policy)
 - policy helpers `allow(...)` and `deny(...)` for deterministic policy results
 - provider setup helpers `setupMistral(...)`, `setupOpenAI(...)`, `setupProvider(...)`
+- stdout logger helper `createStdoutLogger(...)` (opt-in)
 - run record hook via `run(..., { record })` for external persistence/audit adapters
 - message helpers `user(...)`, `assistant(...)`, `system(...)`
 - `setDefaultProvider(...)`
