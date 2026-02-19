@@ -33,6 +33,7 @@ Governance implementation reference:
 - `run(...)` with streaming support
 - run logger hook via `run(..., { logger })`
 - deterministic policy gates via `run(..., { policies })` (tool execution and handoff transitions are default-deny without explicit allow policy)
+- policy helpers `allow(...)` and `deny(...)` for deterministic policy results
 - run record hook via `run(..., { record })` for external persistence/audit adapters
 - message helpers `user(...)`, `assistant(...)`, `system(...)`
 - `setDefaultProvider(...)`

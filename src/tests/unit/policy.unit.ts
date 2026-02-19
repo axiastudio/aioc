@@ -3,6 +3,8 @@ import { z } from "zod";
 import {
   Agent,
   ToolCallPolicyDeniedError,
+  allow,
+  deny,
   type ToolPolicy,
   run,
   setDefaultProvider,
@@ -44,11 +46,29 @@ function createToolProposalTurns() {
 
 export async function runPolicyUnitTests(): Promise<void> {
   {
-    let executions = 0;
-    const allowPolicy: ToolPolicy = () => ({
-      decision: "allow",
-      reason: "allow_ping",
+    const allowResult = allow("allow_reason", {
+      policyVersion: "v1",
+      metadata: { scope: "tool" },
     });
+    const denyResult = deny("deny_reason");
+
+    assert.deepEqual(allowResult, {
+      decision: "allow",
+      reason: "allow_reason",
+      policyVersion: "v1",
+      metadata: { scope: "tool" },
+    });
+    assert.deepEqual(denyResult, {
+      decision: "deny",
+      reason: "deny_reason",
+      policyVersion: undefined,
+      metadata: undefined,
+    });
+  }
+
+  {
+    let executions = 0;
+    const allowPolicy: ToolPolicy = () => allow("allow_ping");
 
     setDefaultProvider(new ScriptedProvider(createToolProposalTurns()));
     const result = await run(
@@ -83,10 +103,7 @@ export async function runPolicyUnitTests(): Promise<void> {
 
   {
     let executions = 0;
-    const denyPolicy: ToolPolicy = () => ({
-      decision: "deny",
-      reason: "tool_not_allowlisted",
-    });
+    const denyPolicy: ToolPolicy = () => deny("tool_not_allowlisted");
 
     setDefaultProvider(new ScriptedProvider(createToolProposalTurns()));
     await assert.rejects(

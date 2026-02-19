@@ -3,6 +3,8 @@ import { z } from "zod";
 import {
   Agent,
   ToolCallPolicyDeniedError,
+  allow,
+  deny,
   type ToolPolicy,
   run,
   setDefaultProvider,
@@ -70,10 +72,7 @@ async function runAllowCase(): Promise<void> {
   let executions = 0;
   setDefaultProvider(new SequencedProvider(createToolProposalRun()));
 
-  const toolPolicy: ToolPolicy = () => ({
-    decision: "allow",
-    reason: "allow_ping",
-  });
+  const toolPolicy: ToolPolicy = () => allow("allow_ping");
 
   const result = await run(
     createAgent(() => (executions += 1)),
@@ -113,10 +112,7 @@ async function runDenyCase(): Promise<void> {
   let executions = 0;
   setDefaultProvider(new SequencedProvider(createToolProposalRun()));
 
-  const toolPolicy: ToolPolicy = () => ({
-    decision: "deny",
-    reason: "tool_not_allowlisted",
-  });
+  const toolPolicy: ToolPolicy = () => deny("tool_not_allowlisted");
 
   await assert.rejects(
     () =>
