@@ -48,3 +48,29 @@ export interface RunRecord<TContext = unknown> {
   errorMessage?: string;
   metadata?: Record<string, unknown>;
 }
+
+export interface RunRecordContextRedactionResult<TContext = unknown> {
+  contextSnapshot: TContext;
+  contextRedacted: boolean;
+}
+
+export type RunRecordContextRedactor<TContext = unknown> = (
+  context: TContext,
+) =>
+  | RunRecordContextRedactionResult<TContext>
+  | Promise<RunRecordContextRedactionResult<TContext>>;
+
+export type RunRecordWriter<TContext = unknown> = (
+  record: RunRecord<TContext>,
+) => Promise<void> | void;
+
+export interface RunRecordSink<TContext = unknown> {
+  write: RunRecordWriter<TContext>;
+}
+
+export interface RunRecordOptions<TContext = unknown> {
+  runId?: string;
+  metadata?: Record<string, unknown>;
+  contextRedactor?: RunRecordContextRedactor<TContext>;
+  sink?: RunRecordSink<TContext> | RunRecordWriter<TContext>;
+}

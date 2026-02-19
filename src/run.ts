@@ -12,6 +12,11 @@ import { user } from "./messages";
 import type { PolicyConfiguration, PolicyResult } from "./policy";
 import { ModelProvider } from "./providers/base";
 import { RunLogEmitter } from "./run-log-emitter";
+import {
+  PendingGuardrailDecisionRecord,
+  PendingPolicyDecisionRecord,
+  RunRecorder,
+} from "./run-recorder-runtime";
 import { RunContext } from "./run-context";
 import type { Tool } from "./tool";
 import {
@@ -230,6 +235,7 @@ async function executeToolCall<TContext>(
   turn: number,
   logEmitter: RunLogEmitter,
   policies?: PolicyConfiguration<TContext>,
+  onPolicyDecision?: (decision: PendingPolicyDecisionRecord) => void,
 ): Promise<unknown> {
   const definition = agent.tools.find((tool) => tool.name === call.name);
   if (!definition) {
@@ -255,6 +261,18 @@ async function executeToolCall<TContext>(
     policyResult.policyVersion,
     policyResult.metadata,
   );
+  onPolicyDecision?.({
+    turn,
+    callId: call.callId,
+    decision: policyResult.decision,
+    reason: policyResult.reason,
+    policyVersion: policyResult.policyVersion,
+    resource: {
+      kind: "tool",
+      name: call.name,
+    },
+    metadata: policyResult.metadata,
+  });
 
   if (policyResult.decision !== "allow") {
     throw new ToolCallPolicyDeniedError({
@@ -274,6 +292,7 @@ async function evaluateOutputGuardrails<TContext>(
   outputText: string,
   logEmitter: RunLogEmitter,
   turn: number,
+  onGuardrailDecision?: (decision: PendingGuardrailDecisionRecord) => void,
 ): Promise<void> {
   for (const guardrail of agent.outputGuardrails) {
     await logEmitter.outputGuardrailStarted(agent.name, turn, guardrail.name);
@@ -286,6 +305,13 @@ async function evaluateOutputGuardrails<TContext>(
     });
 
     if (output.tripwireTriggered) {
+      onGuardrailDecision?.({
+        turn,
+        guardrailName: guardrail.name,
+        decision: "triggered",
+        reason: output.reason,
+        metadata: output.metadata,
+      });
       await logEmitter.outputGuardrailTriggered(
         agent.name,
         turn,
@@ -299,6 +325,11 @@ async function evaluateOutputGuardrails<TContext>(
       });
     }
 
+    onGuardrailDecision?.({
+      turn,
+      guardrailName: guardrail.name,
+      decision: "pass",
+    });
     await logEmitter.outputGuardrailPassed(agent.name, turn, guardrail.name);
   }
 }
@@ -310,6 +341,8 @@ async function* runLoop<TContext>(
   maxTurns: number,
   logger?: RunLogger,
   policies?: PolicyConfiguration<TContext>,
+  onPolicyDecision?: (decision: PendingPolicyDecisionRecord) => void,
+  onGuardrailDecision?: (decision: PendingGuardrailDecisionRecord) => void,
 ): AsyncIterable<RunStreamEvent<TContext>> {
   const logEmitter = new RunLogEmitter(logger);
   await logEmitter.runStarted(
@@ -383,6 +416,7 @@ async function* runLoop<TContext>(
           outputText,
           logEmitter,
           activeTurn,
+          onGuardrailDecision,
         );
 
         for (const delta of bufferedDeltas) {
@@ -447,6 +481,18 @@ async function* runLoop<TContext>(
                 handoffPolicyResult.policyVersion,
                 handoffPolicyResult.metadata,
               );
+              onPolicyDecision?.({
+                turn: activeTurn,
+                callId: call.callId,
+                decision: handoffPolicyResult.decision,
+                reason: handoffPolicyResult.reason,
+                policyVersion: handoffPolicyResult.policyVersion,
+                resource: {
+                  kind: "handoff",
+                  name: handoffTarget.name,
+                },
+                metadata: handoffPolicyResult.metadata,
+              });
 
               if (handoffPolicyResult.decision !== "allow") {
                 throw new HandoffPolicyDeniedError({
@@ -471,6 +517,7 @@ async function* runLoop<TContext>(
                 activeTurn,
                 logEmitter,
                 policies,
+                onPolicyDecision,
               );
             }
           } catch (error) {
@@ -612,14 +659,50 @@ export async function run<TContext = unknown>(
 
   const provider = getDefaultProvider();
   const maxTurns = options.maxTurns ?? 10;
-  const stream = runLoop(
+  const runRecorder = await RunRecorder.create({
+    input,
+    context: runContext.context,
+    providerName: provider.constructor.name,
+    recordOptions: options.record,
+  });
+
+  const rawStream = runLoop(
     state,
     provider,
     runContext,
     maxTurns,
     options.logger,
     options.policies,
+    runRecorder.onPolicyDecision,
+    runRecorder.onGuardrailDecision,
   );
+  const runRecordSnapshot = (): {
+    agentName: string;
+    model?: string;
+    items: AgentInputItem[];
+  } => ({
+    agentName: state.lastAgent.name,
+    model: state.lastAgent.model,
+    items: state.history,
+  });
+
+  const stream = (async function* (): AsyncIterable<RunStreamEvent<TContext>> {
+    try {
+      for await (const event of rawStream) {
+        if (
+          event.type === "run_item_stream_event" &&
+          event.item.type === "message_output_item"
+        ) {
+          runRecorder.onMessageOutput(event.item.content);
+        }
+        yield event;
+      }
+      await runRecorder.emitCompleted(runRecordSnapshot());
+    } catch (error) {
+      await runRecorder.emitFailed(runRecordSnapshot(), error);
+      throw error;
+    }
+  })();
 
   if (options.stream === true) {
     return new StreamedRunResult(stream, state);

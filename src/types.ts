@@ -1,6 +1,7 @@
 import type { Agent } from "./agent";
 import type { RunLogger } from "./logger";
 import type { PolicyConfiguration } from "./policy";
+import type { RunRecordOptions } from "./run-record";
 
 export type ModelSettings = Record<string, unknown>;
 export type Role = "user" | "assistant" | "system";
@@ -67,6 +68,7 @@ export type SharedRunOptions<TContext = unknown> = {
   maxTurns?: number;
   logger?: RunLogger;
   policies?: PolicyConfiguration<TContext>;
+  record?: RunRecordOptions<TContext>;
 };
 
 export type StreamRunOptions<TContext = unknown> =

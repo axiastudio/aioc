@@ -1,10 +1,12 @@
 import { runHandoffUnitTests } from "./handoff.unit";
 import { runGuardrailUnitTests } from "./guardrail.unit";
 import { runPolicyUnitTests } from "./policy.unit";
+import { runRunRecordUnitTests } from "./run-record.unit";
 import { runRunUnitTests } from "./run.unit";
 
 async function main(): Promise<void> {
   await runRunUnitTests();
+  await runRunRecordUnitTests();
   await runPolicyUnitTests();
   await runHandoffUnitTests();
   await runGuardrailUnitTests();
