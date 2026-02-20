@@ -40,6 +40,14 @@
   "author": "Tiziano Lattisi - AXIA Studio S.r.l.",
   "license": "MIT",
   "description": "Governance-first agent SDK with deterministic policy gates, auditable run records, and IoC-oriented orchestration.",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/axiastudio/aioc.git"
+  },
+  "bugs": {
+    "url": "https://github.com/axiastudio/aioc/issues"
+  },
+  "homepage": "https://github.com/axiastudio/aioc#readme",
   "publishConfig": {
     "access": "public",
     "tag": "next"
