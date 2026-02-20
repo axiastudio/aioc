@@ -8,6 +8,7 @@ Project home: [https://github.com/axiastudio/aioc](https://github.com/axiastudio
 
 This package is currently in alpha and is not production-ready.
 Breaking changes may occur before a stable release.
+Alpha contract reference: `docs/ALPHA-CONTRACT.md`.
 
 ## Contact
 
@@ -29,6 +30,7 @@ Governance implementation reference:
 - `docs/RFC-0001-governance-first-runtime.md`
 - `docs/RFC-0002-policy-gates-for-tools-and-handoffs.md`
 - `docs/RFC-0003-run-record-audit-trail-and-persistence.md`
+- `docs/ALPHA-CONTRACT.md`
 
 ## Goals of this first scaffold
 
