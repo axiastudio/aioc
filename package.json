@@ -47,7 +47,7 @@
   "bugs": {
     "url": "https://github.com/axiastudio/aioc/issues"
   },
-  "homepage": "https://github.com/axiastudio/aioc#readme",
+  "homepage": "https://github.com/axiastudio/aioc",
   "publishConfig": {
     "access": "public",
     "tag": "next"
