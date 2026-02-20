@@ -33,7 +33,8 @@ Governance implementation reference:
 - `run(...)` with streaming support
 - run logger hook via `run(..., { logger })`
 - deterministic policy gates via `run(..., { policies })` (tool execution and handoff transitions are default-deny without explicit allow policy)
-- policy helpers `allow(...)` and `deny(...)` for deterministic policy results
+- policy helpers `allow(...)` and `deny(...)` for deterministic policy results (including optional `publicReason` and `denyMode`)
+- tool/handoff call outputs are normalized in an envelope: `{ status, code, publicReason, data }`
 - provider setup helpers `setupMistral(...)`, `setupOpenAI(...)`, `setupProvider(...)`
 - stdout logger helper `createStdoutLogger(...)` (opt-in)
 - run record hook via `run(..., { record })` for external persistence/audit adapters
@@ -48,6 +49,11 @@ Provider setup notes:
 - `setupOpenAI()` reads `OPENAI_API_KEY` from env if no `apiKey` is passed.
 - `setupProvider("mistral" | "openai", ...)` provides a single entrypoint.
 - `run(...)` defaults to non-stream mode (`stream: false`).
+
+Policy deny notes:
+
+- Default deny behavior raises typed runtime errors (`ToolCallPolicyDeniedError` / `HandoffPolicyDeniedError`).
+- Policies can choose `denyMode: "tool_result"` to return a denied tool result to the model without throwing.
 
 ## Test Commands
 

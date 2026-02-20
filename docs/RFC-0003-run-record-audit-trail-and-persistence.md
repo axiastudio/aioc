@@ -103,9 +103,10 @@ export interface RunRecordOptions<TContext = unknown> {
 1. Runtime initializes record state (`runId`, `startedAt`, extracted `question`).
 2. Runtime captures a context snapshot; if `contextRedactor` exists, it runs before persistence.
 3. During execution, runtime appends tool/handoff policy outcomes and guardrail outcomes.
-4. On completion/failure, runtime emits exactly one run record through the configured sink.
-5. Sink failures are swallowed by design and must not change run success/failure semantics.
-6. Streaming mode emits record when stream finishes or fails.
+4. `items` preserve normalized tool result envelopes (`{ status, code, publicReason, data }`) for allow outcomes and soft-deny outcomes.
+5. On completion/failure, runtime emits exactly one run record through the configured sink.
+6. Sink failures are swallowed by design and must not change run success/failure semantics.
+7. Streaming mode emits record when stream finishes or fails.
 
 ## Security and Privacy Notes
 
@@ -119,9 +120,10 @@ export interface RunRecordOptions<TContext = unknown> {
 1. Completed run emits one record with final response.
 2. Failed run emits one record with `errorName` and `errorMessage`.
 3. Tool/handoff policy decisions are included with reason and decision.
-4. Context redactor output is persisted with `contextRedacted = true`.
-5. Sink write exception does not fail runtime.
-6. Record emission remains single-shot in stream and non-stream modes.
+4. Soft-deny tool/handoff outcomes are persisted in `items` as denied envelopes.
+5. Context redactor output is persisted with `contextRedacted = true`.
+6. Sink write exception does not fail runtime.
+7. Record emission remains single-shot in stream and non-stream modes.
 
 ## Rollout Plan
 

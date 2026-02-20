@@ -1,8 +1,7 @@
 # RFC-0002: Deterministic Policy Gates for Tools and Handoffs
 
-- Status: Accepted
+- Status: Draft
 - Date: 2026-02-18
-- Accepted on: 2026-02-18
 - Owners: aioc maintainers
 - Depends on: RFC-0001
 - Related: RFC-0003
@@ -41,10 +40,13 @@ Out of scope:
 
 ```ts
 export type PolicyDecision = "allow" | "deny";
+export type PolicyDenyMode = "throw" | "tool_result";
 
 export interface PolicyResult {
   decision: PolicyDecision;
   reason: string;
+  publicReason?: string;
+  denyMode?: PolicyDenyMode;
   policyVersion?: string;
   metadata?: Record<string, unknown>;
 }
@@ -88,12 +90,30 @@ export interface PolicyConfiguration<TContext = unknown> {
 4. If policy is missing: implicit deny (`reason = "policy_not_configured"`).
 5. If policy returns invalid output: deny (`reason = "invalid_policy_result"`).
 6. Only `decision = "allow"` can proceed to execution/transition.
+7. If `decision = "deny"` and `denyMode = "tool_result"`, runtime returns a denied tool result envelope and continues without tool execution/handoff transition.
+8. If `decision = "deny"` and `denyMode` is missing (or `throw`), runtime raises typed denial errors.
 
 ## Default-Deny Rules
 
 - Missing policy configuration MUST deny.
 - Missing `reason` in policy result MUST be treated as invalid and deny.
 - Exceptions thrown by policy MUST deny (`reason = "policy_error"`).
+
+## Tool Result Envelope
+
+Tool and handoff outputs are normalized into a deterministic envelope:
+
+```ts
+export interface ToolResultEnvelope {
+  status: "ok" | "denied";
+  code: string | null;
+  publicReason: string | null;
+  data: unknown | null;
+}
+```
+
+- Allow path: `status = "ok"`, `data = <tool_or_handoff_payload>`.
+- Soft deny path (`denyMode = "tool_result"`): `status = "denied"`, `code = reason`, `publicReason` from policy (or runtime fallback), `data = null`.
 
 ## Trace Requirements
 
@@ -114,8 +134,9 @@ Each event carries:
 
 ## Error Behavior
 
-- Denied tool proposal returns a typed runtime error without executing the tool.
-- Denied handoff proposal raises a typed runtime error without transitioning agent.
+- Denied tool proposal raises `ToolCallPolicyDeniedError` without executing the tool when deny mode is hard (`throw` or omitted).
+- Denied handoff proposal raises `HandoffPolicyDeniedError` without transitioning agent when deny mode is hard (`throw` or omitted).
+- In soft deny mode (`denyMode = "tool_result"`), runtime must not throw and must emit a denied result envelope.
 - Policy engine failures must never bypass denial.
 
 ## Security and Privacy Notes
@@ -133,6 +154,9 @@ Each event carries:
 5. Handoff deny path: transition blocked.
 6. Policy throws: denied with deterministic reason.
 7. Invalid policy result: denied.
+8. Tool soft deny path: policy denies with `denyMode = "tool_result"` and runtime emits denied envelope without tool execution.
+9. Handoff soft deny path: policy denies with `denyMode = "tool_result"` and runtime emits denied envelope without transition.
+10. Allow path output: runtime emits normalized envelope with `status = "ok"` and `data`.
 
 ## Rollout Plan
 
@@ -147,4 +171,5 @@ Each event carries:
 - Policy contracts and default-deny behavior are implemented.
 - Tool and handoff policy gates are enforced in runtime.
 - Decision trace events are emitted for both tools and handoffs.
+- Hard deny and soft deny (`denyMode = "tool_result"`) are both implemented.
 - Unit/integration/regression coverage is present and executed in `test:ci`.
