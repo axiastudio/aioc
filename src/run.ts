@@ -43,6 +43,14 @@ type MutableRunState<TContext> = {
 };
 
 type HandoffRegistry<TContext> = Map<string, Agent<TContext>>;
+type ToolResultEnvelopeStatus = "ok" | "denied";
+
+interface ToolResultEnvelope {
+  status: ToolResultEnvelopeStatus;
+  code: string | null;
+  publicReason: string | null;
+  data: unknown | null;
+}
 
 function normalizeInput(input: string | AgentInputItem[]): AgentInputItem[] {
   if (typeof input === "string") {
@@ -145,6 +153,32 @@ function createDeniedPolicyResult(
   };
 }
 
+function shouldReturnDeniedAsToolResult(policyResult: PolicyResult): boolean {
+  return (
+    policyResult.decision === "deny" && policyResult.denyMode === "tool_result"
+  );
+}
+
+function toAllowedToolResultEnvelope(data: unknown): ToolResultEnvelope {
+  return {
+    status: "ok",
+    code: null,
+    publicReason: null,
+    data,
+  };
+}
+
+function toDeniedToolResultEnvelope(
+  policyResult: PolicyResult,
+): ToolResultEnvelope {
+  return {
+    status: "denied",
+    code: policyResult.reason,
+    publicReason: policyResult.publicReason?.trim() || "Action not allowed.",
+    data: null,
+  };
+}
+
 function isPolicyResult(value: unknown): value is PolicyResult {
   if (typeof value !== "object" || value === null) {
     return false;
@@ -153,10 +187,19 @@ function isPolicyResult(value: unknown): value is PolicyResult {
   const candidate = value as Partial<PolicyResult>;
   const validDecision =
     candidate.decision === "allow" || candidate.decision === "deny";
+  const validPublicReason =
+    typeof candidate.publicReason === "undefined" ||
+    typeof candidate.publicReason === "string";
+  const validDenyMode =
+    typeof candidate.denyMode === "undefined" ||
+    candidate.denyMode === "throw" ||
+    candidate.denyMode === "tool_result";
   return (
     validDecision &&
     typeof candidate.reason === "string" &&
-    candidate.reason.trim().length > 0
+    candidate.reason.trim().length > 0 &&
+    validPublicReason &&
+    validDenyMode
   );
 }
 
@@ -237,7 +280,7 @@ async function executeToolCall<TContext>(
   logEmitter: RunLogEmitter,
   policies?: PolicyConfiguration<TContext>,
   onPolicyDecision?: (decision: PendingPolicyDecisionRecord) => void,
-): Promise<unknown> {
+): Promise<ToolResultEnvelope> {
   const definition = agent.tools.find((tool) => tool.name === call.name);
   if (!definition) {
     throw new ToolCallError(`Tool "${call.name}" is not registered.`);
@@ -276,6 +319,10 @@ async function executeToolCall<TContext>(
   });
 
   if (policyResult.decision !== "allow") {
+    if (shouldReturnDeniedAsToolResult(policyResult)) {
+      return toDeniedToolResultEnvelope(policyResult);
+    }
+
     throw new ToolCallPolicyDeniedError({
       toolName: call.name,
       policyResult,
@@ -283,7 +330,8 @@ async function executeToolCall<TContext>(
   }
 
   const validated = definition.parameters.parse(parsedArguments);
-  return definition.execute(validated, runContext);
+  const toolOutput = await definition.execute(validated, runContext);
+  return toAllowedToolResultEnvelope(toolOutput);
 }
 
 async function evaluateOutputGuardrails<TContext>(
@@ -458,7 +506,8 @@ async function* runLoop<TContext>(
           );
 
           const handoffTarget = handoffRegistry.get(call.name);
-          let toolOutput: unknown;
+          let toolOutput: ToolResultEnvelope;
+          let handoffTransitioned = false;
           try {
             if (handoffTarget) {
               const handoffPolicyResult = await evaluateHandoffPolicy(
@@ -496,19 +545,24 @@ async function* runLoop<TContext>(
               });
 
               if (handoffPolicyResult.decision !== "allow") {
-                throw new HandoffPolicyDeniedError({
-                  fromAgent: currentAgent.name,
-                  toAgent: handoffTarget.name,
-                  policyResult: handoffPolicyResult,
+                if (shouldReturnDeniedAsToolResult(handoffPolicyResult)) {
+                  toolOutput = toDeniedToolResultEnvelope(handoffPolicyResult);
+                } else {
+                  throw new HandoffPolicyDeniedError({
+                    fromAgent: currentAgent.name,
+                    toAgent: handoffTarget.name,
+                    policyResult: handoffPolicyResult,
+                  });
+                }
+              } else {
+                toolOutput = toAllowedToolResultEnvelope({
+                  handoffTo: handoffTarget.name,
+                  accepted: true,
+                  payload: callItemArguments,
                 });
+                state.lastAgent = handoffTarget;
+                handoffTransitioned = true;
               }
-
-              toolOutput = {
-                handoffTo: handoffTarget.name,
-                accepted: true,
-                payload: callItemArguments,
-              };
-              state.lastAgent = handoffTarget;
             } else {
               toolOutput = await executeToolCall(
                 currentAgent,
@@ -556,7 +610,7 @@ async function* runLoop<TContext>(
             item: outputItem,
           } as RunItemStreamEvent;
 
-          if (handoffTarget) {
+          if (handoffTransitioned) {
             yield {
               type: "agent_updated_stream_event",
               agent: state.lastAgent,

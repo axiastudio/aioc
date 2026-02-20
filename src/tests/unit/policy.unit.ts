@@ -50,17 +50,33 @@ export async function runPolicyUnitTests(): Promise<void> {
       policyVersion: "v1",
       metadata: { scope: "tool" },
     });
+    const denyAsToolResult = deny("deny_reason_public", {
+      publicReason: "Not allowed for this user.",
+      denyMode: "tool_result",
+    });
     const denyResult = deny("deny_reason");
 
     assert.deepEqual(allowResult, {
       decision: "allow",
       reason: "allow_reason",
+      publicReason: undefined,
+      denyMode: undefined,
       policyVersion: "v1",
       metadata: { scope: "tool" },
     });
     assert.deepEqual(denyResult, {
       decision: "deny",
       reason: "deny_reason",
+      publicReason: undefined,
+      denyMode: undefined,
+      policyVersion: undefined,
+      metadata: undefined,
+    });
+    assert.deepEqual(denyAsToolResult, {
+      decision: "deny",
+      reason: "deny_reason_public",
+      publicReason: "Not allowed for this user.",
+      denyMode: "tool_result",
       policyVersion: undefined,
       metadata: undefined,
     });
@@ -81,6 +97,20 @@ export async function runPolicyUnitTests(): Promise<void> {
 
     assert.equal(result.finalOutput, "done");
     assert.equal(executions, 1);
+    const toolOutputItem = result.history.find(
+      (
+        item,
+      ): item is Extract<
+        (typeof result.history)[number],
+        { type: "tool_call_output_item" }
+      > => item.type === "tool_call_output_item",
+    );
+    assert.deepEqual(toolOutputItem?.output, {
+      status: "ok",
+      code: null,
+      publicReason: null,
+      data: { ok: true },
+    });
   }
 
   {
@@ -99,6 +129,41 @@ export async function runPolicyUnitTests(): Promise<void> {
       },
     );
     assert.equal(executions, 0);
+  }
+
+  {
+    let executions = 0;
+    const softDenyPolicy: ToolPolicy = () =>
+      deny("tool_not_allowlisted", {
+        publicReason: "You are not allowed to access this tool.",
+        denyMode: "tool_result",
+      });
+
+    setDefaultProvider(new ScriptedProvider(createToolProposalTurns()));
+    const result = await run(
+      createToolAgent(() => (executions += 1)),
+      "hello",
+      {
+        policies: { toolPolicy: softDenyPolicy },
+      },
+    );
+
+    assert.equal(result.finalOutput, "done");
+    assert.equal(executions, 0);
+    const toolOutputItem = result.history.find(
+      (
+        item,
+      ): item is Extract<
+        (typeof result.history)[number],
+        { type: "tool_call_output_item" }
+      > => item.type === "tool_call_output_item",
+    );
+    assert.deepEqual(toolOutputItem?.output, {
+      status: "denied",
+      code: "tool_not_allowlisted",
+      publicReason: "You are not allowed to access this tool.",
+      data: null,
+    });
   }
 
   {

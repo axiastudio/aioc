@@ -1,15 +1,20 @@
 import type { RunContext } from "./run-context";
 
 export type PolicyDecision = "allow" | "deny";
+export type PolicyDenyMode = "throw" | "tool_result";
 
 export interface PolicyResult {
   decision: PolicyDecision;
   reason: string;
+  publicReason?: string;
+  denyMode?: PolicyDenyMode;
   policyVersion?: string;
   metadata?: Record<string, unknown>;
 }
 
 export interface PolicyResultOptions {
+  publicReason?: string;
+  denyMode?: PolicyDenyMode;
   policyVersion?: string;
   metadata?: Record<string, unknown>;
 }
@@ -22,6 +27,8 @@ function createPolicyResult(
   return {
     decision,
     reason,
+    publicReason: options?.publicReason,
+    denyMode: options?.denyMode,
     policyVersion: options?.policyVersion,
     metadata: options?.metadata,
   };

@@ -18,6 +18,58 @@ interface FinanceContext {
   };
 }
 
+async function runScenario(
+  label: string,
+  agent: Agent<FinanceContext>,
+  toolPolicy: ToolPolicy<FinanceContext>,
+  logger: ReturnType<typeof createStdoutLogger>,
+  actor: FinanceContext["actor"],
+): Promise<void> {
+  process.stdout.write(
+    `\n=== Scenario: ${label} (groups: ${actor.groups.join(", ")}) ===\n`,
+  );
+
+  const stream = await run(
+    agent,
+    "Give me a concise summary for report Q1-2026.",
+    {
+      stream: true,
+      context: { actor },
+      policies: { toolPolicy },
+      logger,
+      maxTurns: 6,
+    },
+  );
+
+  for await (const event of stream.toStream()) {
+    if (
+      event.type === "run_item_stream_event" &&
+      event.item.type === "tool_call_item"
+    ) {
+      process.stdout.write(
+        `\n[tool call] ${event.item.name} ${JSON.stringify(event.item.arguments)}\n`,
+      );
+    }
+
+    if (
+      event.type === "run_item_stream_event" &&
+      event.item.type === "tool_call_output_item"
+    ) {
+      process.stdout.write(
+        `[tool result] ${JSON.stringify(event.item.output)}\n\n`,
+      );
+    }
+
+    if (event.type === "raw_model_stream_event") {
+      process.stdout.write(event.data.delta ?? "");
+    }
+  }
+
+  process.stdout.write(
+    `\n\nCompleted. Last agent: ${stream.lastAgent.name}. History items: ${stream.history.length}\n`,
+  );
+}
+
 async function main(): Promise<void> {
   // Minimal provider setup from env (MISTRAL_API_KEY).
   setupMistral();
@@ -53,7 +105,10 @@ async function main(): Promise<void> {
     const hasFinanceAccess =
       runContext.context.actor.groups.includes("finance");
     if (!hasFinanceAccess) {
-      return deny("deny_missing_finance_group");
+      return deny("deny_missing_finance_group", {
+        denyMode: "tool_result",
+        publicReason: "You are not authorized to access finance reports.",
+      });
     }
     return allow("allow_finance_group_access");
   };
@@ -64,43 +119,15 @@ async function main(): Promise<void> {
     events: ["tool_policy_evaluated"],
   });
 
-  const stream = await run(
-    agent,
-    "Give me a concise summary for report Q1-2026.",
-    {
-      stream: true,
-      context: {
-        actor: {
-          userId: "u-42",
-          groups: ["finance"],
-        },
-      },
-      policies: {
-        toolPolicy,
-      },
-      logger,
-      maxTurns: 6,
-    },
-  );
+  await runScenario("actor in finance", agent, toolPolicy, logger, {
+    userId: "u-finance",
+    groups: ["finance"],
+  });
 
-  for await (const event of stream.toStream()) {
-    if (
-      event.type === "run_item_stream_event" &&
-      event.item.type === "tool_call_item"
-    ) {
-      process.stdout.write(
-        `\n[tool call] ${event.item.name} ${JSON.stringify(event.item.arguments)}\n\n`,
-      );
-    }
-
-    if (event.type === "raw_model_stream_event") {
-      process.stdout.write(event.data.delta ?? "");
-    }
-  }
-
-  process.stdout.write(
-    `\n\nCompleted. Last agent: ${stream.lastAgent.name}. History items: ${stream.history.length}\n`,
-  );
+  await runScenario("actor in sales", agent, toolPolicy, logger, {
+    userId: "u-sales",
+    groups: ["sales"],
+  });
 }
 
 main().catch((error) => {

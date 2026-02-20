@@ -3,6 +3,7 @@ import { z } from "zod";
 import {
   Agent,
   HandoffPolicyDeniedError,
+  deny,
   type HandoffPolicy,
   run,
   setDefaultProvider,
@@ -110,6 +111,41 @@ export async function runHandoffUnitTests(): Promise<void> {
         return true;
       },
     );
+  }
+
+  {
+    const { sourceAgent, handoffToolName } = createAgents();
+    const softDenyHandoffPolicy: HandoffPolicy = () =>
+      deny("target_not_allowlisted", {
+        publicReason: "Escalation not permitted for this request.",
+        denyMode: "tool_result",
+      });
+
+    setDefaultProvider(
+      new ScriptedProvider(createHandoffTurns(handoffToolName)),
+    );
+    const result = await run(sourceAgent, "hello", {
+      policies: {
+        handoffPolicy: softDenyHandoffPolicy,
+      },
+    });
+
+    assert.equal(result.finalOutput, "Handled by target.");
+    assert.equal(result.lastAgent.name, "Source Agent");
+    const toolOutputItem = result.history.find(
+      (
+        item,
+      ): item is Extract<
+        (typeof result.history)[number],
+        { type: "tool_call_output_item" }
+      > => item.type === "tool_call_output_item",
+    );
+    assert.deepEqual(toolOutputItem?.output, {
+      status: "denied",
+      code: "target_not_allowlisted",
+      publicReason: "Escalation not permitted for this request.",
+      data: null,
+    });
   }
 
   {
