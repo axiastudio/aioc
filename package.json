@@ -1,12 +1,13 @@
 {
   "name": "@axiastudio/aioc",
-  "version": "0.0.1",
+  "version": "0.1.0-alpha.0",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
   "files": [
     "dist"
   ],
   "scripts": {
+    "test": "npm run test:ci",
     "build": "tsc -p tsconfig.json",
     "lint": "eslint ./src --ext .ts",
     "test:unit": "npm run build && node dist/tests/unit/index.js",
@@ -22,13 +23,27 @@
   },
   "keywords": [
     "agents",
+    "agent-sdk",
+    "llm",
     "ioc",
     "orchestration",
-    "mistral"
+    "governance",
+    "policy",
+    "guardrails",
+    "audit",
+    "run-records",
+    "tool-calling",
+    "handoffs",
+    "mistral",
+    "openai"
   ],
-  "author": "",
+  "author": "Tiziano Lattisi - AXIA Studio S.r.l.",
   "license": "MIT",
   "description": "Governance-first agent SDK with deterministic policy gates, auditable run records, and IoC-oriented orchestration.",
+  "publishConfig": {
+    "access": "public",
+    "tag": "next"
+  },
   "dependencies": {
     "dotenv": "^17.2.3",
     "zod": "^3.25.76",

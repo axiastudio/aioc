@@ -2,6 +2,11 @@
 
 AIOC is a lightweight internal agent SDK with an IoC-oriented control plane.
 
+## Release status
+
+This package is currently in alpha and is not production-ready.
+Breaking changes may occur before a stable release.
+
 ## Project principles
 
 AIOC adopts the following non-negotiable principles:
