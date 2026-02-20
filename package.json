@@ -15,6 +15,7 @@
     "test:ci": "npm run lint && npm run build && node dist/tests/unit/index.js && node dist/tests/integration/index.js && node dist/tests/regression/index.js",
     "example:hello-world": "tsx src/examples/basic/hello-world.ts",
     "example:tools": "tsx src/examples/basic/tools.ts",
+    "example:run-record-sink": "tsx src/examples/basic/run-record-sink.ts",
     "test:mistral": "tsx src/examples/mistral-smoke.ts",
     "test:guardrail": "tsx src/examples/guardrail-smoke.ts",
     "test:policy": "tsx src/examples/policy-smoke.ts"
