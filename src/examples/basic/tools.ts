@@ -53,14 +53,9 @@ async function main(): Promise<void> {
     const hasFinanceAccess =
       runContext.context.actor.groups.includes("finance");
     if (!hasFinanceAccess) {
-      return deny("deny_missing_finance_group", {
-        policyVersion: "finance-policy.v1",
-      });
+      return deny("deny_missing_finance_group");
     }
-
-    return allow("allow_finance_group_access", {
-      policyVersion: "finance-policy.v1",
-    });
+    return allow("allow_finance_group_access");
   };
 
   // Optional logger: prints only the policy decision event to keep output readable.
