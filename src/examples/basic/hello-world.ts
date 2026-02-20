@@ -1,5 +1,5 @@
 import "dotenv/config";
-import { Agent, run, setupMistral } from "../index";
+import { Agent, run, setupMistral } from "../../index";
 
 async function main(): Promise<void> {
   // Minimal setup: configure default provider from MISTRAL_API_KEY.

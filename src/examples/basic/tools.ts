@@ -9,7 +9,7 @@ import {
   setupMistral,
   tool,
   type ToolPolicy,
-} from "../index";
+} from "../../index";
 
 interface FinanceContext {
   actor: {
