@@ -28,7 +28,7 @@
   ],
   "author": "",
   "license": "MIT",
-  "description": "AIOC internal agent SDK with IoC-oriented orchestration primitives.",
+  "description": "Governance-first agent SDK with deterministic policy gates, auditable run records, and IoC-oriented orchestration.",
   "dependencies": {
     "dotenv": "^17.2.3",
     "zod": "^3.25.76",
