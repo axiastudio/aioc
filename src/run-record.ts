@@ -29,6 +29,16 @@ export interface GuardrailDecisionRecord {
   metadata?: Record<string, unknown>;
 }
 
+export interface PromptSnapshotRecord {
+  timestamp: string;
+  turn: number;
+  agentName: string;
+  model?: string;
+  promptVersion?: string;
+  promptHash: string;
+  promptText?: string;
+}
+
 export interface RunRecord<TContext = unknown> {
   runId: string;
   startedAt: string;
@@ -42,6 +52,7 @@ export interface RunRecord<TContext = unknown> {
   contextSnapshot: TContext;
   contextRedacted?: boolean;
   items: AgentInputItem[];
+  promptSnapshots: PromptSnapshotRecord[];
   policyDecisions: PolicyDecisionRecord[];
   guardrailDecisions?: GuardrailDecisionRecord[];
   errorName?: string;
@@ -72,5 +83,6 @@ export interface RunRecordOptions<TContext = unknown> {
   runId?: string;
   metadata?: Record<string, unknown>;
   contextRedactor?: RunRecordContextRedactor<TContext>;
+  includePromptText?: boolean;
   sink?: RunRecordSink<TContext> | RunRecordWriter<TContext>;
 }

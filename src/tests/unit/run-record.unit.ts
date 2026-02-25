@@ -27,6 +27,8 @@ export async function runRunRecordUnitTests(): Promise<void> {
     const agent = new Agent<{ requestId: string; secret: string }>({
       name: "Run record completed",
       model: "fake-model",
+      promptVersion: "run-record-completed.v1",
+      instructions: "Always keep answers concise.",
     });
 
     const result = await run(agent, "hello", {
@@ -36,6 +38,7 @@ export async function runRunRecordUnitTests(): Promise<void> {
         secret: "top-secret",
       },
       record: {
+        includePromptText: true,
         contextRedactor: (context) => ({
           contextSnapshot: {
             requestId: context.requestId,
@@ -56,6 +59,22 @@ export async function runRunRecordUnitTests(): Promise<void> {
     assert.equal(records[0]?.response, "Hi there.");
     assert.equal(records[0]?.contextRedacted, true);
     assert.equal(records[0]?.contextSnapshot.secret, "[REDACTED]");
+    assert.equal(records[0]?.promptSnapshots.length, 1);
+    assert.equal(records[0]?.promptSnapshots[0]?.turn, 1);
+    assert.equal(records[0]?.promptSnapshots[0]?.agentName, agent.name);
+    assert.equal(records[0]?.promptSnapshots[0]?.model, "fake-model");
+    assert.equal(
+      records[0]?.promptSnapshots[0]?.promptVersion,
+      "run-record-completed.v1",
+    );
+    assert.equal(
+      records[0]?.promptSnapshots[0]?.promptText,
+      "Always keep answers concise.",
+    );
+    assert.match(
+      records[0]?.promptSnapshots[0]?.promptHash ?? "",
+      /^[a-f0-9]{64}$/,
+    );
   }
 
   {
@@ -84,6 +103,7 @@ export async function runRunRecordUnitTests(): Promise<void> {
     const agent = new Agent({
       name: "Run record failed",
       model: "fake-model",
+      instructions: "Try calling ping when available.",
       tools: [ping],
     });
 
@@ -113,6 +133,12 @@ export async function runRunRecordUnitTests(): Promise<void> {
     );
     assert.equal(records[0]?.policyDecisions[0]?.resource.kind, "tool");
     assert.equal(records[0]?.policyDecisions[0]?.resource.name, "ping");
+    assert.equal(records[0]?.promptSnapshots.length, 1);
+    assert.equal(records[0]?.promptSnapshots[0]?.promptText, undefined);
+    assert.match(
+      records[0]?.promptSnapshots[0]?.promptHash ?? "",
+      /^[a-f0-9]{64}$/,
+    );
   }
 
   {
@@ -127,6 +153,7 @@ export async function runRunRecordUnitTests(): Promise<void> {
     const agent = new Agent({
       name: "Run record stream",
       model: "fake-model",
+      instructions: "Stream a short answer.",
     });
 
     const streamed = await run(agent, "hello stream", {
@@ -145,5 +172,7 @@ export async function runRunRecordUnitTests(): Promise<void> {
     assert.equal(records.length, 1);
     assert.equal(records[0]?.status, "completed");
     assert.equal(records[0]?.response, "Streamed completion.");
+    assert.equal(records[0]?.promptSnapshots.length, 1);
+    assert.equal(records[0]?.promptSnapshots[0]?.turn, 1);
   }
 }

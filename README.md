@@ -41,6 +41,7 @@ Governance implementation reference:
 ## Exposed primitives (v0 scaffold)
 
 - `Agent`, `RunContext`
+- optional `Agent.promptVersion` to version resolved instructions
 - `Tool`, `tool(...)`
 - agent handoffs via `Agent({ handoffs: [...] })`
 - `run(...)` with streaming support
@@ -51,6 +52,7 @@ Governance implementation reference:
 - provider setup helpers `setupMistral(...)`, `setupOpenAI(...)`, `setupProvider(...)`
 - stdout logger helper `createStdoutLogger(...)` (opt-in)
 - run record hook via `run(..., { record })` for external persistence/audit adapters
+- run record prompt snapshots per turn (`turn`, `agentName`, `promptVersion`, `promptHash`, optional `promptText`)
 - JSON helper `toJsonValue(...)` to map runtime artifacts (for example `RunRecord.items`) into JSON-safe values for storage adapters
 - message helpers `user(...)`, `assistant(...)`, `system(...)`
 - `setDefaultProvider(...)`

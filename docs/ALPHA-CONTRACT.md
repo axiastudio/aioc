@@ -58,8 +58,9 @@ Semantics:
 1. `run(..., { record })` emits at most one consolidated `RunRecord` per run.
 2. Record emission is best-effort; sink failures must not change run success/failure semantics.
 3. Policy decisions are included with deterministic reasons.
-4. `items` preserve normalized tool/handoff output envelopes.
-5. `contextRedactor` is applied before persistence when configured.
+4. Prompt snapshots are captured per turn with stable `promptHash` and optional `promptVersion`.
+5. `items` preserve normalized tool/handoff output envelopes.
+6. `contextRedactor` is applied before persistence when configured.
 
 ## Out of Contract in Alpha
 

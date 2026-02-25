@@ -1,6 +1,8 @@
+import { createHash } from "node:crypto";
 import type {
   GuardrailDecisionRecord,
   PolicyDecisionRecord,
+  PromptSnapshotRecord,
   RunRecord,
   RunRecordContextRedactionResult,
   RunRecordOptions,
@@ -16,6 +18,12 @@ export type PendingGuardrailDecisionRecord = Omit<
   GuardrailDecisionRecord,
   "timestamp"
 >;
+export type PendingPromptSnapshotRecord = Omit<
+  PromptSnapshotRecord,
+  "timestamp" | "promptHash" | "promptText"
+> & {
+  promptText?: string;
+};
 
 interface RunRecorderCreateOptions<TContext> {
   input: string | AgentInputItem[];
@@ -113,6 +121,10 @@ function toErrorSummary(error: unknown): {
   };
 }
 
+function hashPrompt(promptText: string): string {
+  return createHash("sha256").update(promptText).digest("hex");
+}
+
 export class RunRecorder<TContext = unknown> {
   private readonly runRecordWriter: RunRecordWriter<TContext> | null;
   private readonly runRecordId: string;
@@ -121,9 +133,11 @@ export class RunRecorder<TContext = unknown> {
   private readonly providerName: string;
   private readonly metadata?: Record<string, unknown>;
   private readonly contextSnapshot: RunRecordContextRedactionResult<TContext>;
+  private readonly includePromptText: boolean;
 
   private readonly policyDecisions: PolicyDecisionRecord[] = [];
   private readonly guardrailDecisions: GuardrailDecisionRecord[] = [];
+  private readonly promptSnapshots: PromptSnapshotRecord[] = [];
   private observedFinalOutput = "";
   private runRecordWritten = false;
 
@@ -135,6 +149,7 @@ export class RunRecorder<TContext = unknown> {
     providerName: string,
     metadata: Record<string, unknown> | undefined,
     contextSnapshot: RunRecordContextRedactionResult<TContext>,
+    includePromptText: boolean,
   ) {
     this.runRecordWriter = runRecordWriter;
     this.runRecordId = runRecordId;
@@ -143,6 +158,7 @@ export class RunRecorder<TContext = unknown> {
     this.providerName = providerName;
     this.metadata = metadata;
     this.contextSnapshot = contextSnapshot;
+    this.includePromptText = includePromptText;
   }
 
   static async create<TContext = unknown>(
@@ -165,6 +181,7 @@ export class RunRecorder<TContext = unknown> {
       options.providerName,
       options.recordOptions?.metadata,
       contextSnapshot,
+      options.recordOptions?.includePromptText ?? false,
     );
   }
 
@@ -179,6 +196,19 @@ export class RunRecorder<TContext = unknown> {
     this.guardrailDecisions.push({
       timestamp: new Date().toISOString(),
       ...decision,
+    });
+  };
+
+  onPromptSnapshot = (snapshot: PendingPromptSnapshotRecord): void => {
+    const normalizedPrompt = snapshot.promptText ?? "";
+    this.promptSnapshots.push({
+      timestamp: new Date().toISOString(),
+      turn: snapshot.turn,
+      agentName: snapshot.agentName,
+      model: snapshot.model,
+      promptVersion: snapshot.promptVersion,
+      promptHash: hashPrompt(normalizedPrompt),
+      promptText: this.includePromptText ? normalizedPrompt : undefined,
     });
   };
 
@@ -221,6 +251,7 @@ export class RunRecorder<TContext = unknown> {
       contextSnapshot: this.contextSnapshot.contextSnapshot,
       contextRedacted: this.contextSnapshot.contextRedacted,
       items: [...options.items],
+      promptSnapshots: [...this.promptSnapshots],
       policyDecisions: [...this.policyDecisions],
       guardrailDecisions:
         this.guardrailDecisions.length > 0

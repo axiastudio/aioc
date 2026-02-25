@@ -15,6 +15,7 @@ import { RunLogEmitter } from "./run-log-emitter";
 import {
   PendingGuardrailDecisionRecord,
   PendingPolicyDecisionRecord,
+  PendingPromptSnapshotRecord,
   RunRecorder,
 } from "./run-recorder-runtime";
 import { RunContext } from "./run-context";
@@ -392,6 +393,7 @@ async function* runLoop<TContext>(
   policies?: PolicyConfiguration<TContext>,
   onPolicyDecision?: (decision: PendingPolicyDecisionRecord) => void,
   onGuardrailDecision?: (decision: PendingGuardrailDecisionRecord) => void,
+  onPromptSnapshot?: (snapshot: PendingPromptSnapshotRecord) => void,
 ): AsyncIterable<RunStreamEvent<TContext>> {
   const logEmitter = new RunLogEmitter(logger);
   await logEmitter.runStarted(
@@ -413,10 +415,20 @@ async function* runLoop<TContext>(
       const currentAgent = state.lastAgent;
       await logEmitter.turnStarted(currentAgent.name, activeTurn);
       const { providerTools, handoffRegistry } = buildTurnTools(currentAgent);
+      const model = resolveAgentModel(currentAgent);
+      const systemPrompt = await currentAgent.resolveInstructions(runContext);
+
+      onPromptSnapshot?.({
+        turn: activeTurn,
+        agentName: currentAgent.name,
+        model,
+        promptVersion: currentAgent.promptVersion,
+        promptText: systemPrompt,
+      });
 
       const providerStream = provider.stream({
-        model: resolveAgentModel(currentAgent),
-        systemPrompt: await currentAgent.resolveInstructions(runContext),
+        model,
+        systemPrompt,
         messages: state.history,
         tools: providerTools,
         modelSettings: currentAgent.modelSettings,
@@ -730,6 +742,7 @@ export async function run<TContext = unknown>(
     options.policies,
     runRecorder.onPolicyDecision,
     runRecorder.onGuardrailDecision,
+    runRecorder.onPromptSnapshot,
   );
   const runRecordSnapshot = (): {
     agentName: string;

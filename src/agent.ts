@@ -11,6 +11,7 @@ export interface AgentConfiguration<TContext = unknown> {
   name: string;
   handoffDescription?: string;
   instructions?: AgentInstructions<TContext>;
+  promptVersion?: string;
   model?: string;
   modelSettings?: ModelSettings;
   tools?: Tool<TContext>[];
@@ -22,6 +23,7 @@ export class Agent<TContext = unknown> {
   name: string;
   handoffDescription: string;
   instructions?: AgentInstructions<TContext>;
+  promptVersion?: string;
   model?: string;
   modelSettings?: ModelSettings;
   tools: Tool<TContext>[];
@@ -32,6 +34,7 @@ export class Agent<TContext = unknown> {
     this.name = config.name;
     this.handoffDescription = config.handoffDescription ?? "";
     this.instructions = config.instructions;
+    this.promptVersion = config.promptVersion;
     this.model = config.model;
     this.modelSettings = config.modelSettings;
     this.tools = config.tools ?? [];
