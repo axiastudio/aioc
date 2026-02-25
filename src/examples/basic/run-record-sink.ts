@@ -50,6 +50,7 @@ async function runScenario(
     maxTurns: 6,
     record: {
       metadata: { scenario: label },
+      includePromptText: true,
       contextRedactor: (context) => ({
         contextSnapshot: {
           actor: {
@@ -88,6 +89,7 @@ async function main(): Promise<void> {
   const agent = new Agent<FinanceContext>({
     name: "Finance Analyst Agent",
     model: "mistral-small-latest",
+    promptVersion: "finance-analyst.v1",
     instructions:
       "If asked about a finance report, call get_finance_report first, then provide a short business summary.",
     tools: [getFinanceReport],
@@ -150,6 +152,7 @@ async function main(): Promise<void> {
         `scenario: ${String(record.metadata?.scenario ?? "")}`,
         `contextRedacted: ${String(record.contextRedacted ?? false)}`,
         `policyDecision: ${lastDecision?.decision ?? "n/a"} (${lastDecision?.reason ?? "n/a"})`,
+        `promptSnapshots: ${JSON.stringify(record.promptSnapshots)}`,
         `toolResultEnvelope: ${JSON.stringify(findLastToolResultEnvelope(record))}`,
       ].join("\n") + "\n\n",
     );
