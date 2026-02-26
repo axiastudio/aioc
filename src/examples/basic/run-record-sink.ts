@@ -153,6 +153,7 @@ async function main(): Promise<void> {
         `contextRedacted: ${String(record.contextRedacted ?? false)}`,
         `policyDecision: ${lastDecision?.decision ?? "n/a"} (${lastDecision?.reason ?? "n/a"})`,
         `promptSnapshots: ${JSON.stringify(record.promptSnapshots)}`,
+        `requestFingerprints: ${JSON.stringify(record.requestFingerprints)}`,
         `toolResultEnvelope: ${JSON.stringify(findLastToolResultEnvelope(record))}`,
       ].join("\n") + "\n\n",
     );

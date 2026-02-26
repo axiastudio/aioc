@@ -75,6 +75,44 @@ export async function runRunRecordUnitTests(): Promise<void> {
       records[0]?.promptSnapshots[0]?.promptHash ?? "",
       /^[a-f0-9]{64}$/,
     );
+    assert.equal(records[0]?.requestFingerprints.length, 1);
+    assert.equal(records[0]?.requestFingerprints[0]?.turn, 1);
+    assert.equal(
+      records[0]?.requestFingerprints[0]?.agentName,
+      "Run record completed",
+    );
+    assert.equal(
+      records[0]?.requestFingerprints[0]?.providerName,
+      "ScriptedProvider",
+    );
+    assert.equal(records[0]?.requestFingerprints[0]?.model, "fake-model");
+    assert.ok(
+      (records[0]?.requestFingerprints[0]?.runtimeVersion ?? "").length > 0,
+    );
+    assert.equal(
+      records[0]?.requestFingerprints[0]?.fingerprintSchemaVersion,
+      "request-fingerprint.v1",
+    );
+    assert.match(
+      records[0]?.requestFingerprints[0]?.requestHash ?? "",
+      /^[a-f0-9]{64}$/,
+    );
+    assert.match(
+      records[0]?.requestFingerprints[0]?.systemPromptHash ?? "",
+      /^[a-f0-9]{64}$/,
+    );
+    assert.match(
+      records[0]?.requestFingerprints[0]?.messagesHash ?? "",
+      /^[a-f0-9]{64}$/,
+    );
+    assert.match(
+      records[0]?.requestFingerprints[0]?.toolsHash ?? "",
+      /^[a-f0-9]{64}$/,
+    );
+    assert.match(
+      records[0]?.requestFingerprints[0]?.modelSettingsHash ?? "",
+      /^[a-f0-9]{64}$/,
+    );
   }
 
   {
@@ -139,6 +177,9 @@ export async function runRunRecordUnitTests(): Promise<void> {
       records[0]?.promptSnapshots[0]?.promptHash ?? "",
       /^[a-f0-9]{64}$/,
     );
+    assert.equal(records[0]?.requestFingerprints.length, 1);
+    assert.equal(records[0]?.requestFingerprints[0]?.turn, 1);
+    assert.equal(records[0]?.requestFingerprints[0]?.toolCount, 1);
   }
 
   {
@@ -174,5 +215,8 @@ export async function runRunRecordUnitTests(): Promise<void> {
     assert.equal(records[0]?.response, "Streamed completion.");
     assert.equal(records[0]?.promptSnapshots.length, 1);
     assert.equal(records[0]?.promptSnapshots[0]?.turn, 1);
+    assert.equal(records[0]?.requestFingerprints.length, 1);
+    assert.equal(records[0]?.requestFingerprints[0]?.turn, 1);
+    assert.equal(records[0]?.requestFingerprints[0]?.messageCount, 1);
   }
 }

@@ -55,6 +55,7 @@ Governance implementation reference:
 - stdout logger helper `createStdoutLogger(...)` (opt-in)
 - run record hook via `run(..., { record })` for external persistence/audit adapters
 - run record prompt snapshots per turn (`turn`, `agentName`, `promptVersion`, `promptHash`, optional `promptText`)
+- run record request fingerprints per turn (`requestHash`, segment hashes, `runtimeVersion`, `fingerprintSchemaVersion`)
 - JSON helper `toJsonValue(...)` to map runtime artifacts (for example `RunRecord.items`) into JSON-safe values for storage adapters
 - message helpers `user(...)`, `assistant(...)`, `system(...)`
 - `setDefaultProvider(...)`
@@ -72,6 +73,10 @@ Policy deny notes:
 
 - Default deny behavior raises typed runtime errors (`ToolCallPolicyDeniedError` / `HandoffPolicyDeniedError`).
 - Policies can choose `denyMode: "tool_result"` to return a denied tool result to the model without throwing.
+
+Run record metadata convention:
+
+- `record.metadata.appBuildVersion` is a recommended field to correlate run drift with application-layer source/build changes.
 
 ## Test Commands
 

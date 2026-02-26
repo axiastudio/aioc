@@ -16,6 +16,7 @@ import {
   PendingGuardrailDecisionRecord,
   PendingPolicyDecisionRecord,
   PendingPromptSnapshotRecord,
+  PendingRequestFingerprintRecord,
   RunRecorder,
 } from "./run-recorder-runtime";
 import { RunContext } from "./run-context";
@@ -31,6 +32,7 @@ import {
   StreamRunOptions,
 } from "./types";
 import { z } from "zod";
+import { zodToJsonSchema } from "zod-to-json-schema";
 
 type PendingToolCall = {
   callId: string;
@@ -51,6 +53,26 @@ interface ToolResultEnvelope {
   code: string | null;
   publicReason: string | null;
   data: unknown | null;
+}
+
+function toToolParameterSchema(schema: z.ZodTypeAny): Record<string, unknown> {
+  try {
+    const convert = zodToJsonSchema as unknown as (
+      value: unknown,
+      options?: unknown,
+    ) => unknown;
+    const rawSchema = convert(schema, { $refStrategy: "none" }) as Record<
+      string,
+      unknown
+    >;
+    const normalized = { ...rawSchema };
+    delete normalized.$schema;
+    return normalized;
+  } catch {
+    return {
+      type: "unserializable_tool_schema",
+    };
+  }
 }
 
 function normalizeInput(input: string | AgentInputItem[]): AgentInputItem[] {
@@ -394,6 +416,7 @@ async function* runLoop<TContext>(
   onPolicyDecision?: (decision: PendingPolicyDecisionRecord) => void,
   onGuardrailDecision?: (decision: PendingGuardrailDecisionRecord) => void,
   onPromptSnapshot?: (snapshot: PendingPromptSnapshotRecord) => void,
+  onRequestFingerprint?: (snapshot: PendingRequestFingerprintRecord) => void,
 ): AsyncIterable<RunStreamEvent<TContext>> {
   const logEmitter = new RunLogEmitter(logger);
   await logEmitter.runStarted(
@@ -424,6 +447,21 @@ async function* runLoop<TContext>(
         model,
         promptVersion: currentAgent.promptVersion,
         promptText: systemPrompt,
+      });
+
+      onRequestFingerprint?.({
+        turn: activeTurn,
+        agentName: currentAgent.name,
+        providerName: provider.constructor.name,
+        model,
+        systemPrompt,
+        messages: state.history,
+        tools: providerTools.map((toolDefinition) => ({
+          name: toolDefinition.name,
+          description: toolDefinition.description,
+          parameters: toToolParameterSchema(toolDefinition.parameters),
+        })),
+        modelSettings: currentAgent.modelSettings,
       });
 
       const providerStream = provider.stream({
@@ -743,6 +781,7 @@ export async function run<TContext = unknown>(
     runRecorder.onPolicyDecision,
     runRecorder.onGuardrailDecision,
     runRecorder.onPromptSnapshot,
+    runRecorder.onRequestFingerprint,
   );
   const runRecordSnapshot = (): {
     agentName: string;

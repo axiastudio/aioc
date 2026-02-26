@@ -39,6 +39,23 @@ export interface PromptSnapshotRecord {
   promptText?: string;
 }
 
+export interface RequestFingerprintRecord {
+  timestamp: string;
+  turn: number;
+  agentName: string;
+  providerName: string;
+  model: string;
+  runtimeVersion: string;
+  fingerprintSchemaVersion: string;
+  requestHash: string;
+  systemPromptHash: string;
+  messagesHash: string;
+  toolsHash: string;
+  modelSettingsHash: string;
+  messageCount: number;
+  toolCount: number;
+}
+
 export interface RunRecord<TContext = unknown> {
   runId: string;
   startedAt: string;
@@ -53,6 +70,7 @@ export interface RunRecord<TContext = unknown> {
   contextRedacted?: boolean;
   items: AgentInputItem[];
   promptSnapshots: PromptSnapshotRecord[];
+  requestFingerprints: RequestFingerprintRecord[];
   policyDecisions: PolicyDecisionRecord[];
   guardrailDecisions?: GuardrailDecisionRecord[];
   errorName?: string;

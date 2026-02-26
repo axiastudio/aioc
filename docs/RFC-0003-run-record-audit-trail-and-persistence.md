@@ -31,6 +31,7 @@ In scope:
 - Canonical run-level schema (`RunRecord`).
 - Policy decision records with mandatory `reason`.
 - Optional guardrail decision records.
+- Per-turn request fingerprint records at runtime-provider boundary.
 - Context snapshot redaction hook before persistence.
 - Sink adapter interface for persistence targets (DB, queue, object storage, etc.).
 
@@ -62,6 +63,7 @@ export interface RunRecord<TContext = unknown> {
   contextRedacted?: boolean;
   items: AgentInputItem[];
   promptSnapshots: PromptSnapshotRecord[];
+  requestFingerprints: RequestFingerprintRecord[];
   policyDecisions: PolicyDecisionRecord[];
   guardrailDecisions?: GuardrailDecisionRecord[];
   errorName?: string;
@@ -77,6 +79,23 @@ export interface PromptSnapshotRecord {
   promptVersion?: string;
   promptHash: string;
   promptText?: string;
+}
+
+export interface RequestFingerprintRecord {
+  timestamp: string;
+  turn: number;
+  agentName: string;
+  providerName: string;
+  model: string;
+  runtimeVersion: string;
+  fingerprintSchemaVersion: string;
+  requestHash: string;
+  systemPromptHash: string;
+  messagesHash: string;
+  toolsHash: string;
+  modelSettingsHash: string;
+  messageCount: number;
+  toolCount: number;
 }
 
 export interface PolicyDecisionRecord {
@@ -115,11 +134,12 @@ export interface RunRecordOptions<TContext = unknown> {
 1. Runtime initializes record state (`runId`, `startedAt`, extracted `question`).
 2. Runtime captures a context snapshot; if `contextRedactor` exists, it runs before persistence.
 3. During execution, runtime appends prompt snapshots per turn (`promptHash` always, optional `promptText`).
-4. During execution, runtime appends tool/handoff policy outcomes and guardrail outcomes.
-5. `items` preserve normalized tool result envelopes (`{ status, code, publicReason, data }`) for allow outcomes and soft-deny outcomes.
-6. On completion/failure, runtime emits exactly one run record through the configured sink.
-7. Sink failures are swallowed by design and must not change run success/failure semantics.
-8. Streaming mode emits record when stream finishes or fails.
+4. During execution, runtime appends request fingerprints per turn (full request hash + segmented hashes).
+5. During execution, runtime appends tool/handoff policy outcomes and guardrail outcomes.
+6. `items` preserve normalized tool result envelopes (`{ status, code, publicReason, data }`) for allow outcomes and soft-deny outcomes.
+7. On completion/failure, runtime emits exactly one run record through the configured sink.
+8. Sink failures are swallowed by design and must not change run success/failure semantics.
+9. Streaming mode emits record when stream finishes or fails.
 
 ## Security and Privacy Notes
 
@@ -127,17 +147,19 @@ export interface RunRecordOptions<TContext = unknown> {
 - `reason` in policy decisions should explain authorization outcomes without leaking secrets.
 - Sink adapters must enforce storage-side controls (retention, encryption, access controls).
 - Trace metadata must remain structured and scrubbed of sensitive values.
+- `metadata.appBuildVersion` is a recommended convention to correlate drift with host-application source/build versions.
 
 ## Minimal Test Matrix
 
 1. Completed run emits one record with final response.
 2. Failed run emits one record with `errorName` and `errorMessage`.
 3. Prompt snapshots are captured with stable hash for each turn.
-4. Tool/handoff policy decisions are included with reason and decision.
-5. Soft-deny tool/handoff outcomes are persisted in `items` as denied envelopes.
-6. Context redactor output is persisted with `contextRedacted = true`.
-7. Sink write exception does not fail runtime.
-8. Record emission remains single-shot in stream and non-stream modes.
+4. Request fingerprints are captured with stable full/segment hashes for each turn.
+5. Tool/handoff policy decisions are included with reason and decision.
+6. Soft-deny tool/handoff outcomes are persisted in `items` as denied envelopes.
+7. Context redactor output is persisted with `contextRedacted = true`.
+8. Sink write exception does not fail runtime.
+9. Record emission remains single-shot in stream and non-stream modes.
 
 ## Rollout Plan
 
@@ -151,5 +173,6 @@ export interface RunRecordOptions<TContext = unknown> {
 
 - Runtime record emission is implemented behind `run(..., { record })`.
 - Policy decision and guardrail decision capture are wired into runtime.
+- Prompt snapshot and request fingerprint capture are wired into runtime.
 - Context redaction and sink adapter interfaces are implemented.
 - Unit coverage exists for run record behavior and failure handling.

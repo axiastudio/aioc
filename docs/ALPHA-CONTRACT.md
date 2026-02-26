@@ -59,15 +59,16 @@ Semantics:
 2. Record emission is best-effort; sink failures must not change run success/failure semantics.
 3. Policy decisions are included with deterministic reasons.
 4. Prompt snapshots are captured per turn with stable `promptHash` and optional `promptVersion`.
-5. `items` preserve normalized tool/handoff output envelopes.
-6. `contextRedactor` is applied before persistence when configured.
+5. Request fingerprints are captured per turn with stable SHA-256 hashes (`requestHash`, segmented hashes) plus `runtimeVersion` and `fingerprintSchemaVersion`.
+6. `items` preserve normalized tool/handoff output envelopes.
+7. `contextRedactor` is applied before persistence when configured.
 
 ## Out of Contract in Alpha
 
 The following are intentionally unstable during alpha:
 
 - Logger event schema details and event naming.
-- Non-core metadata field conventions.
+- Non-core metadata field conventions (except the recommended `metadata.appBuildVersion` correlation field).
 - Example files and tutorial structure.
 - Error message text that is not part of explicit typed error semantics.
 

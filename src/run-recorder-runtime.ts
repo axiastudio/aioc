@@ -1,8 +1,11 @@
 import { createHash } from "node:crypto";
+import { readFileSync } from "node:fs";
+import { resolve } from "node:path";
 import type {
   GuardrailDecisionRecord,
   PolicyDecisionRecord,
   PromptSnapshotRecord,
+  RequestFingerprintRecord,
   RunRecord,
   RunRecordContextRedactionResult,
   RunRecordOptions,
@@ -24,6 +27,155 @@ export type PendingPromptSnapshotRecord = Omit<
 > & {
   promptText?: string;
 };
+export type PendingRequestFingerprintRecord = Omit<
+  RequestFingerprintRecord,
+  | "timestamp"
+  | "runtimeVersion"
+  | "fingerprintSchemaVersion"
+  | "requestHash"
+  | "systemPromptHash"
+  | "messagesHash"
+  | "toolsHash"
+  | "modelSettingsHash"
+  | "messageCount"
+  | "toolCount"
+> & {
+  systemPrompt?: string;
+  messages: AgentInputItem[];
+  tools: Array<{
+    name: string;
+    description: string;
+    parameters: unknown;
+  }>;
+  modelSettings?: Record<string, unknown>;
+};
+
+type CanonicalValue =
+  | null
+  | string
+  | number
+  | boolean
+  | CanonicalValue[]
+  | { [key: string]: CanonicalValue };
+
+const REQUEST_FINGERPRINT_SCHEMA_VERSION = "request-fingerprint.v1";
+
+function resolveRuntimeVersion(): string {
+  const envVersion =
+    process.env.AIOC_RUNTIME_VERSION?.trim() ??
+    process.env.npm_package_version?.trim();
+  if (envVersion) {
+    return envVersion;
+  }
+
+  try {
+    const packageJsonPath = resolve(__dirname, "..", "package.json");
+    const packageJsonRaw = readFileSync(packageJsonPath, "utf8");
+    const packageJson = JSON.parse(packageJsonRaw) as { version?: unknown };
+    if (
+      typeof packageJson.version === "string" &&
+      packageJson.version.trim().length > 0
+    ) {
+      return packageJson.version.trim();
+    }
+  } catch {
+    // Fallback handled below.
+  }
+
+  return "unknown";
+}
+
+const RUNTIME_VERSION = resolveRuntimeVersion();
+
+function normalizeForHash(
+  value: unknown,
+  seen: WeakSet<object> = new WeakSet(),
+): CanonicalValue {
+  if (value === null) {
+    return null;
+  }
+
+  const valueType = typeof value;
+  if (
+    valueType === "string" ||
+    valueType === "number" ||
+    valueType === "boolean"
+  ) {
+    return value as string | number | boolean;
+  }
+
+  if (valueType === "undefined") {
+    return "[undefined]";
+  }
+
+  if (valueType === "bigint") {
+    return `[bigint:${String(value)}]`;
+  }
+
+  if (valueType === "symbol") {
+    return `[symbol:${String(value)}]`;
+  }
+
+  if (valueType === "function") {
+    return "[function]";
+  }
+
+  if (value instanceof Date) {
+    return value.toISOString();
+  }
+
+  if (value instanceof RegExp) {
+    return value.toString();
+  }
+
+  if (Array.isArray(value)) {
+    return value.map((item) => normalizeForHash(item, seen));
+  }
+
+  if (value instanceof Set) {
+    const entries = [...value].map((entry) => normalizeForHash(entry, seen));
+    entries.sort((left, right) =>
+      JSON.stringify(left).localeCompare(JSON.stringify(right)),
+    );
+    return entries;
+  }
+
+  if (value instanceof Map) {
+    const entries = [...value.entries()].map(([key, entry]) => [
+      normalizeForHash(key, seen),
+      normalizeForHash(entry, seen),
+    ]);
+    entries.sort((left, right) =>
+      JSON.stringify(left[0]).localeCompare(JSON.stringify(right[0])),
+    );
+    return entries as CanonicalValue;
+  }
+
+  if (value && typeof value === "object") {
+    const objectValue = value as Record<string, unknown>;
+    if (seen.has(objectValue)) {
+      return "[circular]";
+    }
+    seen.add(objectValue);
+
+    const normalized: Record<string, CanonicalValue> = {};
+    const keys = Object.keys(objectValue).sort();
+    for (const key of keys) {
+      normalized[key] = normalizeForHash(objectValue[key], seen);
+    }
+
+    seen.delete(objectValue);
+    return normalized;
+  }
+
+  return String(value);
+}
+
+function hashForFingerprint(value: unknown): string {
+  return createHash("sha256")
+    .update(JSON.stringify(normalizeForHash(value)))
+    .digest("hex");
+}
 
 interface RunRecorderCreateOptions<TContext> {
   input: string | AgentInputItem[];
@@ -138,6 +290,7 @@ export class RunRecorder<TContext = unknown> {
   private readonly policyDecisions: PolicyDecisionRecord[] = [];
   private readonly guardrailDecisions: GuardrailDecisionRecord[] = [];
   private readonly promptSnapshots: PromptSnapshotRecord[] = [];
+  private readonly requestFingerprints: RequestFingerprintRecord[] = [];
   private observedFinalOutput = "";
   private runRecordWritten = false;
 
@@ -212,6 +365,42 @@ export class RunRecorder<TContext = unknown> {
     });
   };
 
+  onRequestFingerprint = (
+    fingerprint: PendingRequestFingerprintRecord,
+  ): void => {
+    const normalizedSystemPrompt = fingerprint.systemPrompt ?? "";
+    const normalizedModelSettings = fingerprint.modelSettings ?? {};
+    const normalizedTools = fingerprint.tools.map((tool) => ({
+      name: tool.name,
+      description: tool.description,
+      parameters: tool.parameters,
+    }));
+    const requestPayload = {
+      model: fingerprint.model,
+      systemPrompt: normalizedSystemPrompt,
+      messages: fingerprint.messages,
+      tools: normalizedTools,
+      modelSettings: normalizedModelSettings,
+    };
+
+    this.requestFingerprints.push({
+      timestamp: new Date().toISOString(),
+      turn: fingerprint.turn,
+      agentName: fingerprint.agentName,
+      providerName: fingerprint.providerName,
+      model: fingerprint.model,
+      runtimeVersion: RUNTIME_VERSION,
+      fingerprintSchemaVersion: REQUEST_FINGERPRINT_SCHEMA_VERSION,
+      requestHash: hashForFingerprint(requestPayload),
+      systemPromptHash: hashForFingerprint(normalizedSystemPrompt),
+      messagesHash: hashForFingerprint(fingerprint.messages),
+      toolsHash: hashForFingerprint(normalizedTools),
+      modelSettingsHash: hashForFingerprint(normalizedModelSettings),
+      messageCount: fingerprint.messages.length,
+      toolCount: normalizedTools.length,
+    });
+  };
+
   onMessageOutput = (content: string): void => {
     this.observedFinalOutput = content;
   };
@@ -252,6 +441,7 @@ export class RunRecorder<TContext = unknown> {
       contextRedacted: this.contextSnapshot.contextRedacted,
       items: [...options.items],
       promptSnapshots: [...this.promptSnapshots],
+      requestFingerprints: [...this.requestFingerprints],
       policyDecisions: [...this.policyDecisions],
       guardrailDecisions:
         this.guardrailDecisions.length > 0
