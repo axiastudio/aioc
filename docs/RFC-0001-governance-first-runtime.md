@@ -1,7 +1,8 @@
 # RFC-0001: Governance-First Runtime Invariants
 
-- Status: Draft
+- Status: Accepted
 - Date: 2026-02-18
+- Accepted: 2026-02-26
 - Owners: aioc maintainers
 
 ## Context
@@ -12,7 +13,7 @@ This RFC defines non-negotiable runtime invariants and feature acceptance criter
 
 ## Decision
 
-All new runtime capabilities (including tools and handoffs) MUST comply with the five invariants below.
+All new runtime capabilities (including tools and handoffs) MUST comply with the six invariants below.
 
 ## Invariants (Enforcement-Level)
 
@@ -37,6 +38,10 @@ All new runtime capabilities (including tools and handoffs) MUST comply with the
    - Any change to prompts, policies, tools, handoffs, or provider integration must pass regression checks.
    - Regressions on safety, policy compliance, or critical quality thresholds block release.
 
+6. **Bias and misalignment control**
+   - Runtime must expose hooks to detect and block unsafe or misaligned outputs.
+   - Deployments must define monitoring and mitigation loops for bias/misalignment incidents.
+
 ## Feature Acceptance Criteria
 
 A feature is accepted only if:
@@ -46,6 +51,7 @@ A feature is accepted only if:
 3. It emits required trace fields for all decision outcomes.
 4. It documents data classification and boundary filtering.
 5. It includes regression tests for normal and adversarial/abuse paths.
+6. It documents how bias/misalignment risks are monitored and mitigated.
 
 ## Initial Application
 
@@ -67,9 +73,10 @@ A feature is accepted only if:
 - Runtime behavior that depends only on prompt wording for safety.
 - Feature parity as a primary objective.
 
-## Rollout
+## Implementation Status (as of 2026-02-26)
 
-1. Introduce policy interfaces and default-deny runtime switches.
-2. Add required trace schema and validation.
-3. Add regression suite with policy and privacy checks.
-4. Gate handoff introduction behind this RFC compliance checklist.
+1. Default deny and deterministic policy gates are implemented for tools and handoffs.
+2. Traceability is implemented through logger events (when enabled) and run records (when configured), including prompt snapshots and request fingerprints.
+3. Privacy hooks are partially implemented (`contextRedactor`, optional prompt text capture); retention and access controls remain application-side.
+4. Non-degeneration baseline is partially implemented via unit/integration/regression suites.
+5. Bias/misalignment control is partially implemented via output guardrail hooks and auditable decision records; domain-specific evaluation sets remain application-side.

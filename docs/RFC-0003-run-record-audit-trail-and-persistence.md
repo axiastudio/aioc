@@ -1,7 +1,8 @@
 # RFC-0003: Run Records, Audit Trail, and Persistence Adapters
 
-- Status: Draft
+- Status: Accepted
 - Date: 2026-02-19
+- Accepted: 2026-02-26
 - Owners: aioc maintainers
 - Depends on: RFC-0001, RFC-0002
 
@@ -20,7 +21,7 @@ To avoid binding `aioc` to one storage model, persistence must be adapter-based.
 `aioc` defines a standard `RunRecord` contract emitted by runtime and written through a pluggable sink.
 
 - Runtime collects decision evidence during execution.
-- Runtime emits one consolidated run record at completion or failure.
+- Runtime emits one consolidated run record at completion or failure when a record sink is configured.
 - Record writing is best-effort and must never alter runtime execution flow.
 - Persistence is delegated to host applications via sink/adapter.
 
@@ -137,7 +138,7 @@ export interface RunRecordOptions<TContext = unknown> {
 4. During execution, runtime appends request fingerprints per turn (full request hash + segmented hashes).
 5. During execution, runtime appends tool/handoff policy outcomes and guardrail outcomes.
 6. `items` preserve normalized tool result envelopes (`{ status, code, publicReason, data }`) for allow outcomes and soft-deny outcomes.
-7. On completion/failure, runtime emits exactly one run record through the configured sink.
+7. On completion/failure, runtime emits exactly one run record when `run(..., { record })` is configured.
 8. Sink failures are swallowed by design and must not change run success/failure semantics.
 9. Streaming mode emits record when stream finishes or fails.
 
@@ -161,7 +162,7 @@ export interface RunRecordOptions<TContext = unknown> {
 8. Sink write exception does not fail runtime.
 9. Record emission remains single-shot in stream and non-stream modes.
 
-## Rollout Plan
+## Adoption History (Completed)
 
 1. Stabilize the record schema and option types.
 2. Expose `record` in shared run options.

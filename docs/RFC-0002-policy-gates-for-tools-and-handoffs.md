@@ -1,7 +1,8 @@
 # RFC-0002: Deterministic Policy Gates for Tools and Handoffs
 
-- Status: Draft
+- Status: Accepted
 - Date: 2026-02-18
+- Accepted: 2026-02-26
 - Owners: aioc maintainers
 - Depends on: RFC-0001
 - Related: RFC-0003
@@ -117,12 +118,12 @@ export interface ToolResultEnvelope {
 
 ## Trace Requirements
 
-For each proposal, runtime MUST emit trace fields through:
+For each proposal, runtime MUST produce deterministic decision traces through at least one enabled channel:
 
-- `tool_policy_evaluated` for tool proposals
-- `handoff_policy_evaluated` for handoff proposals
+- run logger events (`tool_policy_evaluated`, `handoff_policy_evaluated`) when `logger` is configured
+- run record `policyDecisions` when `record` sink is configured
 
-Each event carries:
+Each trace record carries:
 
 - `agent`
 - `turn`
@@ -158,7 +159,7 @@ Each event carries:
 9. Handoff soft deny path: policy denies with `denyMode = "tool_result"` and runtime emits denied envelope without transition.
 10. Allow path output: runtime emits normalized envelope with `status = "ok"` and `data`.
 
-## Rollout Plan
+## Adoption History (Completed)
 
 1. Add policy contract types and defaults.
 2. Integrate tool policy checks before tool execution.
