@@ -10,6 +10,8 @@ Alpha still allows breaking changes, but changes to items in this contract must 
 
 This contract applies to `0.1.x-alpha.*` releases.
 
+For the pre-beta freeze baseline, see `docs/BETA-CONTRACT.md`.
+
 ## Contracted Runtime Behavior
 
 1. Model proposals are not execution permissions.
