@@ -2,12 +2,16 @@ import assert from "node:assert/strict";
 import { z } from "zod";
 import {
   Agent,
+  OutputGuardrailTripwireTriggered,
   ToolCallPolicyDeniedError,
+  defineOutputGuardrail,
+  deny,
   run,
   setDefaultProvider,
   tool,
   type RunRecord,
 } from "../../index";
+import { toHandoffToolName } from "../support/handoff-name";
 import { ScriptedProvider } from "../support/scripted-provider";
 
 export async function runRunRecordUnitTests(): Promise<void> {
@@ -218,5 +222,197 @@ export async function runRunRecordUnitTests(): Promise<void> {
     assert.equal(records[0]?.requestFingerprints.length, 1);
     assert.equal(records[0]?.requestFingerprints[0]?.turn, 1);
     assert.equal(records[0]?.requestFingerprints[0]?.messageCount, 1);
+  }
+
+  {
+    const records: RunRecord[] = [];
+
+    const targetAgent = new Agent({
+      name: "Run record handoff target",
+      model: "fake-model",
+    });
+    const sourceAgent = new Agent({
+      name: "Run record handoff source",
+      model: "fake-model",
+      handoffs: [targetAgent],
+    });
+    const handoffToolName = toHandoffToolName(targetAgent.name);
+
+    setDefaultProvider(
+      new ScriptedProvider([
+        [
+          {
+            type: "tool_call",
+            callId: "handoff-call-1",
+            name: handoffToolName,
+            arguments: JSON.stringify({ reason: "route" }),
+          },
+        ],
+        [{ type: "completed", message: "Stayed on source." }],
+      ]),
+    );
+
+    const result = await run(sourceAgent, "handoff request", {
+      policies: {
+        handoffPolicy: () =>
+          deny("target_not_allowlisted", {
+            publicReason: "Escalation not permitted.",
+            denyMode: "tool_result",
+            policyVersion: "handoff-policy.v1",
+          }),
+      },
+      record: {
+        sink: (record) => {
+          records.push(record);
+        },
+      },
+    });
+
+    assert.equal(result.finalOutput, "Stayed on source.");
+    assert.equal(result.lastAgent.name, sourceAgent.name);
+    assert.equal(records.length, 1);
+    assert.equal(records[0]?.status, "completed");
+    assert.equal(records[0]?.policyDecisions.length, 1);
+    assert.equal(records[0]?.policyDecisions[0]?.resource.kind, "handoff");
+    assert.equal(
+      records[0]?.policyDecisions[0]?.resource.name,
+      targetAgent.name,
+    );
+    assert.equal(records[0]?.policyDecisions[0]?.decision, "deny");
+    assert.equal(
+      records[0]?.policyDecisions[0]?.reason,
+      "target_not_allowlisted",
+    );
+    assert.equal(
+      records[0]?.policyDecisions[0]?.policyVersion,
+      "handoff-policy.v1",
+    );
+    const outputItem = records[0]?.items.find(
+      (
+        item,
+      ): item is Extract<
+        RunRecord["items"][number],
+        { type: "tool_call_output_item" }
+      > => item.type === "tool_call_output_item",
+    );
+    assert.deepEqual(outputItem?.output, {
+      status: "denied",
+      code: "target_not_allowlisted",
+      publicReason: "Escalation not permitted.",
+      data: null,
+    });
+    assert.equal(records[0]?.promptSnapshots.length, 2);
+    assert.equal(records[0]?.requestFingerprints.length, 2);
+    assert.notEqual(
+      records[0]?.requestFingerprints[0]?.requestHash,
+      records[0]?.requestFingerprints[1]?.requestHash,
+    );
+  }
+
+  {
+    const records: RunRecord[] = [];
+    const tripwire = defineOutputGuardrail({
+      name: "block_unsafe_output",
+      execute: ({ outputText }) => ({
+        tripwireTriggered: outputText.toLowerCase().includes("unsafe"),
+        reason: "contains unsafe token",
+      }),
+    });
+
+    setDefaultProvider(
+      new ScriptedProvider([[{ type: "completed", message: "unsafe output" }]]),
+    );
+
+    const agent = new Agent({
+      name: "Run record guardrail fail",
+      model: "fake-model",
+      outputGuardrails: [tripwire],
+    });
+
+    await assert.rejects(
+      () =>
+        run(agent, "hello", {
+          record: {
+            sink: (record) => {
+              records.push(record);
+            },
+          },
+        }),
+      (error: unknown) => {
+        assert.ok(error instanceof OutputGuardrailTripwireTriggered);
+        return true;
+      },
+    );
+
+    assert.equal(records.length, 1);
+    assert.equal(records[0]?.status, "failed");
+    assert.equal(records[0]?.errorName, "OutputGuardrailTripwireTriggered");
+    assert.equal(records[0]?.guardrailDecisions?.length, 1);
+    assert.equal(
+      records[0]?.guardrailDecisions?.[0]?.guardrailName,
+      tripwire.name,
+    );
+    assert.equal(records[0]?.guardrailDecisions?.[0]?.decision, "triggered");
+    assert.equal(
+      records[0]?.guardrailDecisions?.[0]?.reason,
+      "contains unsafe token",
+    );
+    assert.equal(records[0]?.promptSnapshots.length, 1);
+    assert.equal(records[0]?.requestFingerprints.length, 1);
+  }
+
+  {
+    const records: RunRecord<{ requestId: string; secret: string }>[] = [];
+
+    setDefaultProvider(
+      new ScriptedProvider([[{ type: "completed", message: "ok" }]]),
+    );
+
+    const agent = new Agent<{ requestId: string; secret: string }>({
+      name: "Run record redactor fallback",
+      model: "fake-model",
+    });
+
+    const result = await run(agent, "hello", {
+      context: { requestId: "req-2", secret: "raw-secret" },
+      record: {
+        contextRedactor: () => {
+          throw new Error("redactor failure");
+        },
+        sink: (record) => {
+          records.push(record);
+        },
+      },
+    });
+
+    assert.equal(result.finalOutput, "ok");
+    assert.equal(records.length, 1);
+    assert.equal(records[0]?.contextRedacted, false);
+    assert.equal(records[0]?.contextSnapshot.secret, "raw-secret");
+  }
+
+  {
+    let sinkCalls = 0;
+
+    setDefaultProvider(
+      new ScriptedProvider([[{ type: "completed", message: "sink ignored" }]]),
+    );
+
+    const agent = new Agent({
+      name: "Run record sink failure",
+      model: "fake-model",
+    });
+
+    const result = await run(agent, "hello", {
+      record: {
+        sink: () => {
+          sinkCalls += 1;
+          throw new Error("sink unavailable");
+        },
+      },
+    });
+
+    assert.equal(result.finalOutput, "sink ignored");
+    assert.equal(sinkCalls, 1);
   }
 }
