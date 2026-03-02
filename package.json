@@ -19,6 +19,7 @@
     "example:hello-world": "tsx src/examples/basic/hello-world.ts",
     "example:tools": "tsx src/examples/basic/tools.ts",
     "example:run-record-sink": "tsx src/examples/basic/run-record-sink.ts",
+    "example:non-regression": "tsx src/examples/non-regression/v1-v2-runrecord-diff.ts",
     "test:mistral": "tsx src/examples/mistral-smoke.ts",
     "test:guardrail": "tsx src/examples/guardrail-smoke.ts",
     "test:policy": "tsx src/examples/policy-smoke.ts",
