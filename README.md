@@ -12,6 +12,7 @@ This package is currently in alpha and is not production-ready.
 Breaking changes may occur before a stable release.
 Alpha contract reference: `docs/ALPHA-CONTRACT.md`.
 Pre-beta contract freeze reference: `docs/BETA-CONTRACT.md`.
+Privacy baseline reference: `docs/PRIVACY-BASELINE.md`.
 
 ## Contact
 
@@ -35,6 +36,7 @@ Governance implementation reference:
 - `docs/RFC-0003-run-record-audit-trail-and-persistence.md`
 - `docs/ALPHA-CONTRACT.md`
 - `docs/BETA-CONTRACT.md`
+- `docs/PRIVACY-BASELINE.md`
 
 ## Goals of this first scaffold
 
@@ -79,6 +81,12 @@ Policy deny notes:
 Run record metadata convention:
 
 - `record.metadata.appBuildVersion` is a recommended field to correlate run drift with application-layer source/build changes.
+
+Privacy baseline highlights:
+
+- `record.includePromptText` defaults to `false` and should remain disabled unless explicitly required.
+- `record.contextRedactor` should be considered mandatory for production run-record persistence.
+- sink adapters should implement encryption, access controls, retention, and deletion policies.
 
 ## Test Commands
 

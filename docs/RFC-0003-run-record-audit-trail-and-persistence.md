@@ -149,6 +149,7 @@ export interface RunRecordOptions<TContext = unknown> {
 - Sink adapters must enforce storage-side controls (retention, encryption, access controls).
 - Trace metadata must remain structured and scrubbed of sensitive values.
 - `metadata.appBuildVersion` is a recommended convention to correlate drift with host-application source/build versions.
+- Pre-beta operational controls are documented in `docs/PRIVACY-BASELINE.md`.
 
 ## Minimal Test Matrix
 

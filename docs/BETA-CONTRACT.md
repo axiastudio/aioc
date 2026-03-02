@@ -138,3 +138,4 @@ To ship `0.1.0-beta.1`, all items below must hold:
 2. This contract matches implemented runtime behavior.
 3. `npm run test:ci` passes.
 4. No open P0 issues on frozen surfaces.
+5. Privacy baseline controls are documented and adopted (`docs/PRIVACY-BASELINE.md`).
