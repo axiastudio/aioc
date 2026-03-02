@@ -38,6 +38,10 @@ Governance implementation reference:
 - `docs/BETA-CONTRACT.md`
 - `docs/PRIVACY-BASELINE.md`
 
+Canonical examples reference:
+
+- `docs/CANONICAL-EXAMPLES.md`
+
 ## Goals of this first scaffold
 
 - Keep a familiar API.
@@ -94,6 +98,13 @@ Privacy baseline highlights:
 - `npm run test:integration`
 - `npm run test:regression`
 - `npm run test:ci`
+
+## Canonical Examples
+
+- `npm run example:hello` (minimal single-agent run)
+- `npm run example:tool-policy` (tool calls with deterministic policy gate)
+- `npm run example:run-record` (run record persistence with redaction + audit)
+- `npm run example:non-regression` (advanced v1/v2 run-record diff)
 
 ## Python Alpha Port
 
