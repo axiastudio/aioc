@@ -34,3 +34,4 @@ Contract alignment is **green** on frozen runtime behavior and public surface.
 
 1. This audit is scoped to frozen contract items only; non-frozen areas remain intentionally flexible (`logger` schema details, examples structure, provider payload internals).
 2. The handoff `allow` envelope path is now explicitly asserted in unit tests (`src/tests/unit/handoff.unit.ts`).
+3. Continuous verification for pre-beta candidates is enforced by GitHub Actions (`.github/workflows/ci.yml`) running `npm run test:ci` on `push`, `pull_request`, and manual dispatch.
