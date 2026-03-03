@@ -6,6 +6,8 @@ This document defines the pre-beta freeze for `aioc` and the runtime/API surface
 
 During this freeze, behavior and types listed here are treated as contract-level and can only change through explicit documented exceptions.
 
+Latest audit snapshot: `docs/BETA-CONTRACT-AUDIT.md`.
+
 ## Scope
 
 This contract applies to:

@@ -67,6 +67,24 @@ export async function runHandoffUnitTests(): Promise<void> {
     });
     assert.equal(result.finalOutput, "Handled by target.");
     assert.equal(result.lastAgent.name, "Target Agent");
+    const toolOutputItem = result.history.find(
+      (
+        item,
+      ): item is Extract<
+        (typeof result.history)[number],
+        { type: "tool_call_output_item" }
+      > => item.type === "tool_call_output_item",
+    );
+    assert.deepEqual(toolOutputItem?.output, {
+      status: "ok",
+      code: null,
+      publicReason: null,
+      data: {
+        handoffTo: "Target Agent",
+        accepted: true,
+        payload: { reason: "route" },
+      },
+    });
   }
 
   {
