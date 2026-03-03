@@ -1,11 +1,13 @@
 import { runAuditTrailConsistencyRegressionTests } from "./audit-trail-consistency.regression";
 import { runHandoffTransitionRegressionTests } from "./handoff-transition.regression";
 import { runPolicyDefaultDenyRegressionTests } from "./policy-default-deny.regression";
+import { runPrivacyBaselineRegressionTests } from "./privacy-baseline.regression";
 
 async function main(): Promise<void> {
   await runAuditTrailConsistencyRegressionTests();
   await runPolicyDefaultDenyRegressionTests();
   await runHandoffTransitionRegressionTests();
+  await runPrivacyBaselineRegressionTests();
   process.stdout.write("Regression tests passed.\n");
 }
 

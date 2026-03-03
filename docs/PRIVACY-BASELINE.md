@@ -6,6 +6,8 @@ This document defines the minimum privacy controls expected when adopting `aioc`
 
 `aioc` provides runtime hooks and trace primitives. Storage governance and data lifecycle controls remain application responsibilities.
 
+Latest adoption snapshot: `docs/PRIVACY-ADOPTION.md`.
+
 ## Scope
 
 This baseline applies to:

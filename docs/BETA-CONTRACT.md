@@ -8,6 +8,7 @@ During this freeze, behavior and types listed here are treated as contract-level
 
 Latest audit snapshot: `docs/BETA-CONTRACT-AUDIT.md`.
 Latest P0 triage snapshot: `docs/P0-TRIAGE.md`.
+Latest privacy adoption snapshot: `docs/PRIVACY-ADOPTION.md`.
 
 ## Scope
 
