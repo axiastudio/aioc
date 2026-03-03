@@ -8,10 +8,10 @@ Project home: [https://github.com/axiastudio/aioc](https://github.com/axiastudio
 
 ## Release status
 
-This package is currently in alpha and is not production-ready.
+This package is currently in beta and is not production-ready.
 Breaking changes may occur before a stable release.
-Alpha contract reference: `docs/ALPHA-CONTRACT.md`.
-Pre-beta contract freeze reference: `docs/BETA-CONTRACT.md`.
+Beta contract reference: `docs/BETA-CONTRACT.md`.
+Alpha contract reference (historical): `docs/ALPHA-CONTRACT.md`.
 Privacy baseline reference: `docs/PRIVACY-BASELINE.md`.
 
 ## Contact
