@@ -106,32 +106,6 @@ Privacy baseline highlights:
 - `npm run example:run-record` (run record persistence with redaction + audit)
 - `npm run example:non-regression` (advanced v1/v2 run-record diff)
 
-## Python Alpha Port
-
-Python runtime is available under `py/` (Python 3.11+), with governance-first parity against core TS semantics:
-
-- `Agent`, `RunContext`, `run(...)` (stream/non-stream), tool registration, handoff
-- deterministic default-deny policy gates for tool/handoff
-- unified tool/handoff output envelope `{ status, code, publicReason, data }`
-- typed runtime errors for deny/guardrail/max-turns
-- run record sink adapter + context redaction + policy/guardrail decision capture
-- provider setup helpers: `setup_mistral()`, `setup_openai()`, `setup_provider()`
-- JSON-safe helper `to_json_value(...)`
-
-Python test command:
-
-- `cd py && python3 -m unittest discover -s tests -p 'test_*.py'`
-
-Python examples:
-
-- `cd py && python3 examples/basic/hello_world.py`
-- `cd py && python3 examples/basic/tool_policy_allow_deny.py`
-- `cd py && python3 examples/basic/run_record_sink.py`
-
-Migration mapping reference:
-
-- `docs/TS-PY-MIGRATION.md`
-
 ## License
 
 - Project license: `MIT` (`LICENSE`)
