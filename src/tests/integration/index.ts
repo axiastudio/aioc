@@ -1,7 +1,9 @@
 import { runChatCompletionsIntegrationTests } from "./chat-completions.integration";
+import { runAnthropicIntegrationTests } from "./anthropic.integration";
 
 async function main(): Promise<void> {
   await runChatCompletionsIntegrationTests();
+  await runAnthropicIntegrationTests();
   process.stdout.write("Integration tests passed.\n");
 }
 

@@ -9,6 +9,7 @@ export * from "./policy";
 export * from "./provider-setup";
 export * from "./providers/base";
 export * from "./providers/chat-completions";
+export * from "./providers/anthropic";
 export * from "./providers/mistral";
 export * from "./providers/openai";
 export * from "./run";

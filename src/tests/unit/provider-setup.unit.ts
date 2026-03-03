@@ -1,16 +1,18 @@
 import assert from "node:assert/strict";
 import {
+  AnthropicProvider,
   MistralProvider,
   OpenAIProvider,
   clearDefaultProvider,
   getDefaultProvider,
+  setupAnthropic,
   setupMistral,
   setupOpenAI,
   setupProvider,
 } from "../../index";
 
 function withEnv(
-  key: "MISTRAL_API_KEY" | "OPENAI_API_KEY",
+  key: "MISTRAL_API_KEY" | "OPENAI_API_KEY" | "ANTHROPIC_API_KEY",
   value: string | undefined,
 ): () => void {
   const previous = process.env[key];
@@ -67,6 +69,22 @@ export async function runProviderSetupUnitTests(): Promise<void> {
   }
 
   {
+    const restore = withEnv("ANTHROPIC_API_KEY", "anthropic-from-env");
+    clearDefaultProvider();
+    const provider = setupAnthropic();
+    assert.ok(provider instanceof AnthropicProvider);
+    assert.equal(getDefaultProvider(), provider);
+    restore();
+  }
+
+  {
+    const restore = withEnv("ANTHROPIC_API_KEY", undefined);
+    clearDefaultProvider();
+    assert.throws(() => setupAnthropic(), /Missing ANTHROPIC_API_KEY/);
+    restore();
+  }
+
+  {
     const restore = withEnv("MISTRAL_API_KEY", "mistral-from-env");
     clearDefaultProvider();
     const provider = setupProvider("mistral");
@@ -80,6 +98,15 @@ export async function runProviderSetupUnitTests(): Promise<void> {
     clearDefaultProvider();
     const provider = setupProvider("openai");
     assert.ok(provider instanceof OpenAIProvider);
+    assert.equal(getDefaultProvider(), provider);
+    restore();
+  }
+
+  {
+    const restore = withEnv("ANTHROPIC_API_KEY", "anthropic-from-env");
+    clearDefaultProvider();
+    const provider = setupProvider("anthropic");
+    assert.ok(provider instanceof AnthropicProvider);
     assert.equal(getDefaultProvider(), provider);
     restore();
   }

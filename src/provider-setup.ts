@@ -1,5 +1,9 @@
 import { setDefaultProvider } from "./config";
 import {
+  AnthropicProvider,
+  type AnthropicProviderOptions,
+} from "./providers/anthropic";
+import {
   MistralProvider,
   type MistralProviderOptions,
 } from "./providers/mistral";
@@ -13,11 +17,15 @@ export type SetupOpenAIOptions = Omit<OpenAIProviderOptions, "apiKey"> & {
   apiKey?: string;
 };
 
-export type SetupProviderKind = "mistral" | "openai";
+export type SetupAnthropicOptions = Omit<AnthropicProviderOptions, "apiKey"> & {
+  apiKey?: string;
+};
+
+export type SetupProviderKind = "mistral" | "openai" | "anthropic";
 
 function resolveApiKey(
   explicitApiKey: string | undefined,
-  envVarName: "MISTRAL_API_KEY" | "OPENAI_API_KEY",
+  envVarName: "MISTRAL_API_KEY" | "OPENAI_API_KEY" | "ANTHROPIC_API_KEY",
 ): string {
   const byArgument = explicitApiKey?.trim();
   if (byArgument) {
@@ -56,6 +64,18 @@ export function setupOpenAI(options: SetupOpenAIOptions = {}): OpenAIProvider {
   return provider;
 }
 
+export function setupAnthropic(
+  options: SetupAnthropicOptions = {},
+): AnthropicProvider {
+  const apiKey = resolveApiKey(options.apiKey, "ANTHROPIC_API_KEY");
+  const provider = new AnthropicProvider({
+    ...options,
+    apiKey,
+  });
+  setDefaultProvider(provider);
+  return provider;
+}
+
 export function setupProvider(
   provider: "mistral",
   options?: SetupMistralOptions,
@@ -65,11 +85,21 @@ export function setupProvider(
   options?: SetupOpenAIOptions,
 ): OpenAIProvider;
 export function setupProvider(
+  provider: "anthropic",
+  options?: SetupAnthropicOptions,
+): AnthropicProvider;
+export function setupProvider(
   provider: SetupProviderKind,
-  options: SetupMistralOptions | SetupOpenAIOptions = {},
-): MistralProvider | OpenAIProvider {
+  options:
+    | SetupMistralOptions
+    | SetupOpenAIOptions
+    | SetupAnthropicOptions = {},
+): MistralProvider | OpenAIProvider | AnthropicProvider {
   if (provider === "mistral") {
     return setupMistral(options as SetupMistralOptions);
+  }
+  if (provider === "anthropic") {
+    return setupAnthropic(options as SetupAnthropicOptions);
   }
   return setupOpenAI(options as SetupOpenAIOptions);
 }

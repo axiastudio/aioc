@@ -59,7 +59,7 @@ Canonical examples reference:
 - deterministic policy gates via `run(..., { policies })` (tool execution and handoff transitions are default-deny without explicit allow policy)
 - policy helpers `allow(...)` and `deny(...)` for deterministic policy results (including optional `publicReason` and `denyMode`)
 - tool/handoff call outputs are normalized in an envelope: `{ status, code, publicReason, data }`
-- provider setup helpers `setupMistral(...)`, `setupOpenAI(...)`, `setupProvider(...)`
+- provider setup helpers `setupMistral(...)`, `setupOpenAI(...)`, `setupAnthropic(...)`, `setupProvider(...)`
 - stdout logger helper `createStdoutLogger(...)` (opt-in)
 - run record hook via `run(..., { record })` for external persistence/audit adapters
 - run record prompt snapshots per turn (`turn`, `agentName`, `promptVersion`, `promptHash`, optional `promptText`)
@@ -68,13 +68,14 @@ Canonical examples reference:
 - message helpers `user(...)`, `assistant(...)`, `system(...)`
 - `setDefaultProvider(...)`
 - error classes including `OutputGuardrailTripwireTriggered`
-- `OpenAIProvider`, `MistralProvider`
+- `OpenAIProvider`, `MistralProvider`, `AnthropicProvider`
 
 Provider setup notes:
 
 - `setupMistral()` reads `MISTRAL_API_KEY` from env if no `apiKey` is passed.
 - `setupOpenAI()` reads `OPENAI_API_KEY` from env if no `apiKey` is passed.
-- `setupProvider("mistral" | "openai", ...)` provides a single entrypoint.
+- `setupAnthropic()` reads `ANTHROPIC_API_KEY` from env if no `apiKey` is passed.
+- `setupProvider("mistral" | "openai" | "anthropic", ...)` provides a single entrypoint.
 - `run(...)` defaults to non-stream mode (`stream: false`).
 
 Policy deny notes:
