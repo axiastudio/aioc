@@ -2,6 +2,8 @@ import { z } from "zod";
 import {
   Agent,
   allow,
+  compareRunRecords,
+  extractToolCalls,
   run,
   setDefaultProvider,
   tool,
@@ -104,21 +106,12 @@ class PromptSensitiveProvider implements ModelProvider {
   }
 }
 
-function extractToolCalls(record: RunRecord<SupportContext>): string[] {
-  return record.items
-    .filter(
-      (
-        item,
-      ): item is Extract<
-        RunRecord<SupportContext>["items"][number],
-        { type: "tool_call_item" }
-      > => item.type === "tool_call_item",
-    )
-    .map((item) => item.name);
+function listToolCallNames(record: RunRecord<SupportContext>): string[] {
+  return extractToolCalls(record).map((call) => call.name);
 }
 
 function extractHandoffCalls(record: RunRecord<SupportContext>): string[] {
-  return extractToolCalls(record).filter((name) =>
+  return listToolCallNames(record).filter((name) =>
     name.startsWith("handoff_to_"),
   );
 }
@@ -132,11 +125,25 @@ function compareRecords(
   baseline: RunRecord<SupportContext>,
   candidate: RunRecord<SupportContext>,
 ): Record<string, unknown> {
-  const baselineTools = extractToolCalls(baseline);
-  const candidateTools = extractToolCalls(candidate);
+  const baselineTools = listToolCallNames(baseline);
+  const candidateTools = listToolCallNames(candidate);
+  const comparison = compareRunRecords(baseline, candidate, {
+    includeSections: [
+      "response",
+      "toolCalls",
+      "policy",
+      "guardrails",
+      "metadata",
+    ],
+    responseMatchMode: "exact",
+  });
 
   return {
-    finalOutputChanged: baseline.response !== candidate.response,
+    equal: comparison.equal,
+    comparisonSummary: comparison.summary,
+    comparisonMetrics: comparison.metrics,
+    comparisonDifferences: comparison.differences,
+    finalOutputChanged: !comparison.summary.sameFinalResponse,
     promptVersion: {
       baseline: baseline.promptSnapshots[0]?.promptVersion ?? null,
       candidate: candidate.promptSnapshots[0]?.promptVersion ?? null,
