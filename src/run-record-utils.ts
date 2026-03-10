@@ -1,115 +1,10 @@
-import { createHash } from "node:crypto";
 import { Agent } from "./agent";
+import { hashCanonicalJson, toCanonicalJson } from "./canonical-json";
 import { run } from "./run";
 import type { RunRecord, RunRecordOptions, RunRecordSink } from "./run-record";
 import type { Tool } from "./tool";
 import type { AgentInputItem, NonStreamRunOptions, RunResult } from "./types";
 
-type CanonicalJsonValue =
-  | null
-  | string
-  | number
-  | boolean
-  | CanonicalJsonValue[]
-  | { [key: string]: CanonicalJsonValue };
-
-function normalizeCanonicalValue(
-  value: unknown,
-  seen: WeakSet<object> = new WeakSet(),
-): CanonicalJsonValue {
-  if (value === null) {
-    return null;
-  }
-
-  const valueType = typeof value;
-  if (
-    valueType === "string" ||
-    valueType === "number" ||
-    valueType === "boolean"
-  ) {
-    return value as string | number | boolean;
-  }
-
-  if (valueType === "undefined") {
-    return "[undefined]";
-  }
-
-  if (valueType === "bigint") {
-    return `[bigint:${String(value)}]`;
-  }
-
-  if (valueType === "symbol") {
-    return `[symbol:${String(value)}]`;
-  }
-
-  if (valueType === "function") {
-    return "[function]";
-  }
-
-  if (value instanceof Date) {
-    return value.toISOString();
-  }
-
-  if (value instanceof RegExp) {
-    return value.toString();
-  }
-
-  if (Array.isArray(value)) {
-    return value.map((entry) => normalizeCanonicalValue(entry, seen));
-  }
-
-  if (value instanceof Set) {
-    const entries = [...value].map((entry) =>
-      normalizeCanonicalValue(entry, seen),
-    );
-    entries.sort((left, right) =>
-      JSON.stringify(left).localeCompare(JSON.stringify(right)),
-    );
-    return entries;
-  }
-
-  if (value instanceof Map) {
-    const entries = [...value.entries()].map(([key, entry]) => [
-      normalizeCanonicalValue(key, seen),
-      normalizeCanonicalValue(entry, seen),
-    ]);
-    entries.sort((left, right) =>
-      JSON.stringify(left[0]).localeCompare(JSON.stringify(right[0])),
-    );
-    return entries as CanonicalJsonValue;
-  }
-
-  if (value && typeof value === "object") {
-    const objectValue = value as Record<string, unknown>;
-    if (seen.has(objectValue)) {
-      return "[circular]";
-    }
-    seen.add(objectValue);
-
-    const normalized: Record<string, CanonicalJsonValue> = {};
-    const keys = Object.keys(objectValue).sort();
-    for (const key of keys) {
-      normalized[key] = normalizeCanonicalValue(objectValue[key], seen);
-    }
-
-    seen.delete(objectValue);
-    return normalized;
-  }
-
-  return String(value);
-}
-
-function toCanonicalJson(value: unknown): string {
-  return JSON.stringify(normalizeCanonicalValue(value));
-}
-
-function sha256(value: string): string {
-  return createHash("sha256").update(value).digest("hex");
-}
-
-/**
- * Normalized view of a tool call extracted from run history.
- */
 export interface ExtractedToolCall {
   callId: string;
   name: string;
@@ -137,21 +32,14 @@ function buildExtractedToolCall(
     hasOutput: false,
     turn,
     argsCanonicalJson,
-    argsHash: sha256(argsCanonicalJson),
+    argsHash: hashCanonicalJson(argsCanonicalJson),
   };
 }
 
-/**
- * Extracts and pairs tool call/input and tool call/output items from a run record.
- * Pairing is done by `callId` and preserves chronological order of tool call proposals.
- */
 export function extractToolCalls<TContext>(
   input: RunRecord<TContext>,
 ): ExtractedToolCall[];
-/**
- * Extracts and pairs tool call/input and tool call/output items from run items.
- * Pairing is done by `callId` and preserves chronological order of tool call proposals.
- */
+
 export function extractToolCalls(input: AgentInputItem[]): ExtractedToolCall[];
 export function extractToolCalls<TContext>(
   input: RunRecord<TContext> | AgentInputItem[],
@@ -199,9 +87,6 @@ export function extractToolCalls<TContext>(
   return orderedCalls.map((call) => ({ ...call }));
 }
 
-/**
- * Sections available for run-record comparison.
- */
 export type RunRecordComparisonSection =
   | "response"
   | "toolCalls"
@@ -209,18 +94,12 @@ export type RunRecordComparisonSection =
   | "guardrails"
   | "metadata";
 
-/**
- * Options for `compareRunRecords`.
- */
 export interface CompareRunRecordsOptions {
   includeSections?: RunRecordComparisonSection[];
   excludeSections?: RunRecordComparisonSection[];
   responseMatchMode?: "exact";
 }
 
-/**
- * Structured diff item returned by `compareRunRecords`.
- */
 export interface RunRecordDifference {
   path: string;
   kind: "mismatch" | "missing_left" | "missing_right";
@@ -245,9 +124,6 @@ export interface RunRecordComparisonMetrics {
   extraToolCalls: number;
 }
 
-/**
- * Result of `compareRunRecords`.
- */
 export interface RunRecordComparison {
   equal: boolean;
   summary: RunRecordComparisonSummary;
@@ -345,9 +221,6 @@ function countByKey(calls: ExtractedToolCall[]): Map<string, number> {
   return counts;
 }
 
-/**
- * Compares two run records and returns a structured report suitable for CI gates.
- */
 export function compareRunRecords<TContextA, TContextB>(
   left: RunRecord<TContextA>,
   right: RunRecord<TContextB>,
@@ -522,9 +395,6 @@ export function compareRunRecords<TContextA, TContextB>(
   };
 }
 
-/**
- * Replay mode.
- */
 export type ReplayMode = "live" | "strict" | "hybrid";
 
 export interface MissingToolCallResolution {
@@ -613,7 +483,7 @@ function findRecordedToolOutput(
   mode: ReplayMode,
 ): RecordedToolLookupResult {
   const argsCanonicalJson = toCanonicalJson(args);
-  const argsHash = sha256(argsCanonicalJson);
+  const argsHash = hashCanonicalJson(argsCanonicalJson);
   const key = `${toolName}\u001f${argsHash}`;
   const queue = queues.get(key);
   if (queue && queue.length > 0) {
@@ -774,9 +644,6 @@ async function resolveReplayAgent<TContext>(
   throw new Error("Replay configuration is missing an agent or agentFactory.");
 }
 
-/**
- * Replays a run from a recorded run-record baseline.
- */
 export async function replayFromRunRecord<TContext = unknown>(
   input: ReplayFromRunRecordInput<TContext>,
 ): Promise<ReplayFromRunRecordResult<TContext>> {

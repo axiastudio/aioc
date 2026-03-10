@@ -1,6 +1,7 @@
 import { createHash } from "node:crypto";
 import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
+import { hashCanonicalJsonValue } from "./canonical-json";
 import type {
   GuardrailDecisionRecord,
   PolicyDecisionRecord,
@@ -50,14 +51,6 @@ export type PendingRequestFingerprintRecord = Omit<
   modelSettings?: Record<string, unknown>;
 };
 
-type CanonicalValue =
-  | null
-  | string
-  | number
-  | boolean
-  | CanonicalValue[]
-  | { [key: string]: CanonicalValue };
-
 const REQUEST_FINGERPRINT_SCHEMA_VERSION = "request-fingerprint.v1";
 
 function resolveRuntimeVersion(): string {
@@ -86,96 +79,6 @@ function resolveRuntimeVersion(): string {
 }
 
 const RUNTIME_VERSION = resolveRuntimeVersion();
-
-function normalizeForHash(
-  value: unknown,
-  seen: WeakSet<object> = new WeakSet(),
-): CanonicalValue {
-  if (value === null) {
-    return null;
-  }
-
-  const valueType = typeof value;
-  if (
-    valueType === "string" ||
-    valueType === "number" ||
-    valueType === "boolean"
-  ) {
-    return value as string | number | boolean;
-  }
-
-  if (valueType === "undefined") {
-    return "[undefined]";
-  }
-
-  if (valueType === "bigint") {
-    return `[bigint:${String(value)}]`;
-  }
-
-  if (valueType === "symbol") {
-    return `[symbol:${String(value)}]`;
-  }
-
-  if (valueType === "function") {
-    return "[function]";
-  }
-
-  if (value instanceof Date) {
-    return value.toISOString();
-  }
-
-  if (value instanceof RegExp) {
-    return value.toString();
-  }
-
-  if (Array.isArray(value)) {
-    return value.map((item) => normalizeForHash(item, seen));
-  }
-
-  if (value instanceof Set) {
-    const entries = [...value].map((entry) => normalizeForHash(entry, seen));
-    entries.sort((left, right) =>
-      JSON.stringify(left).localeCompare(JSON.stringify(right)),
-    );
-    return entries;
-  }
-
-  if (value instanceof Map) {
-    const entries = [...value.entries()].map(([key, entry]) => [
-      normalizeForHash(key, seen),
-      normalizeForHash(entry, seen),
-    ]);
-    entries.sort((left, right) =>
-      JSON.stringify(left[0]).localeCompare(JSON.stringify(right[0])),
-    );
-    return entries as CanonicalValue;
-  }
-
-  if (value && typeof value === "object") {
-    const objectValue = value as Record<string, unknown>;
-    if (seen.has(objectValue)) {
-      return "[circular]";
-    }
-    seen.add(objectValue);
-
-    const normalized: Record<string, CanonicalValue> = {};
-    const keys = Object.keys(objectValue).sort();
-    for (const key of keys) {
-      normalized[key] = normalizeForHash(objectValue[key], seen);
-    }
-
-    seen.delete(objectValue);
-    return normalized;
-  }
-
-  return String(value);
-}
-
-function hashForFingerprint(value: unknown): string {
-  return createHash("sha256")
-    .update(JSON.stringify(normalizeForHash(value)))
-    .digest("hex");
-}
 
 interface RunRecorderCreateOptions<TContext> {
   input: string | AgentInputItem[];
@@ -391,11 +294,11 @@ export class RunRecorder<TContext = unknown> {
       model: fingerprint.model,
       runtimeVersion: RUNTIME_VERSION,
       fingerprintSchemaVersion: REQUEST_FINGERPRINT_SCHEMA_VERSION,
-      requestHash: hashForFingerprint(requestPayload),
-      systemPromptHash: hashForFingerprint(normalizedSystemPrompt),
-      messagesHash: hashForFingerprint(fingerprint.messages),
-      toolsHash: hashForFingerprint(normalizedTools),
-      modelSettingsHash: hashForFingerprint(normalizedModelSettings),
+      requestHash: hashCanonicalJsonValue(requestPayload),
+      systemPromptHash: hashCanonicalJsonValue(normalizedSystemPrompt),
+      messagesHash: hashCanonicalJsonValue(fingerprint.messages),
+      toolsHash: hashCanonicalJsonValue(normalizedTools),
+      modelSettingsHash: hashCanonicalJsonValue(normalizedModelSettings),
       messageCount: fingerprint.messages.length,
       toolCount: normalizedTools.length,
     });
