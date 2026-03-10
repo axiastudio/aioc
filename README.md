@@ -64,6 +64,10 @@ Canonical examples reference:
 - run record hook via `run(..., { record })` for external persistence/audit adapters
 - run record prompt snapshots per turn (`turn`, `agentName`, `promptVersion`, `promptHash`, optional `promptText`)
 - run record request fingerprints per turn (`requestHash`, segment hashes, `runtimeVersion`, `fingerprintSchemaVersion`)
+- run record utilities:
+  - `extractToolCalls(...)`
+  - `compareRunRecords(...)`
+  - `replayFromRunRecord(...)` with modes `live | strict | hybrid`
 - JSON helper `toJsonValue(...)` to map runtime artifacts (for example `RunRecord.items`) into JSON-safe values for storage adapters
 - message helpers `user(...)`, `assistant(...)`, `system(...)`
 - `setDefaultProvider(...)`
@@ -91,6 +95,54 @@ Privacy baseline highlights:
 - `record.includePromptText` defaults to `false` and should remain disabled unless explicitly required.
 - `record.contextRedactor` should be considered mandatory for production run-record persistence.
 - sink adapters should implement encryption, access controls, retention, and deletion policies.
+
+## RunRecord Utilities
+
+### `extractToolCalls(...)`
+
+```ts
+import { extractToolCalls } from "@axiastudio/aioc";
+
+const calls = extractToolCalls(runRecord);
+// [{ callId, name, arguments, output?, hasOutput, turn?, argsCanonicalJson, argsHash }]
+```
+
+### `compareRunRecords(...)`
+
+```ts
+import { compareRunRecords } from "@axiastudio/aioc";
+
+const comparison = compareRunRecords(runRecordA, runRecordB, {
+  responseMatchMode: "exact",
+  includeSections: ["response", "toolCalls", "policy", "guardrails", "metadata"],
+});
+
+if (!comparison.equal) {
+  console.log(comparison.summary);
+  console.log(comparison.metrics);
+  console.log(comparison.differences);
+}
+```
+
+### `replayFromRunRecord(...)` (strict)
+
+```ts
+import { allow, replayFromRunRecord } from "@axiastudio/aioc";
+
+const replay = await replayFromRunRecord({
+  sourceRunRecord,
+  agent,
+  mode: "strict",
+  runOptions: {
+    policies: {
+      toolPolicy: () => allow("allow_replay"),
+    },
+  },
+});
+
+console.log(replay.result.finalOutput);
+console.log(replay.replayStats);
+```
 
 ## Test Commands
 
