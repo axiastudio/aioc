@@ -1,6 +1,5 @@
 import { createHash } from "node:crypto";
 import { Agent } from "./agent";
-import { allow, type PolicyConfiguration } from "./policy";
 import { run } from "./run";
 import type { RunRecord, RunRecordOptions, RunRecordSink } from "./run-record";
 import type { Tool } from "./tool";
@@ -808,17 +807,7 @@ export async function replayFromRunRecord<TContext = unknown>(
     typeof runOptions.context === "undefined"
       ? (input.sourceRunRecord.contextSnapshot as TContext)
       : runOptions.context;
-  const replayPolicies: PolicyConfiguration<TContext> | undefined =
-    mode === "live"
-      ? runOptions.policies
-      : {
-          toolPolicy:
-            runOptions.policies?.toolPolicy ??
-            (() => allow("replay_default_allow_tool")),
-          handoffPolicy:
-            runOptions.policies?.handoffPolicy ??
-            (() => allow("replay_default_allow_handoff")),
-        };
+  const replayPolicies = runOptions.policies;
 
   let replayRunRecord: RunRecord<TContext> | undefined;
   const shouldCaptureReplayRecord =

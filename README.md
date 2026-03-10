@@ -144,6 +144,8 @@ console.log(replay.result.finalOutput);
 console.log(replay.replayStats);
 ```
 
+`replayFromRunRecord(...)` does not bypass policy enforcement: in `strict` and `hybrid` modes, provide `runOptions.policies` when tool/handoff execution must be authorized.
+
 ## Test Commands
 
 - `npm run test:unit`

@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import { z } from "zod";
 import {
   Agent,
+  ToolCallPolicyDeniedError,
   allow,
   compareRunRecords,
   extractToolCalls,
@@ -269,6 +270,70 @@ export async function runRunRecordUtilsUnitTests(): Promise<void> {
     assert.equal(replay.replayStats.liveFallbackCalls, 0);
     assert.equal(replayRecordSink.length, 1);
     assert.equal(replay.replayRunRecord?.metadata?.scenario, "strict-replay");
+  }
+
+  {
+    const sourceRunRecord = createRunRecord({
+      question: "strict replay policy not configured",
+      items: [
+        {
+          type: "tool_call_item",
+          callId: "src-call-1",
+          name: "dangerous_lookup",
+          arguments: { id: "42" },
+        },
+        {
+          type: "tool_call_output_item",
+          callId: "src-call-1",
+          output: { source: "recorded" },
+        },
+      ],
+    });
+
+    setDefaultProvider(
+      new ScriptedProvider([
+        [
+          {
+            type: "tool_call",
+            callId: "replay-call-1",
+            name: "dangerous_lookup",
+            arguments: JSON.stringify({ id: "42" }),
+          },
+        ],
+      ]),
+    );
+
+    let liveInvocations = 0;
+    const dangerousLookup = tool<TestContext>({
+      name: "dangerous_lookup",
+      description: "Would fail if called live",
+      parameters: z.object({ id: z.string() }),
+      execute: () => {
+        liveInvocations += 1;
+        throw new Error("live execution should not happen in strict mode");
+      },
+    });
+
+    const agent = new Agent<TestContext>({
+      name: "Replay Strict Policy Agent",
+      model: "fake-model",
+      tools: [dangerousLookup],
+    });
+
+    await assert.rejects(
+      () =>
+        replayFromRunRecord({
+          sourceRunRecord,
+          agent,
+          mode: "strict",
+        }),
+      (error: unknown) => {
+        assert.ok(error instanceof ToolCallPolicyDeniedError);
+        assert.equal(error.result.policyResult.reason, "policy_not_configured");
+        return true;
+      },
+    );
+    assert.equal(liveInvocations, 0);
   }
 
   {
