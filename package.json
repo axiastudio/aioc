@@ -55,7 +55,7 @@
   "homepage": "https://github.com/axiastudio/aioc",
   "publishConfig": {
     "access": "public",
-    "tag": "next"
+    "tag": "latest"
   },
   "dependencies": {
     "dotenv": "^17.2.3",

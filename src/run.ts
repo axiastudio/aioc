@@ -46,9 +46,9 @@ type MutableRunState<TContext> = {
 };
 
 type HandoffRegistry<TContext> = Map<string, Agent<TContext>>;
-type ToolResultEnvelopeStatus = "ok" | "denied";
+export type ToolResultEnvelopeStatus = "ok" | "denied";
 
-interface ToolResultEnvelope {
+export interface ToolResultEnvelope {
   status: ToolResultEnvelopeStatus;
   code: string | null;
   publicReason: string | null;
