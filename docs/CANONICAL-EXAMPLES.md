@@ -110,3 +110,4 @@ What it demonstrates:
 - comparing `RunRecord` outputs across `v1` vs `v2`
 - detecting prompt-driven behavior changes (for example tool not called)
 - deriving structured diff signals (`removedTools`, fingerprint and prompt changes)
+- live-provider behavior: results may vary between executions (example is educational, not deterministic)

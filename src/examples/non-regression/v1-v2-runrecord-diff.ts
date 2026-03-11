@@ -1,20 +1,16 @@
+import "dotenv/config";
 import { z } from "zod";
 import {
   Agent,
   allow,
   compareRunRecords,
   extractToolCalls,
-  type ModelProvider,
   run,
-  setDefaultProvider,
+  setupMistral,
   tool,
   type RunRecord,
   type ToolPolicy,
 } from "../../index";
-import {
-  DirectSummaryProvider,
-  ProfileLookupProvider,
-} from "./prompt-sensitive-provider";
 
 interface SupportContext {
   actor: {
@@ -96,9 +92,7 @@ async function executeVersion(
   label: "v1" | "v2",
   agent: Agent<SupportContext>,
   toolPolicy: ToolPolicy<SupportContext>,
-  provider: ModelProvider,
 ): Promise<RunRecord<SupportContext>> {
-  setDefaultProvider(provider);
   const records: RunRecord<SupportContext>[] = [];
 
   const result = await run(
@@ -147,8 +141,8 @@ async function executeVersion(
 }
 
 async function main(): Promise<void> {
-  const baselineProvider = new ProfileLookupProvider();
-  const candidateProvider = new DirectSummaryProvider();
+  // Live provider setup from MISTRAL_API_KEY (non-deterministic by nature).
+  setupMistral();
 
   const getCustomerProfile = tool<SupportContext>({
     name: "get_customer_profile",
@@ -166,19 +160,19 @@ async function main(): Promise<void> {
 
   const supportAgentV1 = new Agent<SupportContext>({
     name: "Customer Support Agent",
-    model: "prompt-sensitive-model",
+    model: "mistral-small-latest",
     promptVersion: "customer-support.v1",
     instructions:
-      "For customer summaries, CALL_PROFILE_TOOL before giving the final answer.",
+      "You must call get_customer_profile exactly once before producing the final answer. Include one concise next action.",
     tools: [getCustomerProfile],
   });
 
   const supportAgentV2 = new Agent<SupportContext>({
     name: "Customer Support Agent",
-    model: "prompt-sensitive-model",
+    model: "mistral-small-latest",
     promptVersion: "customer-support.v2",
     instructions:
-      "Answer directly for this request and do not use external lookups unless strictly required.",
+      "Answer directly without using any tool. Provide one concise next action.",
     tools: [getCustomerProfile],
   });
 
@@ -187,18 +181,8 @@ async function main(): Promise<void> {
       policyVersion: "support-policy.v1",
     });
 
-  const baseline = await executeVersion(
-    "v1",
-    supportAgentV1,
-    toolPolicy,
-    baselineProvider,
-  );
-  const candidate = await executeVersion(
-    "v2",
-    supportAgentV2,
-    toolPolicy,
-    candidateProvider,
-  );
+  const baseline = await executeVersion("v1", supportAgentV1, toolPolicy);
+  const candidate = await executeVersion("v2", supportAgentV2, toolPolicy);
 
   const diff = compareRecords(baseline, candidate);
   process.stdout.write("\n=== RunRecord diff (v1 -> v2) ===\n");
@@ -206,6 +190,9 @@ async function main(): Promise<void> {
 
   process.stdout.write(
     "\nTip: the same pattern can detect handoff regressions by tracking tools named 'handoff_to_*'.\n",
+  );
+  process.stdout.write(
+    "Note: this example uses a live model provider, so output/tool trajectories can vary between runs.\n",
   );
 }
 
