@@ -26,8 +26,6 @@
     "example:rru:04-replay-hybrid": "tsx src/examples/run-record-utils-minimal/04-replay-hybrid.ts",
     "example:non-regression": "tsx src/examples/non-regression/v1-v2-runrecord-diff.ts",
     "test:mistral": "tsx src/examples/mistral-smoke.ts",
-    "test:guardrail": "tsx src/examples/guardrail-smoke.ts",
-    "test:policy": "tsx src/examples/policy-smoke.ts",
     "prepack": "npm run build:package"
   },
   "keywords": [
