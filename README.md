@@ -6,97 +6,109 @@ AIOC is designed for enterprise and public-sector contexts with privacy-by-desig
 
 Project home: [https://github.com/axiastudio/aioc](https://github.com/axiastudio/aioc)
 
-## Release status
+## Release Status
 
 This package is currently in beta and is not production-ready.
 Breaking changes may occur before a stable release.
-Beta contract reference: `docs/BETA-CONTRACT.md`.
-Alpha contract reference (historical): `docs/ALPHA-CONTRACT.md`.
-Privacy baseline reference: `docs/PRIVACY-BASELINE.md`.
+
+- Beta contract: `docs/BETA-CONTRACT.md`
+- Alpha contract (historical): `docs/ALPHA-CONTRACT.md`
+- Privacy baseline: `docs/PRIVACY-BASELINE.md`
 
 ## Contact
 
 If you want to collaborate or provide feedback, write to `tiziano.lattisi@axia.studio`.
 
-## Project principles
+## Install
 
-AIOC adopts the following non-negotiable principles:
+```bash
+npm install @axiastudio/aioc
+```
 
-- **LLM outside the control plane**: critical decisions remain in deterministic components; the LLM supports but does not govern.
-- **End-to-end transparency**: each decision is traceable (inputs, context, prompt/policy version, output).
-- **Verifiable corrigibility**: prompts, policies, and materials are versioned, editable, and comparable before/after changes.
-- **Non-degeneration validation**: each correction must pass regression tests and quality checks.
-- **Bias and misalignment control**: continuous monitoring, dedicated tests, and clear mitigation/escalation mechanisms.
-- **Privacy by design and data minimization**: collect and process only what is strictly necessary, protect sensitive data by default (redaction, encryption, retention limits), and provide auditable controls for access and deletion.
+## Quickstart
 
-Governance implementation reference:
+```ts
+import "dotenv/config";
+import { Agent, run, setupMistral } from "@axiastudio/aioc";
 
-- `docs/RFC-0001-governance-first-runtime.md`
-- `docs/RFC-0002-policy-gates-for-tools-and-handoffs.md`
-- `docs/RFC-0003-run-record-audit-trail-and-persistence.md`
-- `docs/ALPHA-CONTRACT.md`
-- `docs/BETA-CONTRACT.md`
-- `docs/PRIVACY-BASELINE.md`
+setupMistral(); // reads MISTRAL_API_KEY from env
 
-Canonical examples reference:
+const agent = new Agent({
+  name: "Hello Agent",
+  model: "mistral-small-latest",
+  instructions: "Answer in 2 short sentences.",
+});
 
-- `docs/CANONICAL-EXAMPLES.md`
+const result = await run(
+  agent,
+  "In one sentence, what is a deterministic policy gate in an agent SDK?",
+);
+console.log(result.finalOutput);
+```
 
-## Goals of this first scaffold
-
-- Keep a familiar API.
-- Isolate provider/runtime concerns from application agent logic.
-- Enable provider wrappers (including Mistral) behind a stable SDK surface.
-
-## Exposed primitives (v0 scaffold)
+## Core API
 
 - `Agent`, `RunContext`
 - optional `Agent.promptVersion` to version resolved instructions
 - `Tool`, `tool(...)`
-- agent handoffs via `Agent({ handoffs: [...] })`
-- `run(...)` with streaming support
-- run logger hook via `run(..., { logger })`
-- deterministic policy gates via `run(..., { policies })` (tool execution and handoff transitions are default-deny without explicit allow policy)
-- policy helpers `allow(...)` and `deny(...)` for deterministic policy results (including optional `publicReason` and `denyMode`)
-- tool/handoff call outputs are normalized in an envelope: `{ status, code, publicReason, data }`
+- handoffs via `Agent({ handoffs: [...] })`
+- `run(...)` with streaming support (`stream` defaults to `false`)
+- policy helpers `allow(...)` / `deny(...)`
 - provider setup helpers `setupMistral(...)`, `setupOpenAI(...)`, `setupProvider(...)`
-- stdout logger helper `createStdoutLogger(...)` (opt-in)
-- run record hook via `run(..., { record })` for external persistence/audit adapters
-- run record prompt snapshots per turn (`turn`, `agentName`, `promptVersion`, `promptHash`, optional `promptText`)
-- run record request fingerprints per turn (`requestHash`, segment hashes, `runtimeVersion`, `fingerprintSchemaVersion`)
-- run record utilities:
-  - `extractToolCalls(...)`
-  - `compareRunRecords(...)`
-  - `replayFromRunRecord(...)` with modes `live | strict | hybrid`
-- JSON helper `toJsonValue(...)` to map runtime artifacts (for example `RunRecord.items`) into JSON-safe values for storage adapters
-- message helpers `user(...)`, `assistant(...)`, `system(...)`
-- `setDefaultProvider(...)`
-- error classes including `OutputGuardrailTripwireTriggered`
-- `OpenAIProvider`, `MistralProvider`
+- run logger hook `run(..., { logger })`
+- run record hook `run(..., { record })`
+- run-record utilities `extractToolCalls(...)`, `compareRunRecords(...)`, `replayFromRunRecord(...)`
+- JSON helper `toJsonValue(...)`
 
-Provider setup notes:
+## Policy Gate (Minimal)
 
-- `setupMistral()` reads `MISTRAL_API_KEY` from env if no `apiKey` is passed.
-- `setupOpenAI()` reads `OPENAI_API_KEY` from env if no `apiKey` is passed.
-- `setupProvider("mistral" | "openai", ...)` provides a single entrypoint.
-- `run(...)` defaults to non-stream mode (`stream: false`).
+```ts
+import { Agent, allow, deny, run, tool, type ToolPolicy } from "@axiastudio/aioc";
 
-Policy deny notes:
+const toolPolicy: ToolPolicy<{ actor: { groups: string[] } }> = ({ runContext }) => {
+  if (!runContext.context.actor.groups.includes("finance")) {
+    return deny("deny_missing_finance_group", {
+      denyMode: "tool_result",
+      publicReason: "You are not authorized to access this report.",
+    });
+  }
+  return allow("allow_finance_group_access");
+};
 
-- Default deny behavior raises typed runtime errors (`ToolCallPolicyDeniedError` / `HandoffPolicyDeniedError`).
-- Policies can choose `denyMode: "tool_result"` to return a denied tool result to the model without throwing.
+await run(agent, "Summarize report Q1.", {
+  context: { actor: { groups: ["finance"] } },
+  policies: { toolPolicy },
+});
+```
 
-Run record metadata convention:
+Default behavior is deny when no policy is configured.
 
-- `record.metadata.appBuildVersion` is a recommended field to correlate run drift with application-layer source/build changes.
+## Run Record (Minimal)
 
-Privacy baseline highlights:
+```ts
+const records = [] as RunRecord<MyContext>[];
 
-- `record.includePromptText` defaults to `false` and should remain disabled unless explicitly required.
-- `record.contextRedactor` should be considered mandatory for production run-record persistence.
-- sink adapters should implement encryption, access controls, retention, and deletion policies.
+await run(agent, "question", {
+  context,
+  policies: { toolPolicy },
+  record: {
+    includePromptText: true,
+    contextRedactor: (ctx) => ({
+      contextSnapshot: { ...ctx, userId: "[redacted]" },
+      contextRedacted: true,
+    }),
+    sink: (record) => records.push(record),
+  },
+});
+```
 
-## RunRecord Utilities
+Privacy notes:
+
+- `record.includePromptText` defaults to `false`; keep it disabled unless needed.
+- `record.contextRedactor` should be considered mandatory for production persistence.
+- sink adapters should implement encryption, access controls, retention, and deletion.
+
+## RunRecord Utilities (Minimal)
 
 ### `extractToolCalls(...)`
 
@@ -104,7 +116,7 @@ Privacy baseline highlights:
 import { extractToolCalls } from "@axiastudio/aioc";
 
 const calls = extractToolCalls(runRecord);
-// [{ callId, name, arguments, output?, hasOutput, turn?, argsCanonicalJson, argsHash }]
+console.log(calls[0]?.name, calls[0]?.argsHash, calls[0]?.hasOutput);
 ```
 
 ### `compareRunRecords(...)`
@@ -113,18 +125,16 @@ const calls = extractToolCalls(runRecord);
 import { compareRunRecords } from "@axiastudio/aioc";
 
 const comparison = compareRunRecords(runRecordA, runRecordB, {
-  responseMatchMode: "exact",
   includeSections: ["response", "toolCalls", "policy", "guardrails", "metadata"],
+  responseMatchMode: "exact",
 });
 
-if (!comparison.equal) {
-  console.log(comparison.summary);
-  console.log(comparison.metrics);
-  console.log(comparison.differences);
-}
+console.log(comparison.summary);
+console.log(comparison.metrics);
+console.log(comparison.differences);
 ```
 
-### `replayFromRunRecord(...)` (strict)
+### `replayFromRunRecord(...)`
 
 ```ts
 import { allow, replayFromRunRecord } from "@axiastudio/aioc";
@@ -132,7 +142,7 @@ import { allow, replayFromRunRecord } from "@axiastudio/aioc";
 const replay = await replayFromRunRecord({
   sourceRunRecord,
   agent,
-  mode: "strict",
+  mode: "strict", // live | strict | hybrid
   runOptions: {
     policies: {
       toolPolicy: () => allow("allow_replay"),
@@ -144,14 +154,25 @@ console.log(replay.result.finalOutput);
 console.log(replay.replayStats);
 ```
 
-`replayFromRunRecord(...)` does not bypass policy enforcement: in `strict` and `hybrid` modes, provide `runOptions.policies` when tool/handoff execution must be authorized.
+`replayFromRunRecord(...)` does not bypass policy enforcement: in `strict` and `hybrid`, provide `runOptions.policies` when tool/handoff execution must be authorized.
 
-### Minimal examples (step-by-step)
+## Examples
 
-- `npm run example:rru:01-extract` (`extractToolCalls(...)` from a static `RunRecord`)
-- `npm run example:rru:02-compare` (`compareRunRecords(...)` with structured diff output)
-- `npm run example:rru:03-replay-strict` (`replayFromRunRecord(...)` in `strict` mode)
-- `npm run example:rru:04-replay-hybrid` (`replayFromRunRecord(...)` in `hybrid` mode)
+| Command | Purpose | Needs API key |
+|---|---|---|
+| `npm run example:hello` | Minimal single-agent run | Yes (`MISTRAL_API_KEY`) |
+| `npm run example:tool-policy` | Tool calls with deterministic policy gate | Yes (`MISTRAL_API_KEY`) |
+| `npm run example:run-record` | Run-record persistence with redaction + audit | Yes (`MISTRAL_API_KEY`) |
+| `npm run example:rru:01-extract` | Minimal `extractToolCalls(...)` | No |
+| `npm run example:rru:02-compare` | Minimal `compareRunRecords(...)` | No |
+| `npm run example:rru:03-replay-strict` | Minimal strict replay | No |
+| `npm run example:rru:04-replay-hybrid` | Minimal hybrid replay | No |
+| `npm run example:non-regression` | Advanced v1/v2 run-record diff | Yes (`MISTRAL_API_KEY`) |
+
+Notes:
+
+- `example:non-regression` is educational and can be non-deterministic because it uses a live provider.
+- canonical examples guide: `docs/CANONICAL-EXAMPLES.md`.
 
 ## Test Commands
 
@@ -160,16 +181,25 @@ console.log(replay.replayStats);
 - `npm run test:regression`
 - `npm run test:ci`
 
-## Canonical Examples
+## Project Principles
 
-- `npm run example:hello` (minimal single-agent run)
-- `npm run example:tool-policy` (tool calls with deterministic policy gate)
-- `npm run example:run-record` (run record persistence with redaction + audit)
-- `npm run example:rru:01-extract` (minimal extract tool-calls example)
-- `npm run example:rru:02-compare` (minimal run-record comparison example)
-- `npm run example:rru:03-replay-strict` (minimal strict replay example)
-- `npm run example:rru:04-replay-hybrid` (minimal hybrid replay example)
-- `npm run example:non-regression` (advanced v1/v2 run-record diff)
+AIOC adopts the following non-negotiable principles:
+
+- **LLM outside the control plane**: critical decisions remain in deterministic components; the LLM supports but does not govern.
+- **End-to-end transparency**: each decision is traceable (inputs, context, prompt/policy version, output).
+- **Verifiable corrigibility**: prompts, policies, and materials are versioned, editable, and comparable before/after changes.
+- **Non-degeneration validation**: each correction must pass regression tests and quality checks.
+- **Bias and misalignment control**: continuous monitoring, dedicated tests, and clear mitigation/escalation mechanisms.
+- **Privacy by design and data minimization**: collect and process only what is strictly necessary, protect sensitive data by default (redaction, encryption, retention limits), and provide auditable controls for access and deletion.
+
+## Governance References
+
+- `docs/RFC-0001-governance-first-runtime.md`
+- `docs/RFC-0002-policy-gates-for-tools-and-handoffs.md`
+- `docs/RFC-0003-run-record-audit-trail-and-persistence.md`
+- `docs/ALPHA-CONTRACT.md`
+- `docs/BETA-CONTRACT.md`
+- `docs/PRIVACY-BASELINE.md`
 
 ## License
 

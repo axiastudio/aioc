@@ -8,13 +8,13 @@ async function main(): Promise<void> {
   const agent = new Agent({
     name: "Hello run agent",
     model: "mistral-small-latest",
-    instructions: "You only respond in haikus.",
+    instructions: "Answer in 2 short sentences.",
   });
 
   // Default behavior: non-stream run (stream defaults to false).
   const result = await run(
     agent,
-    "Tell me about recursion in programming. Quickly responding with a single answer is fine.",
+    "In one sentence, what is a deterministic policy gate in an agent SDK?",
   );
 
   process.stdout.write(`${result.finalOutput}\n`);
