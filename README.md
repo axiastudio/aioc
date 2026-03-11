@@ -146,6 +146,13 @@ console.log(replay.replayStats);
 
 `replayFromRunRecord(...)` does not bypass policy enforcement: in `strict` and `hybrid` modes, provide `runOptions.policies` when tool/handoff execution must be authorized.
 
+### Minimal examples (step-by-step)
+
+- `npm run example:rru:01-extract` (`extractToolCalls(...)` from a static `RunRecord`)
+- `npm run example:rru:02-compare` (`compareRunRecords(...)` with structured diff output)
+- `npm run example:rru:03-replay-strict` (`replayFromRunRecord(...)` in `strict` mode)
+- `npm run example:rru:04-replay-hybrid` (`replayFromRunRecord(...)` in `hybrid` mode)
+
 ## Test Commands
 
 - `npm run test:unit`
@@ -158,6 +165,10 @@ console.log(replay.replayStats);
 - `npm run example:hello` (minimal single-agent run)
 - `npm run example:tool-policy` (tool calls with deterministic policy gate)
 - `npm run example:run-record` (run record persistence with redaction + audit)
+- `npm run example:rru:01-extract` (minimal extract tool-calls example)
+- `npm run example:rru:02-compare` (minimal run-record comparison example)
+- `npm run example:rru:03-replay-strict` (minimal strict replay example)
+- `npm run example:rru:04-replay-hybrid` (minimal hybrid replay example)
 - `npm run example:non-regression` (advanced v1/v2 run-record diff)
 
 ## License

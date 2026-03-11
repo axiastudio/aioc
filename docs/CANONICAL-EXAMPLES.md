@@ -68,6 +68,31 @@ What it demonstrates:
 - prompt snapshots and request fingerprints
 - policy decision audit trail and persisted envelope output
 
+## 4) RunRecord Utilities (Minimal)
+
+Commands:
+
+```bash
+npm run example:rru:01-extract
+npm run example:rru:02-compare
+npm run example:rru:03-replay-strict
+npm run example:rru:04-replay-hybrid
+```
+
+Files:
+
+- `src/examples/run-record-utils-minimal/01-extract-tool-calls.ts`
+- `src/examples/run-record-utils-minimal/02-compare-run-records.ts`
+- `src/examples/run-record-utils-minimal/03-replay-strict.ts`
+- `src/examples/run-record-utils-minimal/04-replay-hybrid.ts`
+
+What it demonstrates:
+
+- extracting normalized tool calls from a run record
+- comparing two run records with summary/metrics/differences
+- replaying in strict mode (recorded outputs only)
+- replaying in hybrid mode (recorded outputs + live fallback)
+
 ## Advanced (Non-Regression Diff)
 
 Command:
