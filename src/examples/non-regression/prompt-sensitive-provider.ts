@@ -33,9 +33,8 @@ function toObjectRecord(value: unknown): Record<string, unknown> | null {
   return value as Record<string, unknown>;
 }
 
-// Deterministic provider used by the non-regression demo:
-// its behavior intentionally changes based on the system prompt.
-export class PromptSensitiveProvider implements ModelProvider {
+// Baseline behavior: asks for customer profile via tool call before final answer.
+export class ProfileLookupProvider implements ModelProvider {
   async *stream<TContext = unknown>(
     request: ProviderRequest<TContext>,
   ): AsyncIterable<ProviderEvent> {
@@ -44,28 +43,15 @@ export class PromptSensitiveProvider implements ModelProvider {
     );
 
     if (!profileOutput) {
-      const shouldCallProfileTool = (request.systemPrompt ?? "").includes(
-        "CALL_PROFILE_TOOL",
-      );
-
-      if (shouldCallProfileTool) {
-        yield {
-          type: "tool_call",
-          callId: "call-profile-1",
-          name: "get_customer_profile",
-          arguments: JSON.stringify({ customerId: "C-42" }),
-        };
-        yield {
-          type: "completed",
-          message: "",
-        };
-        return;
-      }
-
+      yield {
+        type: "tool_call",
+        callId: "call-profile-1",
+        name: "get_customer_profile",
+        arguments: JSON.stringify({ customerId: "C-42" }),
+      };
       yield {
         type: "completed",
-        message:
-          "Customer summary generated without profile lookup. Next action: ask user for missing account details.",
+        message: "",
       };
       return;
     }
@@ -87,6 +73,20 @@ export class PromptSensitiveProvider implements ModelProvider {
       type: "completed",
       message:
         "Profile lookup was denied. Next action: continue with a minimal safe response.",
+    };
+  }
+}
+
+// Candidate behavior: answers directly without external tool lookup.
+export class DirectSummaryProvider implements ModelProvider {
+  async *stream<TContext = unknown>(
+    request: ProviderRequest<TContext>,
+  ): AsyncIterable<ProviderEvent> {
+    void request;
+    yield {
+      type: "completed",
+      message:
+        "Customer summary generated without profile lookup. Next action: ask user for missing account details.",
     };
   }
 }

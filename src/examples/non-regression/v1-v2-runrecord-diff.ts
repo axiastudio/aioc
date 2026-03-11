@@ -4,13 +4,17 @@ import {
   allow,
   compareRunRecords,
   extractToolCalls,
+  type ModelProvider,
   run,
   setDefaultProvider,
   tool,
   type RunRecord,
   type ToolPolicy,
 } from "../../index";
-import { PromptSensitiveProvider } from "./prompt-sensitive-provider";
+import {
+  DirectSummaryProvider,
+  ProfileLookupProvider,
+} from "./prompt-sensitive-provider";
 
 interface SupportContext {
   actor: {
@@ -92,7 +96,9 @@ async function executeVersion(
   label: "v1" | "v2",
   agent: Agent<SupportContext>,
   toolPolicy: ToolPolicy<SupportContext>,
+  provider: ModelProvider,
 ): Promise<RunRecord<SupportContext>> {
+  setDefaultProvider(provider);
   const records: RunRecord<SupportContext>[] = [];
 
   const result = await run(
@@ -141,8 +147,8 @@ async function executeVersion(
 }
 
 async function main(): Promise<void> {
-  // Deterministic provider: changes in prompt text alter behavior in a reproducible way.
-  setDefaultProvider(new PromptSensitiveProvider());
+  const baselineProvider = new ProfileLookupProvider();
+  const candidateProvider = new DirectSummaryProvider();
 
   const getCustomerProfile = tool<SupportContext>({
     name: "get_customer_profile",
@@ -181,8 +187,18 @@ async function main(): Promise<void> {
       policyVersion: "support-policy.v1",
     });
 
-  const baseline = await executeVersion("v1", supportAgentV1, toolPolicy);
-  const candidate = await executeVersion("v2", supportAgentV2, toolPolicy);
+  const baseline = await executeVersion(
+    "v1",
+    supportAgentV1,
+    toolPolicy,
+    baselineProvider,
+  );
+  const candidate = await executeVersion(
+    "v2",
+    supportAgentV2,
+    toolPolicy,
+    candidateProvider,
+  );
 
   const diff = compareRecords(baseline, candidate);
   process.stdout.write("\n=== RunRecord diff (v1 -> v2) ===\n");
