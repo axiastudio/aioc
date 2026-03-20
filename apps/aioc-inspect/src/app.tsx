@@ -5,6 +5,7 @@ import {
   buildRunRecordPreview,
   compareRunRecords,
   extractToolCalls,
+  extractHandoffFlow,
   formatJson,
   formatNumberList,
   formatStringList,
@@ -74,6 +75,79 @@ function buttonClassName(enabled: boolean, centered = false): string {
 
 function sectionTitleClassName(): string {
   return "text-xs font-semibold uppercase tracking-[0.24em] text-slate-500";
+}
+
+function toAnchorSegment(value: string | number): string {
+  const normalized = String(value)
+    .trim()
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "");
+
+  return normalized || "item";
+}
+
+function toolCallAnchorId(callId: string): string {
+  return `tool-call-${toAnchorSegment(callId)}`;
+}
+
+function policyDecisionAnchorId(callId: string, turn?: number): string {
+  return `policy-decision-${toAnchorSegment(callId)}-${toAnchorSegment(
+    turn ?? "na",
+  )}`;
+}
+
+function revealTarget(targetId: string): void {
+  if (typeof document === "undefined") {
+    return;
+  }
+
+  const target = document.getElementById(targetId);
+  if (!target) {
+    return;
+  }
+
+  const parentDetails = target.closest("details");
+  if (parentDetails instanceof HTMLDetailsElement) {
+    parentDetails.open = true;
+  }
+
+  requestAnimationFrame(() => {
+    target.scrollIntoView({
+      behavior: "smooth",
+      block: "start",
+    });
+    window.history.replaceState(null, "", `#${targetId}`);
+  });
+}
+
+function AgentChip({ name }: { name: string }): ReactElement {
+  return (
+    <span className="inline-flex items-center rounded-full border border-slate-300 bg-white px-3 py-1 text-xs font-semibold tracking-[0.08em] text-slate-800 shadow-sm">
+      {name}
+    </span>
+  );
+}
+
+function InPageLink({
+  targetId,
+  children,
+}: {
+  targetId: string;
+  children: ReactNode;
+}): ReactElement {
+  return (
+    <a
+      href={`#${targetId}`}
+      className="inline-flex items-center rounded-full border border-sky-200 bg-sky-50 px-3 py-1 text-xs font-medium text-sky-800 transition hover:border-sky-300 hover:bg-sky-100"
+      onClick={(event) => {
+        event.preventDefault();
+        revealTarget(targetId);
+      }}
+    >
+      {children}
+    </a>
+  );
 }
 
 interface SlotCardProps {
@@ -267,6 +341,21 @@ function InspectPage({
 }): ReactElement {
   const record = loaded.record;
   const toolCalls = useMemo(() => extractToolCalls(record), [record]);
+  const handoffFlow = useMemo(() => extractHandoffFlow(record), [record]);
+  const policyDecisionsByCallId = useMemo(() => {
+    const grouped = new Map<string, typeof record.policyDecisions>();
+
+    for (const decision of record.policyDecisions) {
+      const existing = grouped.get(decision.callId);
+      if (existing) {
+        existing.push(decision);
+      } else {
+        grouped.set(decision.callId, [decision]);
+      }
+    }
+
+    return grouped;
+  }, [record]);
 
   return (
     <div className="space-y-6">
@@ -332,7 +421,7 @@ function InspectPage({
       <div className="grid gap-6">
         <Section
           title="Overview"
-          summary="Question, final response, metadata, and context visibility."
+          summary="Question, final response, handoff flow, metadata, and context visibility."
         >
           <div className="grid gap-6 lg:grid-cols-2">
             <div className="space-y-4">
@@ -350,6 +439,151 @@ function InspectPage({
               </div>
             </div>
             <div className="space-y-4">
+              <div className="rounded-[1.25rem] border border-slate-200 bg-slate-50 p-4">
+                <p className={sectionTitleClassName()}>Handoff Flow</p>
+                <div className="mt-3 space-y-4">
+                  <div className="rounded-2xl border border-slate-200 bg-white p-4">
+                    <p className="text-sm font-medium text-slate-900">
+                      Activated agent path
+                    </p>
+                    {handoffFlow.activatedAgentPath.length > 0 ? (
+                      <div className="mt-3 flex flex-wrap items-center gap-2">
+                        {handoffFlow.activatedAgentPath.map((agentName, index) => (
+                          <div
+                            key={`${agentName}-${index}`}
+                            className="flex items-center gap-2"
+                          >
+                            <AgentChip name={agentName} />
+                            {index < handoffFlow.activatedAgentPath.length - 1 ? (
+                              <span className="text-slate-400" aria-hidden="true">
+                                <svg
+                                  viewBox="0 0 24 24"
+                                  className="h-5 w-5"
+                                  fill="none"
+                                  xmlns="http://www.w3.org/2000/svg"
+                                >
+                                  <path
+                                    d="M4 12H18"
+                                    stroke="currentColor"
+                                    strokeWidth="1.8"
+                                    strokeLinecap="round"
+                                  />
+                                  <path
+                                    d="M13 7L18 12L13 17"
+                                    stroke="currentColor"
+                                    strokeWidth="1.8"
+                                    strokeLinecap="round"
+                                    strokeLinejoin="round"
+                                  />
+                                </svg>
+                              </span>
+                            ) : null}
+                          </div>
+                        ))}
+                      </div>
+                    ) : (
+                      <p className="mt-2 text-sm leading-7 text-slate-700">
+                        No activated agents recorded.
+                      </p>
+                    )}
+                  </div>
+
+                  <div className="rounded-2xl border border-slate-200 bg-white p-4">
+                    <div className="flex flex-wrap items-center gap-3 text-sm text-slate-600">
+                      <span>{handoffFlow.attempts.length} attempts</span>
+                      <span>{handoffFlow.acceptedCount} accepted</span>
+                      <span>{handoffFlow.deniedCount} denied</span>
+                    </div>
+
+                    {handoffFlow.attempts.length === 0 ? (
+                      <p className="mt-3 text-sm text-slate-500">
+                        No handoff attempts found.
+                      </p>
+                    ) : (
+                      <div className="mt-4 space-y-3">
+                        {handoffFlow.attempts.map((attempt) => (
+                          <article
+                            key={`${attempt.callId}-${attempt.turn ?? "na"}`}
+                            className="rounded-2xl border border-slate-200 bg-slate-50 p-3"
+                          >
+                            <div className="flex flex-col gap-2 md:flex-row md:items-start md:justify-between">
+                              <div>
+                                <div className="flex flex-wrap items-center gap-2">
+                                  <AgentChip name={attempt.fromAgent} />
+                                  <span className="text-slate-400" aria-hidden="true">
+                                    <svg
+                                      viewBox="0 0 24 24"
+                                      className="h-5 w-5"
+                                      fill="none"
+                                      xmlns="http://www.w3.org/2000/svg"
+                                    >
+                                      <path
+                                        d="M4 12H18"
+                                        stroke="currentColor"
+                                        strokeWidth="1.8"
+                                        strokeLinecap="round"
+                                      />
+                                      <path
+                                        d="M13 7L18 12L13 17"
+                                        stroke="currentColor"
+                                        strokeWidth="1.8"
+                                        strokeLinecap="round"
+                                        strokeLinejoin="round"
+                                      />
+                                    </svg>
+                                  </span>
+                                  <AgentChip name={attempt.toAgent} />
+                                </div>
+                                <p className="mt-1 text-xs text-slate-500">
+                                  Turn {attempt.turn ?? "n/a"} • {attempt.callId}
+                                </p>
+                              </div>
+                              <span
+                                className={`inline-flex w-fit rounded-full px-3 py-1 text-xs font-medium ${
+                                  attempt.decision === "allow"
+                                    ? "bg-emerald-100 text-emerald-800"
+                                    : attempt.decision === "deny"
+                                      ? "bg-rose-100 text-rose-800"
+                                      : "bg-slate-200 text-slate-700"
+                                }`}
+                              >
+                                {attempt.decision}
+                              </span>
+                            </div>
+                            {attempt.reason ? (
+                              <p className="mt-3 text-sm leading-7 text-slate-700">
+                                {attempt.reason}
+                              </p>
+                            ) : null}
+                            <div className="mt-3 flex flex-wrap items-center gap-2">
+                              <InPageLink
+                                targetId={toolCallAnchorId(attempt.callId)}
+                              >
+                                Open tool call
+                              </InPageLink>
+                              {attempt.decision !== "unknown" ? (
+                                <InPageLink
+                                  targetId={policyDecisionAnchorId(
+                                    attempt.callId,
+                                    attempt.turn,
+                                  )}
+                                >
+                                  Open policy
+                                </InPageLink>
+                              ) : null}
+                            </div>
+                            {attempt.policyVersion ? (
+                              <p className="mt-2 text-xs text-slate-500">
+                                Policy version: {attempt.policyVersion}
+                              </p>
+                            ) : null}
+                          </article>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </div>
               <div className="rounded-[1.25rem] border border-slate-200 bg-slate-50 p-4">
                 <p className={sectionTitleClassName()}>Metadata</p>
                 <JsonPanel value={record.metadata ?? {}} />
@@ -375,53 +609,78 @@ function InspectPage({
             {toolCalls.length === 0 ? (
               <p className="text-sm text-slate-500">No tool calls found.</p>
             ) : null}
-            {toolCalls.map((call) => (
-              <article
-                key={`${call.callId}-${call.name}`}
-                className="rounded-[1.25rem] border border-slate-200 bg-slate-50 p-4"
-              >
-                <div className="grid gap-3 text-sm text-slate-600 md:grid-cols-4">
-                  <div>
-                    <p className={sectionTitleClassName()}>Turn</p>
-                    <p className="mt-2 font-medium text-slate-900">
-                      {call.turn ?? "n/a"}
-                    </p>
-                  </div>
-                  <div>
-                    <p className={sectionTitleClassName()}>Tool</p>
-                    <p className="mt-2 font-medium text-slate-900">{call.name}</p>
-                  </div>
-                  <div>
-                    <p className={sectionTitleClassName()}>Call ID</p>
-                    <p className="mt-2 break-all font-medium text-slate-900">
-                      {call.callId}
-                    </p>
-                  </div>
-                  <div>
-                    <p className={sectionTitleClassName()}>Args Hash</p>
-                    <p className="mt-2 font-mono text-xs text-slate-900">
-                      {call.argsHash}
-                    </p>
-                  </div>
-                </div>
-                <div className="mt-4 grid gap-4 lg:grid-cols-2">
-                  <div>
-                    <p className={sectionTitleClassName()}>Arguments</p>
-                    <div className="mt-2">
-                      <JsonPanel value={call.arguments} />
+            {toolCalls.map((call) => {
+              const relatedPolicyDecisions =
+                policyDecisionsByCallId.get(call.callId) ?? [];
+
+              return (
+                <article
+                  id={toolCallAnchorId(call.callId)}
+                  key={`${call.callId}-${call.name}`}
+                  className="scroll-mt-6 rounded-[1.25rem] border border-slate-200 bg-slate-50 p-4 target:border-sky-300 target:bg-sky-50 target:ring-4 target:ring-sky-100"
+                >
+                  <div className="grid gap-3 text-sm text-slate-600 md:grid-cols-4">
+                    <div>
+                      <p className={sectionTitleClassName()}>Turn</p>
+                      <p className="mt-2 font-medium text-slate-900">
+                        {call.turn ?? "n/a"}
+                      </p>
+                    </div>
+                    <div>
+                      <p className={sectionTitleClassName()}>Tool</p>
+                      <p className="mt-2 font-medium text-slate-900">{call.name}</p>
+                    </div>
+                    <div>
+                      <p className={sectionTitleClassName()}>Call ID</p>
+                      <p className="mt-2 break-all font-medium text-slate-900">
+                        {call.callId}
+                      </p>
+                    </div>
+                    <div>
+                      <p className={sectionTitleClassName()}>Args Hash</p>
+                      <p className="mt-2 font-mono text-xs text-slate-900">
+                        {call.argsHash}
+                      </p>
                     </div>
                   </div>
-                  <div>
-                    <p className={sectionTitleClassName()}>
-                      Output {call.hasOutput ? "" : "(missing)"}
-                    </p>
-                    <div className="mt-2">
-                      <JsonPanel value={call.output ?? null} />
+                  <div className="mt-4 flex flex-wrap items-center gap-2">
+                    {relatedPolicyDecisions.length > 0 ? (
+                      relatedPolicyDecisions.map((decision) => (
+                        <InPageLink
+                          key={`${decision.callId}-${decision.turn}`}
+                          targetId={policyDecisionAnchorId(
+                            decision.callId,
+                            decision.turn,
+                          )}
+                        >
+                          Open policy
+                        </InPageLink>
+                      ))
+                    ) : (
+                      <span className="text-xs text-slate-500">
+                        No linked policy decision.
+                      </span>
+                    )}
+                  </div>
+                  <div className="mt-4 grid gap-4 lg:grid-cols-2">
+                    <div>
+                      <p className={sectionTitleClassName()}>Arguments</p>
+                      <div className="mt-2">
+                        <JsonPanel value={call.arguments} />
+                      </div>
+                    </div>
+                    <div>
+                      <p className={sectionTitleClassName()}>
+                        Output {call.hasOutput ? "" : "(missing)"}
+                      </p>
+                      <div className="mt-2">
+                        <JsonPanel value={call.output ?? null} />
+                      </div>
                     </div>
                   </div>
-                </div>
-              </article>
-            ))}
+                </article>
+              );
+            })}
           </div>
         </Section>
 
@@ -436,8 +695,9 @@ function InspectPage({
             ) : null}
             {record.policyDecisions.map((decision) => (
               <article
+                id={policyDecisionAnchorId(decision.callId, decision.turn)}
                 key={`${decision.callId}-${decision.turn}-${decision.timestamp}`}
-                className="rounded-[1.25rem] border border-slate-200 bg-slate-50 p-4"
+                className="scroll-mt-6 rounded-[1.25rem] border border-slate-200 bg-slate-50 p-4 target:border-sky-300 target:bg-sky-50 target:ring-4 target:ring-sky-100"
               >
                 <div className="grid gap-3 text-sm text-slate-600 md:grid-cols-4">
                   <div>
@@ -464,6 +724,11 @@ function InspectPage({
                       {decision.policyVersion ?? "n/a"}
                     </p>
                   </div>
+                </div>
+                <div className="mt-4 flex flex-wrap items-center gap-2">
+                  <InPageLink targetId={toolCallAnchorId(decision.callId)}>
+                    Open related tool call
+                  </InPageLink>
                 </div>
                 <p className="mt-4 text-sm leading-7 text-slate-700">
                   {decision.reason}

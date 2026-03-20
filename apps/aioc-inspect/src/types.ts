@@ -16,6 +16,23 @@ export interface RunRecordPreview {
   model: string;
 }
 
+export interface HandoffAttempt {
+  callId: string;
+  turn?: number;
+  fromAgent: string;
+  toAgent: string;
+  decision: "allow" | "deny" | "unknown";
+  reason?: string;
+  policyVersion?: string;
+}
+
+export interface HandoffFlow {
+  activatedAgentPath: string[];
+  attempts: HandoffAttempt[];
+  acceptedCount: number;
+  deniedCount: number;
+}
+
 export interface LoadedRunRecord {
   fileName: string;
   loadedAt: string;

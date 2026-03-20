@@ -8,6 +8,8 @@ import type {
 } from "@axiastudio/aioc";
 import type {
   ExtractedToolCall,
+  HandoffAttempt,
+  HandoffFlow,
   RunRecordComparison,
   RunRecordComparisonMetrics,
   RunRecordComparisonSummary,
@@ -156,6 +158,120 @@ export function extractToolCalls(
   }
 
   return orderedCalls;
+}
+
+function buildActivatedAgentPath(record: RunRecord<unknown>): string[] {
+  const path: string[] = [];
+
+  for (const snapshot of record.promptSnapshots) {
+    const agentName = snapshot.agentName.trim();
+    if (!agentName) {
+      continue;
+    }
+
+    if (path[path.length - 1] !== agentName) {
+      path.push(agentName);
+    }
+  }
+
+  if (path.length === 0 && record.agentName.trim()) {
+    path.push(record.agentName.trim());
+  }
+
+  return path;
+}
+
+function getAgentNameByTurn(record: RunRecord<unknown>): Map<number, string> {
+  const agentsByTurn = new Map<number, string>();
+
+  for (const snapshot of record.promptSnapshots) {
+    if (!agentsByTurn.has(snapshot.turn)) {
+      agentsByTurn.set(snapshot.turn, snapshot.agentName);
+    }
+  }
+
+  return agentsByTurn;
+}
+
+function readHandoffTargetFromOutput(output: unknown): string | undefined {
+  if (!isObject(output)) {
+    return undefined;
+  }
+
+  const data = output.data;
+  if (!isObject(data) || typeof data.handoffTo !== "string") {
+    return undefined;
+  }
+
+  return data.handoffTo;
+}
+
+function inferHandoffTargetFromToolName(toolName: string): string | undefined {
+  if (!toolName.startsWith("handoff_to_")) {
+    return undefined;
+  }
+
+  return toolName.replace(/^handoff_to_/, "");
+}
+
+export function extractHandoffFlow(record: RunRecord<unknown>): HandoffFlow {
+  const toolCalls = extractToolCalls(record);
+  const handoffCalls = toolCalls.filter((call) =>
+    call.name.startsWith("handoff_to_"),
+  );
+  const handoffDecisions = record.policyDecisions.filter(
+    (decision) => decision.resource.kind === "handoff",
+  );
+  const decisionsByCallId = new Map(
+    handoffDecisions.map((decision) => [decision.callId, decision]),
+  );
+  const toolCallsByCallId = new Map(
+    handoffCalls.map((toolCall) => [toolCall.callId, toolCall]),
+  );
+  const agentsByTurn = getAgentNameByTurn(record);
+  const attemptIds = new Set<string>([
+    ...handoffCalls.map((call) => call.callId),
+    ...handoffDecisions.map((decision) => decision.callId),
+  ]);
+
+  const attempts: HandoffAttempt[] = [...attemptIds]
+    .map((callId) => {
+      const toolCall = toolCallsByCallId.get(callId);
+      const decision = decisionsByCallId.get(callId);
+      const turn = decision?.turn ?? toolCall?.turn;
+      const decisionValue: HandoffAttempt["decision"] =
+        decision?.decision === "allow" || decision?.decision === "deny"
+          ? decision.decision
+          : "unknown";
+      const fromAgent =
+        (typeof turn === "number" ? agentsByTurn.get(turn) : undefined) ??
+        "unknown";
+      const toAgent =
+        decision?.resource.name ??
+        (toolCall ? readHandoffTargetFromOutput(toolCall.output) : undefined) ??
+        (toolCall ? inferHandoffTargetFromToolName(toolCall.name) : undefined) ??
+        "unknown";
+
+      return {
+        callId,
+        turn,
+        fromAgent,
+        toAgent,
+        decision: decisionValue,
+        reason: decision?.reason,
+        policyVersion: decision?.policyVersion,
+      };
+    })
+    .sort((left, right) => (left.turn ?? Number.MAX_SAFE_INTEGER) - (right.turn ?? Number.MAX_SAFE_INTEGER));
+
+  return {
+    activatedAgentPath: buildActivatedAgentPath(record),
+    attempts,
+    acceptedCount: attempts.filter((attempt) => attempt.decision === "allow")
+      .length,
+    deniedCount: attempts.filter((attempt) => attempt.decision === "deny")
+      .length,
+  };
 }
 
 function toToolShapeKey(call: ExtractedToolCall): string {
