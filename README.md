@@ -156,6 +156,17 @@ console.log(replay.replayStats);
 
 `replayFromRunRecord(...)` does not bypass policy enforcement: in `strict` and `hybrid`, provide `runOptions.policies` when tool/handoff execution must be authorized.
 
+## Reference UI Example
+
+This repository also contains `aioc-inspect`, a private reference example UI for visual `RunRecord` analysis:
+
+- path: `apps/aioc-inspect`
+- purpose: show one possible way to inspect, navigate, and compare `RunRecord` artifacts visually
+- scope: experimental, stateless, session-only
+- positioning: example application for implementors, not a hosted service or production console
+
+`aioc-inspect` exists to demonstrate the value of the `RunRecord` contract. It should be read as one possible interpretation of the data model, not as the only intended UI for `aioc`.
+
 ## Examples
 
 | Command | Purpose | Needs API key |

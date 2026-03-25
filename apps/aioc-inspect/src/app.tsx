@@ -1228,15 +1228,16 @@ function AppShell({ children }: { children: ReactNode }): ReactElement {
               aioc-inspect
             </p>
             <h1 className="mt-3 max-w-3xl text-4xl font-semibold tracking-tight text-slate-950">
-              Stateless RunRecord inspection for implementors.
+              Reference UI example for visual RunRecord analysis.
             </h1>
             <p className="mt-3 max-w-2xl text-sm leading-7 text-slate-600">
               Load one or two RunRecord artifacts, inspect the execution trail, and
-              compare behavioral changes without a backing service.
+              compare behavioral changes in a stateless reference application for
+              implementors.
             </p>
           </div>
           <div className="rounded-[1.5rem] border border-white/80 bg-white/70 px-5 py-4 text-sm text-slate-600 shadow-[0_18px_50px_rgba(15,23,42,0.05)] backdrop-blur">
-            Session-only. No persistence.
+            Experimental. Session-only. No persistence.
           </div>
         </header>
         {children}
