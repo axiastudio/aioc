@@ -1,0 +1,149 @@
+{
+  "runId": "tool-allow",
+  "startedAt": "2026-01-15T10:00:00.000Z",
+  "completedAt": "2026-01-15T10:00:30.000Z",
+  "status": "completed",
+  "agentName": "Finance Assistant",
+  "providerName": "ScriptedProvider",
+  "model": "fake-model",
+  "question": "Summarize the Q1 finance report.",
+  "response": "Report Q1-2026 is approved and owned by finance-ops.",
+  "contextSnapshot": {
+    "actor": {
+      "userId": "[redacted-user-id]",
+      "groups": [
+        "finance"
+      ]
+    },
+    "requestId": "req-tool-001",
+    "customerId": "C-100"
+  },
+  "contextRedacted": true,
+  "items": [
+    {
+      "type": "message",
+      "role": "user",
+      "content": "Summarize the Q1 finance report."
+    },
+    {
+      "type": "tool_call_item",
+      "callId": "tool-call-finance-1",
+      "name": "get_finance_report",
+      "arguments": {
+        "reportId": "Q1-2026"
+      },
+      "rawItem": {
+        "type": "function_call",
+        "id": "tool-call-finance-1",
+        "name": "get_finance_report",
+        "arguments": "{\"reportId\":\"Q1-2026\"}"
+      }
+    },
+    {
+      "type": "tool_call_output_item",
+      "callId": "tool-call-finance-1",
+      "output": {
+        "status": "ok",
+        "code": null,
+        "publicReason": null,
+        "data": {
+          "reportId": "Q1-2026",
+          "status": "approved",
+          "owner": "finance-ops"
+        }
+      },
+      "rawItem": {
+        "type": "function_call_result",
+        "call_id": "tool-call-finance-1",
+        "output": {
+          "status": "ok",
+          "code": null,
+          "publicReason": null,
+          "data": {
+            "reportId": "Q1-2026",
+            "status": "approved",
+            "owner": "finance-ops"
+          }
+        }
+      }
+    },
+    {
+      "type": "message",
+      "role": "assistant",
+      "content": "Report Q1-2026 is approved and owned by finance-ops."
+    }
+  ],
+  "promptSnapshots": [
+    {
+      "timestamp": "2026-01-15T10:00:05.000Z",
+      "turn": 1,
+      "agentName": "Finance Assistant",
+      "model": "fake-model",
+      "promptVersion": "finance-assistant.v1",
+      "promptHash": "d593068adf15296abd7b4bc17906e27e53187e828093b7b6c583c89319b581f3",
+      "promptText": "Call get_finance_report before answering."
+    },
+    {
+      "timestamp": "2026-01-15T10:00:06.000Z",
+      "turn": 2,
+      "agentName": "Finance Assistant",
+      "model": "fake-model",
+      "promptVersion": "finance-assistant.v1",
+      "promptHash": "d593068adf15296abd7b4bc17906e27e53187e828093b7b6c583c89319b581f3",
+      "promptText": "Call get_finance_report before answering."
+    }
+  ],
+  "requestFingerprints": [
+    {
+      "timestamp": "2026-01-15T10:00:10.000Z",
+      "turn": 1,
+      "agentName": "Finance Assistant",
+      "providerName": "ScriptedProvider",
+      "model": "fake-model",
+      "runtimeVersion": "0.1.0-beta.4",
+      "fingerprintSchemaVersion": "request-fingerprint.v1",
+      "requestHash": "32026e1de013844f5956803f371849407051013fffcd75948166772c2f97a1e4",
+      "systemPromptHash": "ffc13f4fb291c61c0f92ddd44606b780e2a674dd7afe0bbfb4aa59934a1571cf",
+      "messagesHash": "76a899300c6ad6761c7c8eb2c4f7d8e8948fcddee62af11473755a19da068b3e",
+      "toolsHash": "c57507dc33d64103fbc2e8a0d88e806bef1cd81f1650395de5a3e8fb555ca4e8",
+      "modelSettingsHash": "44136fa355b3678a1146ad16f7e8649e94fb4fc21fe77e8310c060f61caaff8a",
+      "messageCount": 1,
+      "toolCount": 1
+    },
+    {
+      "timestamp": "2026-01-15T10:00:11.000Z",
+      "turn": 2,
+      "agentName": "Finance Assistant",
+      "providerName": "ScriptedProvider",
+      "model": "fake-model",
+      "runtimeVersion": "0.1.0-beta.4",
+      "fingerprintSchemaVersion": "request-fingerprint.v1",
+      "requestHash": "15588c0490a3f229a29361d69d8faae903034a1d9e4d140b85ce8caf71eb636b",
+      "systemPromptHash": "ffc13f4fb291c61c0f92ddd44606b780e2a674dd7afe0bbfb4aa59934a1571cf",
+      "messagesHash": "b7c312195d82b3794bf83ed533027f22e53c00e64aa22efbe5f7ebd636e98b0b",
+      "toolsHash": "c57507dc33d64103fbc2e8a0d88e806bef1cd81f1650395de5a3e8fb555ca4e8",
+      "modelSettingsHash": "44136fa355b3678a1146ad16f7e8649e94fb4fc21fe77e8310c060f61caaff8a",
+      "messageCount": 3,
+      "toolCount": 1
+    }
+  ],
+  "policyDecisions": [
+    {
+      "timestamp": "2026-01-15T10:00:15.000Z",
+      "turn": 1,
+      "callId": "tool-call-finance-1",
+      "decision": "allow",
+      "reason": "allow_finance_report",
+      "policyVersion": "finance-policy.v1",
+      "resource": {
+        "kind": "tool",
+        "name": "get_finance_report"
+      }
+    }
+  ],
+  "metadata": {
+    "sampleId": "tool-allow",
+    "sampleCategory": "tool-policy",
+    "sampleTitle": "Tool call allowed by policy"
+  }
+}

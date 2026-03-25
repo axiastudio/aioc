@@ -1,0 +1,68 @@
+{
+  "runId": "simple-run",
+  "startedAt": "2026-01-15T09:00:00.000Z",
+  "completedAt": "2026-01-15T09:00:30.000Z",
+  "status": "completed",
+  "agentName": "Simple Assistant",
+  "providerName": "ScriptedProvider",
+  "model": "fake-model",
+  "question": "What does AIOC record?",
+  "response": "AIOC ",
+  "contextSnapshot": {
+    "actor": {
+      "userId": "[redacted-user-id]",
+      "groups": [
+        "support"
+      ]
+    },
+    "requestId": "req-simple-001"
+  },
+  "contextRedacted": true,
+  "items": [
+    {
+      "type": "message",
+      "role": "user",
+      "content": "What does AIOC record?"
+    },
+    {
+      "type": "message",
+      "role": "assistant",
+      "content": "AIOC "
+    }
+  ],
+  "promptSnapshots": [
+    {
+      "timestamp": "2026-01-15T09:00:05.000Z",
+      "turn": 1,
+      "agentName": "Simple Assistant",
+      "model": "fake-model",
+      "promptVersion": "simple-assistant.v1",
+      "promptHash": "46d83aa9a8e71e4339fd7717be3a7e4edb2fc4ec9a49dddf1b7d78ff2d0b710f",
+      "promptText": "Answer in one short sentence."
+    }
+  ],
+  "requestFingerprints": [
+    {
+      "timestamp": "2026-01-15T09:00:10.000Z",
+      "turn": 1,
+      "agentName": "Simple Assistant",
+      "providerName": "ScriptedProvider",
+      "model": "fake-model",
+      "runtimeVersion": "0.1.0-beta.4",
+      "fingerprintSchemaVersion": "request-fingerprint.v1",
+      "requestHash": "ab9cfa32c257b1e14f21b770aef3a798f53f6b5814525a220c38808ae0de9f15",
+      "systemPromptHash": "228ed221735b979d54863e568731ff3b21bcea134047424a7a8e7a66e3272393",
+      "messagesHash": "24d290a30aadd2530d9577ef9a6fd87af345754762790dff445b4bcee2d48f96",
+      "toolsHash": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+      "modelSettingsHash": "44136fa355b3678a1146ad16f7e8649e94fb4fc21fe77e8310c060f61caaff8a",
+      "messageCount": 1,
+      "toolCount": 0
+    }
+  ],
+  "policyDecisions": [],
+  "metadata": {
+    "sampleId": "simple-run",
+    "sampleCategory": "single-run",
+    "sampleTitle": "Simple completed run"
+  }
+}

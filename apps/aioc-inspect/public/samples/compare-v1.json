@@ -1,0 +1,149 @@
+{
+  "runId": "compare-v1",
+  "startedAt": "2026-01-15T13:00:00.000Z",
+  "completedAt": "2026-01-15T13:00:30.000Z",
+  "status": "completed",
+  "agentName": "Customer Support Agent",
+  "providerName": "ScriptedProvider",
+  "model": "fake-model",
+  "question": "Summarize customer C-42 and suggest the next action.",
+  "response": "Customer C-42 is enterprise with low risk. Next action: schedule a renewal call.",
+  "contextSnapshot": {
+    "actor": {
+      "userId": "[redacted-user-id]",
+      "groups": [
+        "support"
+      ]
+    },
+    "requestId": "req-compare-v1-001",
+    "customerId": "C-42"
+  },
+  "contextRedacted": true,
+  "items": [
+    {
+      "type": "message",
+      "role": "user",
+      "content": "Summarize customer C-42 and suggest the next action."
+    },
+    {
+      "type": "tool_call_item",
+      "callId": "compare-tool-call-1",
+      "name": "get_customer_profile",
+      "arguments": {
+        "customerId": "C-42"
+      },
+      "rawItem": {
+        "type": "function_call",
+        "id": "compare-tool-call-1",
+        "name": "get_customer_profile",
+        "arguments": "{\"customerId\":\"C-42\"}"
+      }
+    },
+    {
+      "type": "tool_call_output_item",
+      "callId": "compare-tool-call-1",
+      "output": {
+        "status": "ok",
+        "code": null,
+        "publicReason": null,
+        "data": {
+          "customerId": "C-42",
+          "segment": "enterprise",
+          "riskScore": 18
+        }
+      },
+      "rawItem": {
+        "type": "function_call_result",
+        "call_id": "compare-tool-call-1",
+        "output": {
+          "status": "ok",
+          "code": null,
+          "publicReason": null,
+          "data": {
+            "customerId": "C-42",
+            "segment": "enterprise",
+            "riskScore": 18
+          }
+        }
+      }
+    },
+    {
+      "type": "message",
+      "role": "assistant",
+      "content": "Customer C-42 is enterprise with low risk. Next action: schedule a renewal call."
+    }
+  ],
+  "promptSnapshots": [
+    {
+      "timestamp": "2026-01-15T13:00:05.000Z",
+      "turn": 1,
+      "agentName": "Customer Support Agent",
+      "model": "fake-model",
+      "promptVersion": "customer-support.v1",
+      "promptHash": "b179465b0ce23a5fad0009d5e7b4f2cafbb5c7080edc271364331f1f87cdf606",
+      "promptText": "Call get_customer_profile exactly once before producing the final answer."
+    },
+    {
+      "timestamp": "2026-01-15T13:00:06.000Z",
+      "turn": 2,
+      "agentName": "Customer Support Agent",
+      "model": "fake-model",
+      "promptVersion": "customer-support.v1",
+      "promptHash": "b179465b0ce23a5fad0009d5e7b4f2cafbb5c7080edc271364331f1f87cdf606",
+      "promptText": "Call get_customer_profile exactly once before producing the final answer."
+    }
+  ],
+  "requestFingerprints": [
+    {
+      "timestamp": "2026-01-15T13:00:10.000Z",
+      "turn": 1,
+      "agentName": "Customer Support Agent",
+      "providerName": "ScriptedProvider",
+      "model": "fake-model",
+      "runtimeVersion": "0.1.0-beta.4",
+      "fingerprintSchemaVersion": "request-fingerprint.v1",
+      "requestHash": "eaa5d0fc770fcede2c6e4610311cd1f231aefe798f3389bfb38e0af887a7c82a",
+      "systemPromptHash": "158b8b50837714981a48a7bdae15bab4fbe77d24e4fe9a109aed03dffa85db5c",
+      "messagesHash": "af9fb37f191d109a42b05cd655643f2bce68ceac253564d300421f8382272de5",
+      "toolsHash": "815a98b3a2d42f15c24a7ede4b3d019888b6b64e348d5949d0e3a7dc4c402ac6",
+      "modelSettingsHash": "44136fa355b3678a1146ad16f7e8649e94fb4fc21fe77e8310c060f61caaff8a",
+      "messageCount": 1,
+      "toolCount": 1
+    },
+    {
+      "timestamp": "2026-01-15T13:00:11.000Z",
+      "turn": 2,
+      "agentName": "Customer Support Agent",
+      "providerName": "ScriptedProvider",
+      "model": "fake-model",
+      "runtimeVersion": "0.1.0-beta.4",
+      "fingerprintSchemaVersion": "request-fingerprint.v1",
+      "requestHash": "ff4ed38d35d4754148f7530f4dc7cbe450e0d565521415ee8cfbd0e157866250",
+      "systemPromptHash": "158b8b50837714981a48a7bdae15bab4fbe77d24e4fe9a109aed03dffa85db5c",
+      "messagesHash": "772144c1ceb5d7c4dbd3759ae784eaad44dfa228a693fd6fd42e30f6118ed503",
+      "toolsHash": "815a98b3a2d42f15c24a7ede4b3d019888b6b64e348d5949d0e3a7dc4c402ac6",
+      "modelSettingsHash": "44136fa355b3678a1146ad16f7e8649e94fb4fc21fe77e8310c060f61caaff8a",
+      "messageCount": 3,
+      "toolCount": 1
+    }
+  ],
+  "policyDecisions": [
+    {
+      "timestamp": "2026-01-15T13:00:15.000Z",
+      "turn": 1,
+      "callId": "compare-tool-call-1",
+      "decision": "allow",
+      "reason": "allow_customer_profile_lookup",
+      "policyVersion": "support-policy.v1",
+      "resource": {
+        "kind": "tool",
+        "name": "get_customer_profile"
+      }
+    }
+  ],
+  "metadata": {
+    "sampleId": "compare-v1",
+    "sampleCategory": "compare",
+    "sampleTitle": "Compare baseline with tool usage"
+  }
+}

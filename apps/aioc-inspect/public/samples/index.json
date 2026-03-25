@@ -1,0 +1,40 @@
+{
+  "samples": [
+    {
+      "id": "simple-run",
+      "title": "Simple completed run",
+      "description": "Single-turn run with prompt snapshot, request fingerprint, and redacted context.",
+      "file": "simple-run.json"
+    },
+    {
+      "id": "tool-allow",
+      "title": "Tool call allowed by policy",
+      "description": "Two-turn run where a deterministic tool call is allowed and produces a recorded output.",
+      "file": "tool-allow.json"
+    },
+    {
+      "id": "handoff-allow",
+      "title": "Handoff accepted by policy",
+      "description": "Two-turn run where a handoff is accepted, the active agent changes, and the target agent completes the response.",
+      "file": "handoff-allow.json"
+    },
+    {
+      "id": "handoff-deny",
+      "title": "Handoff denied as tool result",
+      "description": "Two-turn run where the handoff is denied, the source agent remains active, and the denial is visible in policy decisions and tool output.",
+      "file": "handoff-deny.json"
+    },
+    {
+      "id": "compare-v1",
+      "title": "Compare baseline with tool usage",
+      "description": "Baseline record for visual comparison, with one customer profile lookup.",
+      "file": "compare-v1.json"
+    },
+    {
+      "id": "compare-v2",
+      "title": "Compare candidate without tool usage",
+      "description": "Candidate record for visual comparison, answering directly without a tool call.",
+      "file": "compare-v2.json"
+    }
+  ]
+}

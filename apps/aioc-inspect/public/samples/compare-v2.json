@@ -1,0 +1,69 @@
+{
+  "runId": "compare-v2",
+  "startedAt": "2026-01-15T13:30:00.000Z",
+  "completedAt": "2026-01-15T13:30:30.000Z",
+  "status": "completed",
+  "agentName": "Customer Support Agent",
+  "providerName": "ScriptedProvider",
+  "model": "fake-model",
+  "question": "Summarize customer C-42 and suggest the next action.",
+  "response": "Customer C-42 appears stable. Next action: send a renewal reminder.",
+  "contextSnapshot": {
+    "actor": {
+      "userId": "[redacted-user-id]",
+      "groups": [
+        "support"
+      ]
+    },
+    "requestId": "req-compare-v2-001",
+    "customerId": "C-42"
+  },
+  "contextRedacted": true,
+  "items": [
+    {
+      "type": "message",
+      "role": "user",
+      "content": "Summarize customer C-42 and suggest the next action."
+    },
+    {
+      "type": "message",
+      "role": "assistant",
+      "content": "Customer C-42 appears stable. Next action: send a renewal reminder."
+    }
+  ],
+  "promptSnapshots": [
+    {
+      "timestamp": "2026-01-15T13:30:05.000Z",
+      "turn": 1,
+      "agentName": "Customer Support Agent",
+      "model": "fake-model",
+      "promptVersion": "customer-support.v2",
+      "promptHash": "f7d2ad81ba42e4b4413e2ad9e24090154b137b7bbddd0da8ed0cc4ff013c6c16",
+      "promptText": "Answer directly without using any tool."
+    }
+  ],
+  "requestFingerprints": [
+    {
+      "timestamp": "2026-01-15T13:30:10.000Z",
+      "turn": 1,
+      "agentName": "Customer Support Agent",
+      "providerName": "ScriptedProvider",
+      "model": "fake-model",
+      "runtimeVersion": "0.1.0-beta.4",
+      "fingerprintSchemaVersion": "request-fingerprint.v1",
+      "requestHash": "1b11ebd4734a57f075a4e10a37d04a3904e3958cfeffd7270f57685ea5a03825",
+      "systemPromptHash": "293d1d82a6e0af2e557a404b68a51a90f8b6f498a42b8a91d50d731f15c94eff",
+      "messagesHash": "af9fb37f191d109a42b05cd655643f2bce68ceac253564d300421f8382272de5",
+      "toolsHash": "815a98b3a2d42f15c24a7ede4b3d019888b6b64e348d5949d0e3a7dc4c402ac6",
+      "modelSettingsHash": "44136fa355b3678a1146ad16f7e8649e94fb4fc21fe77e8310c060f61caaff8a",
+      "messageCount": 1,
+      "toolCount": 1
+    }
+  ],
+  "policyDecisions": [],
+  "metadata": {
+    "sampleId": "compare-v2",
+    "sampleCategory": "compare",
+    "sampleTitle": "Compare candidate without tool usage"
+  }
+}

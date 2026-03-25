@@ -161,6 +161,8 @@ console.log(replay.replayStats);
 This repository also contains `aioc-inspect`, a private reference example UI for visual `RunRecord` analysis:
 
 - path: `apps/aioc-inspect`
+- public sample files: `apps/aioc-inspect/public/samples`
+- regenerate samples: `npm run inspect:samples`
 - purpose: show one possible way to inspect, navigate, and compare `RunRecord` artifacts visually
 - scope: experimental, stateless, session-only
 - positioning: example application for implementors, not a hosted service or production console

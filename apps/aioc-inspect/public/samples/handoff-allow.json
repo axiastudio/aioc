@@ -1,0 +1,153 @@
+{
+  "runId": "handoff-allow",
+  "startedAt": "2026-01-15T11:00:00.000Z",
+  "completedAt": "2026-01-15T11:00:30.000Z",
+  "status": "completed",
+  "agentName": "Finance Specialist",
+  "providerName": "ScriptedProvider",
+  "model": "fake-model",
+  "question": "Can finance review this invoice dispute?",
+  "response": "The finance specialist will review the invoice dispute today.",
+  "contextSnapshot": {
+    "actor": {
+      "userId": "[redacted-user-id]",
+      "groups": [
+        "support"
+      ]
+    },
+    "requestId": "req-handoff-allow-001",
+    "customerId": "C-220"
+  },
+  "contextRedacted": true,
+  "items": [
+    {
+      "type": "message",
+      "role": "user",
+      "content": "Can finance review this invoice dispute?"
+    },
+    {
+      "type": "tool_call_item",
+      "callId": "handoff-call-allow-1",
+      "name": "handoff_to_finance_specialist",
+      "arguments": {
+        "reason": "invoice_dispute"
+      },
+      "rawItem": {
+        "type": "function_call",
+        "id": "handoff-call-allow-1",
+        "name": "handoff_to_finance_specialist",
+        "arguments": "{\"reason\":\"invoice_dispute\"}"
+      }
+    },
+    {
+      "type": "tool_call_output_item",
+      "callId": "handoff-call-allow-1",
+      "output": {
+        "status": "ok",
+        "code": null,
+        "publicReason": null,
+        "data": {
+          "handoffTo": "Finance Specialist",
+          "accepted": true,
+          "payload": {
+            "reason": "invoice_dispute"
+          }
+        }
+      },
+      "rawItem": {
+        "type": "function_call_result",
+        "call_id": "handoff-call-allow-1",
+        "output": {
+          "status": "ok",
+          "code": null,
+          "publicReason": null,
+          "data": {
+            "handoffTo": "Finance Specialist",
+            "accepted": true,
+            "payload": {
+              "reason": "invoice_dispute"
+            }
+          }
+        }
+      }
+    },
+    {
+      "type": "message",
+      "role": "assistant",
+      "content": "The finance specialist will review the invoice dispute today."
+    }
+  ],
+  "promptSnapshots": [
+    {
+      "timestamp": "2026-01-15T11:00:05.000Z",
+      "turn": 1,
+      "agentName": "Triage Agent",
+      "model": "fake-model",
+      "promptVersion": "triage-agent.v1",
+      "promptHash": "c9915ac36f4a74ce12d6f52abc46fff63522dd9c16b885c0784277a80ea8d026",
+      "promptText": "Escalate finance requests when needed."
+    },
+    {
+      "timestamp": "2026-01-15T11:00:06.000Z",
+      "turn": 2,
+      "agentName": "Finance Specialist",
+      "model": "fake-model",
+      "promptVersion": "finance-specialist.v1",
+      "promptHash": "bd7fc4a0162827d257066bcb4e94008fd041192ad0c7379adad32f19987a54a5",
+      "promptText": "Take over finance-related escalations."
+    }
+  ],
+  "requestFingerprints": [
+    {
+      "timestamp": "2026-01-15T11:00:10.000Z",
+      "turn": 1,
+      "agentName": "Triage Agent",
+      "providerName": "ScriptedProvider",
+      "model": "fake-model",
+      "runtimeVersion": "0.1.0-beta.4",
+      "fingerprintSchemaVersion": "request-fingerprint.v1",
+      "requestHash": "eacbc82c802571a5b4bb38b92e84f0256e7c5721b48672b8cb14d40ef6ca1d76",
+      "systemPromptHash": "d65e1434966dc0893decaf219f28f5c36d411305eb69a605641f8ad0c33bd573",
+      "messagesHash": "3f164f6cc045d35f7516667e47395926095466805744ca814683d5c260e9d59a",
+      "toolsHash": "ec9934af25a31856f75187f861ba5f161613cd25923daf423fb9495c24bff5a8",
+      "modelSettingsHash": "44136fa355b3678a1146ad16f7e8649e94fb4fc21fe77e8310c060f61caaff8a",
+      "messageCount": 1,
+      "toolCount": 1
+    },
+    {
+      "timestamp": "2026-01-15T11:00:11.000Z",
+      "turn": 2,
+      "agentName": "Finance Specialist",
+      "providerName": "ScriptedProvider",
+      "model": "fake-model",
+      "runtimeVersion": "0.1.0-beta.4",
+      "fingerprintSchemaVersion": "request-fingerprint.v1",
+      "requestHash": "5f56c770bbf6d5e3e174c64094747846469130161e4d9d87d3be9637782c8057",
+      "systemPromptHash": "5b62eebe904dca3a409ffe8ee7e8e14cb22bbfbffa18a5cd242d7b3479c98feb",
+      "messagesHash": "93e17fcc96639bb8f228496330903f298750296f32e9bc301a215f0e7895da14",
+      "toolsHash": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+      "modelSettingsHash": "44136fa355b3678a1146ad16f7e8649e94fb4fc21fe77e8310c060f61caaff8a",
+      "messageCount": 3,
+      "toolCount": 0
+    }
+  ],
+  "policyDecisions": [
+    {
+      "timestamp": "2026-01-15T11:00:15.000Z",
+      "turn": 1,
+      "callId": "handoff-call-allow-1",
+      "decision": "allow",
+      "reason": "allow_finance_handoff",
+      "policyVersion": "handoff-policy.v1",
+      "resource": {
+        "kind": "handoff",
+        "name": "Finance Specialist"
+      }
+    }
+  ],
+  "metadata": {
+    "sampleId": "handoff-allow",
+    "sampleCategory": "handoff",
+    "sampleTitle": "Handoff accepted by policy"
+  }
+}

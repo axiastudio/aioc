@@ -20,6 +20,7 @@ The purpose of `aioc-inspect` is to demonstrate the value of the `RunRecord` con
 - compare two runs visually
 - navigate across related tool calls and policy decisions
 - reconstruct handoff flow from the recorded audit trail
+- provide public sample JSON files under `public/samples`
 
 ## Out of Scope
 
@@ -35,6 +36,16 @@ The purpose of `aioc-inspect` is to demonstrate the value of the `RunRecord` con
 cd apps/aioc-inspect
 npm install
 npm run dev
+```
+
+## Public Samples
+
+Public didactic sample `RunRecord` files are committed under `public/samples`.
+
+To regenerate them from deterministic scripted scenarios:
+
+```bash
+npm run inspect:samples
 ```
 
 ## Notes

@@ -1,0 +1,141 @@
+{
+  "runId": "handoff-deny",
+  "startedAt": "2026-01-15T12:00:00.000Z",
+  "completedAt": "2026-01-15T12:00:30.000Z",
+  "status": "completed",
+  "agentName": "Triage Agent",
+  "providerName": "ScriptedProvider",
+  "model": "fake-model",
+  "question": "Can finance review this invoice dispute?",
+  "response": "I cannot escalate this request to finance, but I can prepare a manual review note.",
+  "contextSnapshot": {
+    "actor": {
+      "userId": "[redacted-user-id]",
+      "groups": [
+        "support"
+      ]
+    },
+    "requestId": "req-handoff-deny-001",
+    "customerId": "C-221"
+  },
+  "contextRedacted": true,
+  "items": [
+    {
+      "type": "message",
+      "role": "user",
+      "content": "Can finance review this invoice dispute?"
+    },
+    {
+      "type": "tool_call_item",
+      "callId": "handoff-call-deny-1",
+      "name": "handoff_to_finance_specialist",
+      "arguments": {
+        "reason": "invoice_dispute"
+      },
+      "rawItem": {
+        "type": "function_call",
+        "id": "handoff-call-deny-1",
+        "name": "handoff_to_finance_specialist",
+        "arguments": "{\"reason\":\"invoice_dispute\"}"
+      }
+    },
+    {
+      "type": "tool_call_output_item",
+      "callId": "handoff-call-deny-1",
+      "output": {
+        "status": "denied",
+        "code": "missing_finance_approval",
+        "publicReason": "Escalation to finance is not allowed for this request.",
+        "data": null
+      },
+      "rawItem": {
+        "type": "function_call_result",
+        "call_id": "handoff-call-deny-1",
+        "output": {
+          "status": "denied",
+          "code": "missing_finance_approval",
+          "publicReason": "Escalation to finance is not allowed for this request.",
+          "data": null
+        }
+      }
+    },
+    {
+      "type": "message",
+      "role": "assistant",
+      "content": "I cannot escalate this request to finance, but I can prepare a manual review note."
+    }
+  ],
+  "promptSnapshots": [
+    {
+      "timestamp": "2026-01-15T12:00:05.000Z",
+      "turn": 1,
+      "agentName": "Triage Agent",
+      "model": "fake-model",
+      "promptVersion": "triage-agent.v1",
+      "promptHash": "c9915ac36f4a74ce12d6f52abc46fff63522dd9c16b885c0784277a80ea8d026",
+      "promptText": "Escalate finance requests when needed."
+    },
+    {
+      "timestamp": "2026-01-15T12:00:06.000Z",
+      "turn": 2,
+      "agentName": "Triage Agent",
+      "model": "fake-model",
+      "promptVersion": "triage-agent.v1",
+      "promptHash": "c9915ac36f4a74ce12d6f52abc46fff63522dd9c16b885c0784277a80ea8d026",
+      "promptText": "Escalate finance requests when needed."
+    }
+  ],
+  "requestFingerprints": [
+    {
+      "timestamp": "2026-01-15T12:00:10.000Z",
+      "turn": 1,
+      "agentName": "Triage Agent",
+      "providerName": "ScriptedProvider",
+      "model": "fake-model",
+      "runtimeVersion": "0.1.0-beta.4",
+      "fingerprintSchemaVersion": "request-fingerprint.v1",
+      "requestHash": "eacbc82c802571a5b4bb38b92e84f0256e7c5721b48672b8cb14d40ef6ca1d76",
+      "systemPromptHash": "d65e1434966dc0893decaf219f28f5c36d411305eb69a605641f8ad0c33bd573",
+      "messagesHash": "3f164f6cc045d35f7516667e47395926095466805744ca814683d5c260e9d59a",
+      "toolsHash": "ec9934af25a31856f75187f861ba5f161613cd25923daf423fb9495c24bff5a8",
+      "modelSettingsHash": "44136fa355b3678a1146ad16f7e8649e94fb4fc21fe77e8310c060f61caaff8a",
+      "messageCount": 1,
+      "toolCount": 1
+    },
+    {
+      "timestamp": "2026-01-15T12:00:11.000Z",
+      "turn": 2,
+      "agentName": "Triage Agent",
+      "providerName": "ScriptedProvider",
+      "model": "fake-model",
+      "runtimeVersion": "0.1.0-beta.4",
+      "fingerprintSchemaVersion": "request-fingerprint.v1",
+      "requestHash": "ff3e642ff0e13400a51da567bde54004d3104fb75b673b708fe530bacb253dc3",
+      "systemPromptHash": "d65e1434966dc0893decaf219f28f5c36d411305eb69a605641f8ad0c33bd573",
+      "messagesHash": "00cb8be11c8535fc1c7459c2c49e2525c90173a08db66fc83432004e6ab4de2d",
+      "toolsHash": "ec9934af25a31856f75187f861ba5f161613cd25923daf423fb9495c24bff5a8",
+      "modelSettingsHash": "44136fa355b3678a1146ad16f7e8649e94fb4fc21fe77e8310c060f61caaff8a",
+      "messageCount": 3,
+      "toolCount": 1
+    }
+  ],
+  "policyDecisions": [
+    {
+      "timestamp": "2026-01-15T12:00:15.000Z",
+      "turn": 1,
+      "callId": "handoff-call-deny-1",
+      "decision": "deny",
+      "reason": "missing_finance_approval",
+      "policyVersion": "handoff-policy.v1",
+      "resource": {
+        "kind": "handoff",
+        "name": "Finance Specialist"
+      }
+    }
+  ],
+  "metadata": {
+    "sampleId": "handoff-deny",
+    "sampleCategory": "handoff",
+    "sampleTitle": "Handoff denied as tool result"
+  }
+}
