@@ -169,6 +169,8 @@ This repository also contains `aioc-inspect`, a private reference example UI for
 
 `aioc-inspect` exists to demonstrate the value of the `RunRecord` contract. It should be read as one possible interpretation of the data model, not as the only intended UI for `aioc`.
 
+![aioc-inspect: reference UI for visual RunRecord analysis](apps/aioc-inspect/docs/aioc-inspect-overview.png)
+
 ## Examples
 
 | Command | Purpose | Needs API key |

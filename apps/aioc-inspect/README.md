@@ -4,6 +4,10 @@
 
 It is included in the repository to show one possible way to inspect and compare `RunRecord` artifacts produced by applications built with `@axiastudio/aioc`.
 
+## Screenshot
+
+![aioc-inspect overview](./docs/aioc-inspect-overview.png)
+
 ## Positioning
 
 - reference example application, not a hosted service
