@@ -1,7 +1,10 @@
 dist/
 node_modules/
+.astro/
 *.tsbuildinfo
 .env
 .env.*
 .DS_Store
 .idea/*
+apps/aioc-docs/src/content/docs/governance/current/
+apps/aioc-docs/src/content/docs/governance/historical/

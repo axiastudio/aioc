@@ -15,6 +15,17 @@ Breaking changes may occur before a stable release.
 - Alpha contract (historical): `docs/ALPHA-CONTRACT.md`
 - Privacy baseline: `docs/PRIVACY-BASELINE.md`
 
+## Documentation Site
+
+This repository also contains `aioc-docs`, a Starlight documentation app:
+
+- app path: `apps/aioc-docs`
+- source of truth for normative documents: `docs/`
+- start locally: `npm run docs:dev`
+- build statically: `npm run docs:build`
+
+The root `docs:*` commands intentionally invoke the app from inside `apps/aioc-docs` so it can use its own Node toolchain.
+
 ## Contact
 
 If you want to collaborate or provide feedback, write to `tiziano.lattisi@axia.studio`.
