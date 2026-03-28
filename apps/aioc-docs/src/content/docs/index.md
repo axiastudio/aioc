@@ -15,6 +15,7 @@ The project focuses on three technical areas:
 
 - a concise technical introduction to the runtime model
 - the key public concepts you need to build with `aioc`
+- a compact manual reference for the most important public APIs
 - run-record and governance-oriented documentation in a navigable format
 
 ## Source of Truth

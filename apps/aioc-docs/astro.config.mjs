@@ -30,6 +30,18 @@ export default defineConfig({
           ],
         },
         {
+          label: "Reference",
+          items: [
+            "reference",
+            "reference/agent",
+            "reference/tools",
+            "reference/run",
+            "reference/policies",
+            "reference/providers",
+            "reference/run-record-utils",
+          ],
+        },
+        {
           label: "Governance",
           items: [
             "governance",
