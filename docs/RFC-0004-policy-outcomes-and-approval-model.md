@@ -98,7 +98,9 @@ Notes:
 - `reason` remains the mandatory deterministic explanation recorded by runtime.
 - `publicReason` is the user/model-safe explanation that can be surfaced in tool-result mode.
 - `resultMode` applies only to non-allow outcomes (`deny` and `require_approval`).
-- `expiresAt` is optional and does not change runtime semantics; it is an auditable hint for host applications building approval workflows.
+- If `resultMode` is omitted for a non-allow outcome, runtime MUST treat it as `throw`.
+- `expiresAt` is optional, informational only, and does not change runtime semantics.
+- `expiresAt`, when present, SHOULD be an RFC 3339 timestamp string. Runtime MUST NOT interpret it as an implicit approval condition.
 
 ## Runtime Semantics
 
@@ -109,6 +111,7 @@ Notes:
 5. If policy returns `decision = "require_approval"`, execution or transition is also blocked, but runtime must preserve the distinct outcome.
 6. Missing policy, invalid policy output, or policy exceptions remain hard `deny`; runtime must never upgrade them to `require_approval`.
 7. Runtime must never auto-approve, auto-retry, or auto-resume a blocked proposal.
+8. Invalid or conflicting non-allow delivery-mode configuration MUST be treated as invalid policy output and therefore hard `deny`.
 
 ## Non-Allow Delivery Modes
 
@@ -118,6 +121,8 @@ Non-allow decisions (`deny` and `require_approval`) are surfaced in one of two d
 - `resultMode = "tool_result"`: runtime emits a normalized tool-result envelope and continues without executing the tool or performing the handoff.
 
 `allow` ignores `resultMode`.
+
+If `resultMode` is omitted, runtime MUST behave as if `resultMode = "throw"`.
 
 ## Tool Result Envelope
 
@@ -145,7 +150,7 @@ The envelope is designed to let the model continue coherently:
 
 ## Typed Errors
 
-When `resultMode = "throw"`, runtime SHOULD expose distinct typed errors:
+When `resultMode = "throw"`, runtime MUST expose distinct typed errors:
 
 - `ToolCallPolicyDeniedError`
 - `HandoffPolicyDeniedError`
@@ -194,6 +199,8 @@ Each trace record MUST preserve:
 - optional `expiresAt`
 - structured metadata when present
 
+Soft `require_approval` outcomes MUST also be persisted in `RunRecord.items` through the normalized tool-result envelope with `status = "approval_required"`.
+
 ## Compatibility and Migration
 
 The design goal is additive migration during beta:
@@ -203,6 +210,11 @@ The design goal is additive migration during beta:
 - Existing helper functions `allow(...)` and `deny(...)` remain valid.
 
 During migration, implementations MAY accept the current `denyMode` field as a compatibility alias for `resultMode` when `decision = "deny"`, but the canonical contract after RFC adoption SHOULD use `resultMode`.
+
+If both `denyMode` and `resultMode` are present during migration:
+
+- identical values MAY be accepted,
+- conflicting values MUST be treated as invalid policy output and therefore hard `deny`.
 
 ## Security and Privacy Notes
 
