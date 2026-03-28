@@ -213,6 +213,7 @@ AIOC adopts the following non-negotiable principles:
 - `docs/RFC-0002-policy-gates-for-tools-and-handoffs.md`
 - `docs/RFC-0003-run-record-audit-trail-and-persistence.md`
 - `docs/RFC-0004-policy-outcomes-and-approval-model.md`
+- `docs/RFC-0005-suspended-proposals-and-approval-lifecycle.md`
 - `docs/ALPHA-CONTRACT.md`
 - `docs/BETA-CONTRACT.md`
 - `docs/PRIVACY-BASELINE.md`
