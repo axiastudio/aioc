@@ -2,7 +2,7 @@
 
 AIOC is a governance-first SDK for LLM agents: models can propose actions, while deterministic policies and runtime controls enforce decisions.
 It provides default-deny gates for tools and handoffs, end-to-end auditability (run records, prompt snapshots, request fingerprints), and a foundation for verifiable iteration on prompts and policies.
-AIOC is designed for enterprise and public-sector contexts with privacy-by-design and AI Act-aligned governance requirements.
+AIOC is designed for enterprise and public-sector contexts with privacy-by-design and high-accountability (AI Act-style) governance requirements.
 
 Project home: [https://github.com/axiastudio/aioc](https://github.com/axiastudio/aioc)
 
@@ -207,16 +207,22 @@ AIOC adopts the following non-negotiable principles:
 - **Bias and misalignment control**: continuous monitoring, dedicated tests, and clear mitigation/escalation mechanisms.
 - **Privacy by design and data minimization**: collect and process only what is strictly necessary, protect sensitive data by default (redaction, encryption, retention limits), and provide auditable controls for access and deletion.
 
-## Governance References
+## Current Governance Documents
 
-- `docs/RFC-0001-governance-first-runtime.md`
-- `docs/RFC-0002-policy-gates-for-tools-and-handoffs.md`
-- `docs/RFC-0003-run-record-audit-trail-and-persistence.md`
-- `docs/RFC-0004-policy-outcomes-and-approval-model.md`
-- `docs/RFC-0005-suspended-proposals-and-approval-lifecycle.md`
+- `docs/RFC-0001-governance-first-runtime.md` (`Accepted`)
+- `docs/RFC-0002-policy-gates-for-tools-and-handoffs.md` (`Accepted`)
+- `docs/RFC-0003-run-record-audit-trail-and-persistence.md` (`Accepted`)
+- `docs/RFC-0004-policy-outcomes-and-approval-model.md` (`Draft`)
+- `docs/RFC-0005-suspended-proposals-and-approval-lifecycle.md` (`Draft`)
+- `docs/PRIVACY-BASELINE.md`
+
+## Historical Snapshots
+
 - `docs/ALPHA-CONTRACT.md`
 - `docs/BETA-CONTRACT.md`
-- `docs/PRIVACY-BASELINE.md`
+- `docs/BETA-CONTRACT-AUDIT.md`
+- `docs/P0-TRIAGE.md`
+- `docs/PRIVACY-ADOPTION.md`
 
 ## License
 

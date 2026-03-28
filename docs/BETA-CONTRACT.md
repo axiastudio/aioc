@@ -1,5 +1,8 @@
 # Beta Contract (0.1.0-beta.1)
 
+> Historical snapshot: this document captures the pre-beta freeze defined for `0.1.0-beta.1`.
+> It does not describe the full public surface available in later beta releases.
+
 ## Purpose
 
 This document defines the pre-beta freeze for `aioc` and the runtime/API surface that is expected to remain stable for the `0.1.0-beta.1` milestone.
