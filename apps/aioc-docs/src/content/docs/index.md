@@ -1,11 +1,50 @@
 ---
 title: AIOC
-description: Governance-first SDK for LLM agents with deterministic policy gates, auditable run records, and high-accountability runtime patterns.
+template: splash
+editUrl: false
+description: Governance-first Agent SDK for LLM agents with deterministic policy gates, auditable run records, and high-accountability runtime patterns.
+hero:
+  title: AIOC
+  tagline: Governance-first Agent SDK
+  actions:
+    - text: Quickstart
+      link: ./quickstart/
+      variant: primary
+    - text: Reference
+      link: ./reference/
+      variant: secondary
+    - text: GitHub
+      link: https://github.com/axiastudio/aioc
+      variant: minimal
 ---
 
 `aioc` is a TypeScript SDK for agent systems where models can propose actions, but deterministic runtime components decide what is actually allowed to happen.
 
-The project focuses on three technical areas:
+## Status
+
+`aioc` is currently in beta and is not production-ready yet.
+
+The current documentation mixes:
+
+- stable runtime behavior you can use today
+- draft RFC material for approval-related extensions that are not implemented yet
+
+## Install
+
+```bash
+npm install @axiastudio/aioc
+```
+
+## What You Get Today
+
+- deterministic policy gates for tools and handoffs
+- `RunRecord` audit artifacts with prompt snapshots and request fingerprints
+- replay and comparison utilities for non-regression analysis
+- provider setup helpers for Mistral and OpenAI
+
+## Technical Focus
+
+The project currently focuses on three technical areas:
 
 - controlled execution through policy gates for tools and handoffs
 - structured auditability through `RunRecord`, prompt snapshots, and request fingerprints
@@ -23,3 +62,10 @@ The project focuses on three technical areas:
 The normative governance documents remain in the repository root under `/docs`.
 
 This site is a documentation app living in `/apps/aioc-docs` and imports those documents into a browsable Starlight site.
+
+## Where To Go Next
+
+- Start with [`Quickstart`](./quickstart/) for the minimal setup path.
+- Use [`Reference`](./reference/) for the current public runtime surface.
+- Use [`Run Records`](./run-records/) if you are evaluating auditability, replay, and regression workflows.
+- Use [`Governance`](./governance/) for RFCs, contracts, and privacy baseline documents.

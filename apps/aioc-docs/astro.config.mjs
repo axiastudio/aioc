@@ -6,7 +6,7 @@ export default defineConfig({
   base: "/aioc",
   integrations: [
     starlight({
-      title: "AIOC",
+      title: "AIOC Docs",
       description:
         "Governance-first SDK for LLM agents with deterministic policy gates and auditable run records.",
       disable404Route: true,
