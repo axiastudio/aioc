@@ -21,6 +21,7 @@ This repository also contains `aioc-docs`, a Starlight documentation app:
 
 - app path: `apps/aioc-docs`
 - source of truth for normative documents: `docs/`
+- GitHub Pages target: `https://axiastudio.github.io/aioc/`
 - start locally: `npm run docs:dev`
 - build statically: `npm run docs:build`
 

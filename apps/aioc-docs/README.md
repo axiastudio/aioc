@@ -25,3 +25,13 @@ Build:
 ```bash
 npm run docs:build
 ```
+
+## Deployment
+
+GitHub Pages target:
+
+```text
+https://axiastudio.github.io/aioc/
+```
+
+Deployment is handled by `/Users/tiziano/Projects/aioc/.github/workflows/docs-pages.yml`.
