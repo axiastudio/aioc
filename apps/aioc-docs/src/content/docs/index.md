@@ -20,6 +20,8 @@ hero:
 
 `aioc` is a TypeScript SDK for agent systems where models can propose actions, but deterministic runtime components decide what is actually allowed to happen.
 
+It is designed for applications that must retain full governance control over persistence, tracing, approval, and oversight concerns, instead of inheriting those decisions from the SDK.
+
 ## Status
 
 `aioc` is currently in beta and is not production-ready yet.
@@ -66,6 +68,7 @@ This site is a documentation app living in `/apps/aioc-docs` and imports those d
 ## Where To Go Next
 
 - Start with [`Quickstart`](./quickstart/) for the minimal setup path.
+- Read [`Governance-First Design`](./governance-first-design/) for the design position behind the runtime.
 - Use [`Reference`](./reference/) for the current public runtime surface.
 - Use [`Run Records`](./run-records/) if you are evaluating auditability, replay, and regression workflows.
 - Use [`Governance`](./governance/) for RFCs, contracts, and privacy baseline documents.

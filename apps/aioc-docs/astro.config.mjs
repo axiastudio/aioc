@@ -24,6 +24,7 @@ export default defineConfig({
           items: [
             "quickstart",
             "core-concepts",
+            "governance-first-design",
             "run-records",
             { label: "Examples", slug: "example-guides" },
             "reference-ui",
