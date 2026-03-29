@@ -59,7 +59,7 @@
   "bugs": {
     "url": "https://github.com/axiastudio/aioc/issues"
   },
-  "homepage": "https://github.com/axiastudio/aioc",
+  "homepage": "https://axiastudio.github.io/aioc",
   "publishConfig": {
     "access": "public",
     "tag": "latest"
