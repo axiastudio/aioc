@@ -4,7 +4,7 @@ AIOC is a governance-first SDK for LLM agents: models can propose actions, while
 It provides default-deny gates for tools and handoffs, end-to-end auditability (run records, prompt snapshots, request fingerprints), and a foundation for verifiable iteration on prompts and policies.
 AIOC is designed for enterprise and public-sector contexts with privacy-by-design and high-accountability (AI Act-style) governance requirements.
 
-Project home: [https://github.com/axiastudio/aioc](https://github.com/axiastudio/aioc)
+Project home and documentation: [https://github.com/axiastudio/aioc](https://github.com/axiastudio/aioc)
 
 ## Release Status
 
