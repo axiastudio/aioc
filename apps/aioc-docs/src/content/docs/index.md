@@ -31,6 +31,10 @@ The current documentation mixes:
 - stable runtime behavior you can use today
 - draft RFC material for approval-related extensions that are not implemented yet
 
+## What Stable Means
+
+`aioc` will leave beta when its governance-first runtime model is stable enough to serve as a dependable foundation for high-accountability applications: core APIs are compatibility-managed, audit artifacts and replay workflows are dependable, and the project has been validated through real implementation use.
+
 ## Install
 
 ```bash
