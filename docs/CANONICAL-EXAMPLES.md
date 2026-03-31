@@ -56,7 +56,26 @@ What it demonstrates:
 - a deterministic soft deny path (`resultMode: "tool_result"`)
 - how the model receives a denied tool result instead of live tool execution
 
-## 3) Tool + Policy
+## 3) Approval Required
+
+Command:
+
+```bash
+npm run example:approval-required
+```
+
+File:
+
+- `src/examples/basic/approval-required.ts`
+
+What it demonstrates:
+
+- the smallest useful `requireApproval(...)` example
+- a parameterless tool definition
+- a deterministic soft approval-required path (`resultMode: "tool_result"`)
+- the normalized tool-result envelope with `status = "approval_required"`
+
+## 4) Tool + Policy
 
 Command:
 
@@ -75,7 +94,7 @@ What it demonstrates:
 - tool execution after policy approval
 - a straight, single-scenario basic example
 
-## 4) RunRecord Sink
+## 5) RunRecord Sink
 
 Command:
 
@@ -94,7 +113,7 @@ What it demonstrates:
 - prompt snapshots and request fingerprints
 - policy decision audit trail and persisted envelope output
 
-## 5) RunRecord Utilities (Minimal)
+## 6) RunRecord Utilities (Minimal)
 
 Commands:
 

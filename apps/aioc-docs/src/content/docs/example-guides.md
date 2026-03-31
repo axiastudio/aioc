@@ -9,6 +9,7 @@ All example commands are run from the repository root.
 
 - `npm run example:hello`
 - `npm run example:policy`
+- `npm run example:approval-required`
 - `npm run example:tool-policy`
 - `npm run example:run-record`
 - `npm run example:non-regression`

@@ -218,6 +218,7 @@ This repository also contains `aioc-inspect`, a private reference example UI for
 |---|---|---|
 | `npm run example:hello` | Minimal single-agent run | Yes (`AIOC_EXAMPLE_PROVIDER` + matching provider API key) |
 | `npm run example:policy` | Minimal denied tool + policy flow | Yes (`AIOC_EXAMPLE_PROVIDER` + matching provider API key) |
+| `npm run example:approval-required` | Minimal approval-required tool + policy flow | Yes (`AIOC_EXAMPLE_PROVIDER` + matching provider API key) |
 | `npm run example:tool-policy` | Straight tool + policy flow with allowed execution | Yes (`AIOC_EXAMPLE_PROVIDER` + matching provider API key) |
 | `npm run example:run-record` | Run-record persistence with redaction + audit | Yes (`AIOC_EXAMPLE_PROVIDER` + matching provider API key) |
 | `npm run example:rru:01-extract` | Minimal `extractToolCalls(...)` | No |
