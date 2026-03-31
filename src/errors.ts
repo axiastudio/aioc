@@ -1,5 +1,6 @@
 import type { GuardrailFunctionOutput } from "./guardrails";
 import type { PolicyResult } from "./policy";
+import type { SuspendedProposal } from "./run-record";
 
 export class AIOCError extends Error {
   constructor(message: string) {
@@ -53,6 +54,7 @@ export class ToolCallPolicyDeniedError extends ToolCallError {
 export interface ToolCallApprovalRequiredResult {
   toolName: string;
   policyResult: PolicyResult;
+  suspendedProposal: SuspendedProposal;
 }
 
 export class ToolCallApprovalRequiredError extends ToolCallError {
@@ -87,6 +89,7 @@ export interface HandoffApprovalRequiredResult {
   fromAgent: string;
   toAgent: string;
   policyResult: PolicyResult;
+  suspendedProposal: SuspendedProposal;
 }
 
 export class HandoffApprovalRequiredError extends AIOCError {

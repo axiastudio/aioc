@@ -59,6 +59,40 @@ export interface RequestFingerprintRecord {
   toolCount: number;
 }
 
+export interface SuspendedProposalBase {
+  timestamp: string;
+  runId: string;
+  turn: number;
+  callId: string;
+  agentName: string;
+  proposalHash: string;
+  reason: string;
+  publicReason?: string;
+  policyVersion?: string;
+  expiresAt?: string;
+  metadata?: Record<string, unknown>;
+}
+
+export interface SuspendedToolProposal extends SuspendedProposalBase {
+  kind: "tool";
+  toolName: string;
+  rawArguments: string;
+  parsedArguments: unknown;
+  argsCanonicalJson: string;
+}
+
+export interface SuspendedHandoffProposal extends SuspendedProposalBase {
+  kind: "handoff";
+  fromAgentName: string;
+  toAgentName: string;
+  handoffPayload: unknown;
+  payloadCanonicalJson: string;
+}
+
+export type SuspendedProposal =
+  | SuspendedToolProposal
+  | SuspendedHandoffProposal;
+
 export interface RunRecord<TContext = unknown> {
   runId: string;
   startedAt: string;
@@ -75,6 +109,7 @@ export interface RunRecord<TContext = unknown> {
   promptSnapshots: PromptSnapshotRecord[];
   requestFingerprints: RequestFingerprintRecord[];
   policyDecisions: PolicyDecisionRecord[];
+  suspendedProposals?: SuspendedProposal[];
   guardrailDecisions?: GuardrailDecisionRecord[];
   errorName?: string;
   errorMessage?: string;

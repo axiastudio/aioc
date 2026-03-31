@@ -216,6 +216,25 @@ export async function runHandoffUnitTests(): Promise<void> {
           "manager_approval_required",
         );
         assert.equal(error.result.policyResult.resultMode, "throw");
+        const suspendedProposal = error.result.suspendedProposal;
+        assert.equal(suspendedProposal.kind, "handoff");
+        if (suspendedProposal.kind !== "handoff") {
+          return false;
+        }
+        assert.equal(suspendedProposal.agentName, "Source Agent");
+        assert.equal(suspendedProposal.turn, 1);
+        assert.equal(suspendedProposal.callId, "handoff-call-1");
+        assert.equal(suspendedProposal.fromAgentName, "Source Agent");
+        assert.equal(suspendedProposal.toAgentName, "Target Agent");
+        assert.deepEqual(suspendedProposal.handoffPayload, {
+          reason: "route",
+        });
+        assert.equal(
+          suspendedProposal.payloadCanonicalJson,
+          JSON.stringify({ reason: "route" }),
+        );
+        assert.match(suspendedProposal.proposalHash, /^[a-f0-9]{64}$/);
+        assert.ok(suspendedProposal.runId.length > 0);
         return true;
       },
     );

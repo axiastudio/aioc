@@ -11,6 +11,7 @@ import type {
   RunRecordContextRedactionResult,
   RunRecordOptions,
   RunRecordWriter,
+  SuspendedProposal,
 } from "./run-record";
 import type { AgentInputItem } from "./types";
 
@@ -191,6 +192,7 @@ export class RunRecorder<TContext = unknown> {
   private readonly includePromptText: boolean;
 
   private readonly policyDecisions: PolicyDecisionRecord[] = [];
+  private readonly suspendedProposals: SuspendedProposal[] = [];
   private readonly guardrailDecisions: GuardrailDecisionRecord[] = [];
   private readonly promptSnapshots: PromptSnapshotRecord[] = [];
   private readonly requestFingerprints: RequestFingerprintRecord[] = [];
@@ -241,11 +243,19 @@ export class RunRecorder<TContext = unknown> {
     );
   }
 
+  get runId(): string {
+    return this.runRecordId;
+  }
+
   onPolicyDecision = (decision: PendingPolicyDecisionRecord): void => {
     this.policyDecisions.push({
       timestamp: new Date().toISOString(),
       ...decision,
     });
+  };
+
+  onSuspendedProposal = (proposal: SuspendedProposal): void => {
+    this.suspendedProposals.push(proposal);
   };
 
   onGuardrailDecision = (decision: PendingGuardrailDecisionRecord): void => {
@@ -346,6 +356,10 @@ export class RunRecorder<TContext = unknown> {
       promptSnapshots: [...this.promptSnapshots],
       requestFingerprints: [...this.requestFingerprints],
       policyDecisions: [...this.policyDecisions],
+      suspendedProposals:
+        this.suspendedProposals.length > 0
+          ? [...this.suspendedProposals]
+          : undefined,
       guardrailDecisions:
         this.guardrailDecisions.length > 0
           ? [...this.guardrailDecisions]

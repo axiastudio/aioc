@@ -1,4 +1,5 @@
 import { Agent } from "./agent";
+import { hashCanonicalJson, toCanonicalJson } from "./canonical-json";
 import { getDefaultProvider } from "./config";
 import {
   HandoffApprovalRequiredError,
@@ -18,6 +19,7 @@ import type {
 } from "./policy";
 import { ModelProvider } from "./providers/base";
 import { RunLogEmitter } from "./run-log-emitter";
+import type { SuspendedProposal } from "./run-record";
 import {
   PendingGuardrailDecisionRecord,
   PendingPolicyDecisionRecord,
@@ -276,6 +278,91 @@ function resolveResultMode(policyResult: PolicyResult): PolicyResultMode {
   return policyResult.resultMode ?? "throw";
 }
 
+function buildSuspendedToolProposal(params: {
+  runId: string;
+  agentName: string;
+  turn: number;
+  callId: string;
+  toolName: string;
+  rawArguments: string;
+  parsedArguments: unknown;
+  policyResult: PolicyResult;
+}): SuspendedProposal {
+  const argsCanonicalJson = toCanonicalJson(params.parsedArguments);
+  const proposalHash = hashCanonicalJson(
+    toCanonicalJson({
+      kind: "tool",
+      agentName: params.agentName,
+      toolName: params.toolName,
+      argsCanonicalJson,
+      reason: params.policyResult.reason,
+      policyVersion: params.policyResult.policyVersion,
+      expiresAt: params.policyResult.expiresAt,
+    }),
+  );
+
+  return {
+    timestamp: new Date().toISOString(),
+    kind: "tool",
+    runId: params.runId,
+    turn: params.turn,
+    callId: params.callId,
+    agentName: params.agentName,
+    proposalHash,
+    reason: params.policyResult.reason,
+    publicReason: params.policyResult.publicReason,
+    policyVersion: params.policyResult.policyVersion,
+    expiresAt: params.policyResult.expiresAt,
+    metadata: params.policyResult.metadata,
+    toolName: params.toolName,
+    rawArguments: params.rawArguments,
+    parsedArguments: params.parsedArguments,
+    argsCanonicalJson,
+  };
+}
+
+function buildSuspendedHandoffProposal(params: {
+  runId: string;
+  fromAgentName: string;
+  toAgentName: string;
+  turn: number;
+  callId: string;
+  handoffPayload: unknown;
+  policyResult: PolicyResult;
+}): SuspendedProposal {
+  const payloadCanonicalJson = toCanonicalJson(params.handoffPayload);
+  const proposalHash = hashCanonicalJson(
+    toCanonicalJson({
+      kind: "handoff",
+      fromAgentName: params.fromAgentName,
+      toAgentName: params.toAgentName,
+      payloadCanonicalJson,
+      reason: params.policyResult.reason,
+      policyVersion: params.policyResult.policyVersion,
+      expiresAt: params.policyResult.expiresAt,
+    }),
+  );
+
+  return {
+    timestamp: new Date().toISOString(),
+    kind: "handoff",
+    runId: params.runId,
+    turn: params.turn,
+    callId: params.callId,
+    agentName: params.fromAgentName,
+    proposalHash,
+    reason: params.policyResult.reason,
+    publicReason: params.policyResult.publicReason,
+    policyVersion: params.policyResult.policyVersion,
+    expiresAt: params.policyResult.expiresAt,
+    metadata: params.policyResult.metadata,
+    fromAgentName: params.fromAgentName,
+    toAgentName: params.toAgentName,
+    handoffPayload: params.handoffPayload,
+    payloadCanonicalJson,
+  };
+}
+
 async function emitPolicyDecision(
   params:
     | {
@@ -382,12 +469,14 @@ function handleBlockedPolicyResult(
         kind: "tool";
         toolName: string;
         policyResult: PolicyResult;
+        suspendedProposal?: SuspendedProposal;
       }
     | {
         kind: "handoff";
         fromAgent: string;
         toAgent: string;
         policyResult: PolicyResult;
+        suspendedProposal?: SuspendedProposal;
       },
 ): ToolResultEnvelope {
   const { policyResult } = params;
@@ -402,10 +491,17 @@ function handleBlockedPolicyResult(
   }
 
   if (policyResult.decision === "require_approval") {
+    if (!params.suspendedProposal) {
+      throw new Error(
+        "Approval-required policy result is missing a suspended proposal.",
+      );
+    }
+
     if (params.kind === "tool") {
       throw new ToolCallApprovalRequiredError({
         toolName: params.toolName,
         policyResult,
+        suspendedProposal: params.suspendedProposal,
       });
     }
 
@@ -413,6 +509,7 @@ function handleBlockedPolicyResult(
       fromAgent: params.fromAgent,
       toAgent: params.toAgent,
       policyResult,
+      suspendedProposal: params.suspendedProposal,
     });
   }
 
@@ -516,6 +613,7 @@ async function evaluateHandoffPolicy<TContext>(
 
 async function executeToolCall<TContext>(
   agent: Agent<TContext>,
+  runId: string,
   call: PendingToolCall,
   parsedArguments: unknown,
   runContext: RunContext<TContext>,
@@ -523,6 +621,7 @@ async function executeToolCall<TContext>(
   logEmitter: RunLogEmitter,
   policies?: PolicyConfiguration<TContext>,
   onPolicyDecision?: (decision: PendingPolicyDecisionRecord) => void,
+  onSuspendedProposal?: (proposal: SuspendedProposal) => void,
 ): Promise<ToolResultEnvelope> {
   const definition = agent.tools.find((tool) => tool.name === call.name);
   if (!definition) {
@@ -550,10 +649,29 @@ async function executeToolCall<TContext>(
   });
 
   if (policyResult.decision !== "allow") {
+    const suspendedProposal =
+      policyResult.decision === "require_approval"
+        ? buildSuspendedToolProposal({
+            runId,
+            agentName: agent.name,
+            turn,
+            callId: call.callId,
+            toolName: call.name,
+            rawArguments: call.arguments,
+            parsedArguments,
+            policyResult,
+          })
+        : undefined;
+
+    if (suspendedProposal) {
+      onSuspendedProposal?.(suspendedProposal);
+    }
+
     return handleBlockedPolicyResult({
       kind: "tool",
       toolName: call.name,
       policyResult,
+      suspendedProposal,
     });
   }
 
@@ -613,12 +731,14 @@ async function evaluateOutputGuardrails<TContext>(
 
 async function* runLoop<TContext>(
   state: MutableRunState<TContext>,
+  runId: string,
   provider: ModelProvider,
   runContext: RunContext<TContext>,
   maxTurns: number,
   logger?: RunLogger,
   policies?: PolicyConfiguration<TContext>,
   onPolicyDecision?: (decision: PendingPolicyDecisionRecord) => void,
+  onSuspendedProposal?: (proposal: SuspendedProposal) => void,
   onGuardrailDecision?: (decision: PendingGuardrailDecisionRecord) => void,
   onPromptSnapshot?: (snapshot: PendingPromptSnapshotRecord) => void,
   onRequestFingerprint?: (snapshot: PendingRequestFingerprintRecord) => void,
@@ -788,11 +908,29 @@ async function* runLoop<TContext>(
               });
 
               if (handoffPolicyResult.decision !== "allow") {
+                const suspendedProposal =
+                  handoffPolicyResult.decision === "require_approval"
+                    ? buildSuspendedHandoffProposal({
+                        runId,
+                        fromAgentName: currentAgent.name,
+                        toAgentName: handoffTarget.name,
+                        turn: activeTurn,
+                        callId: call.callId,
+                        handoffPayload: callItemArguments,
+                        policyResult: handoffPolicyResult,
+                      })
+                    : undefined;
+
+                if (suspendedProposal) {
+                  onSuspendedProposal?.(suspendedProposal);
+                }
+
                 toolOutput = handleBlockedPolicyResult({
                   kind: "handoff",
                   fromAgent: currentAgent.name,
                   toAgent: handoffTarget.name,
                   policyResult: handoffPolicyResult,
+                  suspendedProposal,
                 });
               } else {
                 toolOutput = toAllowedToolResultEnvelope({
@@ -806,6 +944,7 @@ async function* runLoop<TContext>(
             } else {
               toolOutput = await executeToolCall(
                 currentAgent,
+                runId,
                 call,
                 callItemArguments,
                 runContext,
@@ -813,6 +952,7 @@ async function* runLoop<TContext>(
                 logEmitter,
                 policies,
                 onPolicyDecision,
+                onSuspendedProposal,
               );
             }
           } catch (error) {
@@ -963,12 +1103,14 @@ export async function run<TContext = unknown>(
 
   const rawStream = runLoop(
     state,
+    runRecorder.runId,
     provider,
     runContext,
     maxTurns,
     options.logger,
     options.policies,
     runRecorder.onPolicyDecision,
+    runRecorder.onSuspendedProposal,
     runRecorder.onGuardrailDecision,
     runRecorder.onPromptSnapshot,
     runRecorder.onRequestFingerprint,

@@ -263,6 +263,24 @@ export async function runRunRecordUnitTests(): Promise<void> {
       records[0]?.policyDecisions[0]?.expiresAt,
       "2026-04-01T00:00:00Z",
     );
+    assert.equal(records[0]?.suspendedProposals?.length, 1);
+    const suspendedProposal = records[0]?.suspendedProposals?.[0];
+    assert.ok(suspendedProposal);
+    assert.equal(suspendedProposal.kind, "tool");
+    if (suspendedProposal.kind !== "tool") {
+      throw new Error("Expected a suspended tool proposal.");
+    }
+    assert.equal(suspendedProposal.runId, records[0]?.runId);
+    assert.equal(suspendedProposal.turn, 1);
+    assert.equal(suspendedProposal.callId, "call-approval-1");
+    assert.equal(suspendedProposal.agentName, agent.name);
+    assert.equal(suspendedProposal.toolName, "ping");
+    assert.equal(suspendedProposal.rawArguments, "{}");
+    assert.deepEqual(suspendedProposal.parsedArguments, {});
+    assert.equal(suspendedProposal.argsCanonicalJson, "{}");
+    assert.equal(suspendedProposal.policyVersion, "approval-policy.v1");
+    assert.equal(suspendedProposal.expiresAt, "2026-04-01T00:00:00Z");
+    assert.match(suspendedProposal.proposalHash, /^[a-f0-9]{64}$/);
     const outputItem = records[0]?.items.find(
       (
         item,
@@ -404,6 +422,161 @@ export async function runRunRecordUnitTests(): Promise<void> {
     assert.notEqual(
       records[0]?.requestFingerprints[0]?.requestHash,
       records[0]?.requestFingerprints[1]?.requestHash,
+    );
+  }
+
+  {
+    const records: RunRecord[] = [];
+
+    const targetAgent = new Agent({
+      name: "Run record approval handoff target",
+      model: "fake-model",
+    });
+    const sourceAgent = new Agent({
+      name: "Run record approval handoff source",
+      model: "fake-model",
+      handoffs: [targetAgent],
+    });
+    const handoffToolName = toHandoffToolName(targetAgent.name);
+
+    setDefaultProvider(
+      new ScriptedProvider([
+        [
+          {
+            type: "tool_call",
+            callId: "handoff-approval-call-1",
+            name: handoffToolName,
+            arguments: JSON.stringify({ reason: "route" }),
+          },
+        ],
+        [{ type: "completed", message: "Stayed on source." }],
+      ]),
+    );
+
+    const result = await run(sourceAgent, "approval handoff request", {
+      policies: {
+        handoffPolicy: () =>
+          requireApproval("manager_approval_required", {
+            publicReason: "Manager approval is required.",
+            resultMode: "tool_result",
+            policyVersion: "handoff-approval-policy.v1",
+          }),
+      },
+      record: {
+        sink: (record) => {
+          records.push(record);
+        },
+      },
+    });
+
+    assert.equal(result.finalOutput, "Stayed on source.");
+    assert.equal(result.lastAgent.name, sourceAgent.name);
+    assert.equal(records.length, 1);
+    assert.equal(records[0]?.policyDecisions.length, 1);
+    assert.equal(records[0]?.policyDecisions[0]?.decision, "require_approval");
+    assert.equal(records[0]?.policyDecisions[0]?.resource.kind, "handoff");
+    assert.equal(
+      records[0]?.policyDecisions[0]?.resource.name,
+      targetAgent.name,
+    );
+    assert.equal(records[0]?.suspendedProposals?.length, 1);
+    const handoffSuspendedProposal = records[0]?.suspendedProposals?.[0];
+    assert.ok(handoffSuspendedProposal);
+    assert.equal(handoffSuspendedProposal.kind, "handoff");
+    if (handoffSuspendedProposal.kind !== "handoff") {
+      throw new Error("Expected a suspended handoff proposal.");
+    }
+    assert.equal(handoffSuspendedProposal.runId, records[0]?.runId);
+    assert.equal(handoffSuspendedProposal.turn, 1);
+    assert.equal(handoffSuspendedProposal.callId, "handoff-approval-call-1");
+    assert.equal(handoffSuspendedProposal.fromAgentName, sourceAgent.name);
+    assert.equal(handoffSuspendedProposal.toAgentName, targetAgent.name);
+    assert.deepEqual(handoffSuspendedProposal.handoffPayload, {
+      reason: "route",
+    });
+    assert.equal(
+      handoffSuspendedProposal.payloadCanonicalJson,
+      JSON.stringify({ reason: "route" }),
+    );
+    assert.equal(
+      handoffSuspendedProposal.policyVersion,
+      "handoff-approval-policy.v1",
+    );
+    assert.match(handoffSuspendedProposal.proposalHash, /^[a-f0-9]{64}$/);
+    const outputItem = records[0]?.items.find(
+      (
+        item,
+      ): item is Extract<
+        RunRecord["items"][number],
+        { type: "tool_call_output_item" }
+      > => item.type === "tool_call_output_item",
+    );
+    assert.deepEqual(outputItem?.output, {
+      status: "approval_required",
+      code: "manager_approval_required",
+      publicReason: "Manager approval is required.",
+      data: null,
+    });
+  }
+
+  {
+    const records: RunRecord[] = [];
+
+    const ping = tool({
+      name: "ping",
+      description: "Ping tool",
+      parameters: z.object({}),
+      execute: () => ({ ok: true }),
+    });
+
+    const agent = new Agent({
+      name: "Run record proposal hash stability",
+      model: "fake-model",
+      instructions: "Try calling ping when available.",
+      tools: [ping],
+    });
+
+    for (let index = 0; index < 2; index += 1) {
+      setDefaultProvider(
+        new ScriptedProvider([
+          [
+            {
+              type: "tool_call",
+              callId: `call-hash-${index + 1}`,
+              name: "ping",
+              arguments: JSON.stringify({ accountId: "acct-1", amount: 10 }),
+            },
+          ],
+          [{ type: "completed", message: "done" }],
+        ]),
+      );
+
+      await run(agent, "hello", {
+        policies: {
+          toolPolicy: () =>
+            requireApproval("manager_approval_required", {
+              publicReason: "Manager approval is required.",
+              resultMode: "tool_result",
+              policyVersion: "approval-policy.v1",
+            }),
+        },
+        record: {
+          sink: (record) => {
+            records.push(record);
+          },
+        },
+      });
+    }
+
+    assert.equal(records.length, 2);
+    assert.notEqual(records[0]?.runId, records[1]?.runId);
+    assert.equal(
+      records[0]?.suspendedProposals?.[0]?.proposalHash,
+      records[1]?.suspendedProposals?.[0]?.proposalHash,
+    );
+    assert.notEqual(
+      records[0]?.suspendedProposals?.[0]?.callId,
+      records[1]?.suspendedProposals?.[0]?.callId,
     );
   }
 

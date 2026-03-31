@@ -284,6 +284,20 @@ export async function runPolicyUnitTests(): Promise<void> {
           "manager_approval_required",
         );
         assert.equal(error.result.policyResult.resultMode, "throw");
+        const suspendedProposal = error.result.suspendedProposal;
+        assert.equal(suspendedProposal.kind, "tool");
+        if (suspendedProposal.kind !== "tool") {
+          return false;
+        }
+        assert.equal(suspendedProposal.agentName, "Policy unit agent");
+        assert.equal(suspendedProposal.turn, 1);
+        assert.equal(suspendedProposal.callId, "call-1");
+        assert.equal(suspendedProposal.toolName, "ping");
+        assert.equal(suspendedProposal.rawArguments, "{}");
+        assert.deepEqual(suspendedProposal.parsedArguments, {});
+        assert.equal(suspendedProposal.argsCanonicalJson, "{}");
+        assert.match(suspendedProposal.proposalHash, /^[a-f0-9]{64}$/);
+        assert.ok(suspendedProposal.runId.length > 0);
         return true;
       },
     );
