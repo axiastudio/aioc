@@ -30,6 +30,23 @@ function createToolAgent(onExecute: () => void): Agent {
   });
 }
 
+function createParameterlessToolAgent(onExecute: () => void): Agent {
+  const ping = tool({
+    name: "ping",
+    description: "Ping tool without explicit parameters",
+    execute: () => {
+      onExecute();
+      return { ok: true };
+    },
+  });
+
+  return new Agent({
+    name: "Parameterless policy unit agent",
+    model: "fake-model",
+    tools: [ping],
+  });
+}
+
 function createToolProposalTurns() {
   return [
     [
@@ -89,6 +106,37 @@ export async function runPolicyUnitTests(): Promise<void> {
     setDefaultProvider(new ScriptedProvider(createToolProposalTurns()));
     const result = await run(
       createToolAgent(() => (executions += 1)),
+      "hello",
+      {
+        policies: { toolPolicy: allowPolicy },
+      },
+    );
+
+    assert.equal(result.finalOutput, "done");
+    assert.equal(executions, 1);
+    const toolOutputItem = result.history.find(
+      (
+        item,
+      ): item is Extract<
+        (typeof result.history)[number],
+        { type: "tool_call_output_item" }
+      > => item.type === "tool_call_output_item",
+    );
+    assert.deepEqual(toolOutputItem?.output, {
+      status: "ok",
+      code: null,
+      publicReason: null,
+      data: { ok: true },
+    });
+  }
+
+  {
+    let executions = 0;
+    const allowPolicy: ToolPolicy = () => allow("allow_ping");
+
+    setDefaultProvider(new ScriptedProvider(createToolProposalTurns()));
+    const result = await run(
+      createParameterlessToolAgent(() => (executions += 1)),
       "hello",
       {
         policies: { toolPolicy: allowPolicy },

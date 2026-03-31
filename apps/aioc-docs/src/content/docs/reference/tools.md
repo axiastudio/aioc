@@ -11,7 +11,7 @@ Use `tool(...)` to define a callable capability exposed to the model.
 const myTool = tool<TContext, TSchema, TOutput>({
   name: string,
   description: string,
-  parameters: z.ZodTypeAny,
+  parameters?: z.ZodTypeAny,
   execute: (input, runContext?) => TOutput | Promise<TOutput>,
 })
 ```
@@ -41,7 +41,7 @@ const getFinanceReport = tool<{ actor: { team: string } }>({
 
 ### `parameters`
 
-Must be a Zod schema.
+Optional. When omitted, `tool(...)` normalizes it to an empty object schema.
 
 The runtime converts it to a JSON schema before sending the tool definition to the provider.
 
