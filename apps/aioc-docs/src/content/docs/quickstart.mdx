@@ -3,6 +3,8 @@ title: Quickstart
 description: Minimal setup for running a first agent with aioc.
 ---
 
+import { Tabs, TabItem } from '@astrojs/starlight/components';
+
 Install the SDK:
 
 ```bash
@@ -10,6 +12,32 @@ npm install @axiastudio/aioc
 ```
 
 Minimal example:
+
+<Tabs syncKey="provider">
+  <TabItem label="OpenAI">
+
+```ts
+import "dotenv/config";
+import { Agent, run, setupOpenAI } from "@axiastudio/aioc";
+
+setupOpenAI();
+
+const agent = new Agent({
+  name: "Hello Agent",
+  model: "gpt-4.1-mini",
+  instructions: "Answer in 2 short sentences.",
+});
+
+const result = await run(
+  agent,
+  "In one sentence, what is a deterministic policy gate in an agent SDK?",
+);
+
+console.log(result.finalOutput);
+```
+
+  </TabItem>
+  <TabItem label="Mistral">
 
 ```ts
 import "dotenv/config";
@@ -31,9 +59,12 @@ const result = await run(
 console.log(result.finalOutput);
 ```
 
+  </TabItem>
+</Tabs>
+
 ## What Happens
 
-1. A provider is configured with `setupMistral()`.
+1. A provider is configured with `setupOpenAI()` or `setupMistral()`.
 2. The `Agent` defines instructions, model, tools, and handoffs.
 3. `run(...)` executes the turn loop and returns a structured result.
 

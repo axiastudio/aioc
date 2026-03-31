@@ -43,6 +43,29 @@ npm install @axiastudio/aioc
 
 ## Quickstart
 
+### OpenAI
+
+```ts
+import "dotenv/config";
+import { Agent, run, setupOpenAI } from "@axiastudio/aioc";
+
+setupOpenAI(); // reads OPENAI_API_KEY from env
+
+const agent = new Agent({
+  name: "Hello Agent",
+  model: "gpt-4.1-mini",
+  instructions: "Answer in 2 short sentences.",
+});
+
+const result = await run(
+  agent,
+  "In one sentence, what is a deterministic policy gate in an agent SDK?",
+);
+console.log(result.finalOutput);
+```
+
+### Mistral
+
 ```ts
 import "dotenv/config";
 import { Agent, run, setupMistral } from "@axiastudio/aioc";
