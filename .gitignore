@@ -6,5 +6,6 @@ node_modules/
 .env.*
 .DS_Store
 .idea/*
+.internal/
 apps/aioc-docs/src/content/docs/governance/current/
 apps/aioc-docs/src/content/docs/governance/historical/
