@@ -253,6 +253,7 @@ function isPolicyResultShape(value: unknown): value is PolicyResult {
   );
 }
 
+// TODO: Remove this beta-only migration guard before stable.
 function hasLegacyDenyMode(value: unknown): value is { denyMode?: unknown } {
   return typeof value === "object" && value !== null && "denyMode" in value;
 }
