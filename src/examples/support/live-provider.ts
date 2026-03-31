@@ -32,6 +32,6 @@ export function getExampleProviderConfig(): ExampleProviderConfig {
   }
 
   throw new Error(
-    'Set AIOC_EXAMPLE_PROVIDER to "openai" or "mistral". Optionally set AIOC_EXAMPLE_MODEL to override the default model.',
+    "Set AIOC_EXAMPLE_PROVIDER to 'openai' or 'mistral'. Optionally set AIOC_EXAMPLE_MODEL to override the default model.",
   );
 }

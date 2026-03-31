@@ -1,13 +1,6 @@
 import "dotenv/config";
 import { z } from "zod";
-import {
-  Agent,
-  allow,
-  deny,
-  run,
-  tool,
-  type ToolPolicy,
-} from "../../index";
+import { Agent, allow, deny, run, tool, type ToolPolicy } from "../../index";
 import { getExampleProviderConfig } from "../support/live-provider";
 
 interface FinanceContext {
