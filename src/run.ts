@@ -1,5 +1,4 @@
 import { Agent } from "./agent";
-import { hashCanonicalJson, toCanonicalJson } from "./canonical-json";
 import { getDefaultProvider } from "./config";
 import {
   HandoffApprovalRequiredError,
@@ -28,6 +27,10 @@ import {
   RunRecorder,
 } from "./run-recorder-runtime";
 import { RunContext } from "./run-context";
+import {
+  buildSuspendedHandoffProposal,
+  buildSuspendedToolProposal,
+} from "./suspended-proposals";
 import type { Tool } from "./tool";
 import {
   AgentInputItem,
@@ -276,91 +279,6 @@ function materializePolicyResult(policyResult: PolicyResult): PolicyResult {
 
 function resolveResultMode(policyResult: PolicyResult): PolicyResultMode {
   return policyResult.resultMode ?? "throw";
-}
-
-function buildSuspendedToolProposal(params: {
-  runId: string;
-  agentName: string;
-  turn: number;
-  callId: string;
-  toolName: string;
-  rawArguments: string;
-  parsedArguments: unknown;
-  policyResult: PolicyResult;
-}): SuspendedProposal {
-  const argsCanonicalJson = toCanonicalJson(params.parsedArguments);
-  const proposalHash = hashCanonicalJson(
-    toCanonicalJson({
-      kind: "tool",
-      agentName: params.agentName,
-      toolName: params.toolName,
-      argsCanonicalJson,
-      reason: params.policyResult.reason,
-      policyVersion: params.policyResult.policyVersion,
-      expiresAt: params.policyResult.expiresAt,
-    }),
-  );
-
-  return {
-    timestamp: new Date().toISOString(),
-    kind: "tool",
-    runId: params.runId,
-    turn: params.turn,
-    callId: params.callId,
-    agentName: params.agentName,
-    proposalHash,
-    reason: params.policyResult.reason,
-    publicReason: params.policyResult.publicReason,
-    policyVersion: params.policyResult.policyVersion,
-    expiresAt: params.policyResult.expiresAt,
-    metadata: params.policyResult.metadata,
-    toolName: params.toolName,
-    rawArguments: params.rawArguments,
-    parsedArguments: params.parsedArguments,
-    argsCanonicalJson,
-  };
-}
-
-function buildSuspendedHandoffProposal(params: {
-  runId: string;
-  fromAgentName: string;
-  toAgentName: string;
-  turn: number;
-  callId: string;
-  handoffPayload: unknown;
-  policyResult: PolicyResult;
-}): SuspendedProposal {
-  const payloadCanonicalJson = toCanonicalJson(params.handoffPayload);
-  const proposalHash = hashCanonicalJson(
-    toCanonicalJson({
-      kind: "handoff",
-      fromAgentName: params.fromAgentName,
-      toAgentName: params.toAgentName,
-      payloadCanonicalJson,
-      reason: params.policyResult.reason,
-      policyVersion: params.policyResult.policyVersion,
-      expiresAt: params.policyResult.expiresAt,
-    }),
-  );
-
-  return {
-    timestamp: new Date().toISOString(),
-    kind: "handoff",
-    runId: params.runId,
-    turn: params.turn,
-    callId: params.callId,
-    agentName: params.fromAgentName,
-    proposalHash,
-    reason: params.policyResult.reason,
-    publicReason: params.policyResult.publicReason,
-    policyVersion: params.policyResult.policyVersion,
-    expiresAt: params.policyResult.expiresAt,
-    metadata: params.policyResult.metadata,
-    fromAgentName: params.fromAgentName,
-    toAgentName: params.toAgentName,
-    handoffPayload: params.handoffPayload,
-    payloadCanonicalJson,
-  };
 }
 
 async function emitPolicyDecision(
