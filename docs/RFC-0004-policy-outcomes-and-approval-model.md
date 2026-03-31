@@ -239,7 +239,12 @@ The legacy `denyMode` field is not part of the current runtime contract. Impleme
 
 ## Implementation Status
 
-- Current runtime implements `allow` / `deny` only.
-- `publicReason` and hard/soft deny behavior already exist.
-- `require_approval` is not yet implemented.
+- Current runtime implements `allow`, `deny`, and `require_approval`.
+- `requireApproval(...)` is available as a public helper alongside `allow(...)` and `deny(...)`.
+- Runtime exposes approval-required outcomes through:
+  - `ToolCallApprovalRequiredError`
+  - `HandoffApprovalRequiredError`
+  - normalized tool-result envelopes with `status = "approval_required"`
+- Logger events and `RunRecord.policyDecisions` preserve `decision`, `reason`, `publicReason`, `resultMode`, and `expiresAt` for approval-required outcomes.
+- Unit and regression coverage now exercise hard/soft approval-required behavior for both tool and handoff paths.
 - Approval workflow, reviewer identity, and resume semantics remain intentionally outside the core contract.
