@@ -52,9 +52,6 @@ type MutableRunState<TContext> = {
 };
 
 type HandoffRegistry<TContext> = Map<string, Agent<TContext>>;
-type ResolvedPolicyResult = Omit<PolicyResult, "resultMode"> & {
-  resultMode?: PolicyResultMode;
-};
 
 export type ToolResultEnvelopeStatus = "ok" | "denied" | "approval_required";
 
@@ -178,7 +175,7 @@ function toErrorMetadata(error: unknown): Record<string, unknown> {
 function createDeniedPolicyResult(
   reason: string,
   metadata?: Record<string, unknown>,
-): ResolvedPolicyResult {
+): PolicyResult {
   return {
     decision: "deny",
     reason,
@@ -191,7 +188,7 @@ function createDeprecatedPolicyFieldResult(
   fieldName: string,
   replacementField: string,
   receivedValue?: unknown,
-): ResolvedPolicyResult {
+): PolicyResult {
   return createDeniedPolicyResult(`deprecated_policy_field_${fieldName}`, {
     deprecatedField: fieldName,
     replacementField,
@@ -209,7 +206,7 @@ function toAllowedToolResultEnvelope(data: unknown): ToolResultEnvelope {
 }
 
 function toBlockedToolResultEnvelope(
-  policyResult: ResolvedPolicyResult,
+  policyResult: PolicyResult,
 ): ToolResultEnvelope {
   return {
     status:
@@ -260,29 +257,22 @@ function hasLegacyDenyMode(value: unknown): value is { denyMode?: unknown } {
   return typeof value === "object" && value !== null && "denyMode" in value;
 }
 
-function normalizePolicyResult(
-  policyResult: PolicyResult,
-): ResolvedPolicyResult | null {
-  if (policyResult.decision === "allow") {
-    return {
-      decision: policyResult.decision,
-      reason: policyResult.reason,
-      publicReason: policyResult.publicReason,
-      policyVersion: policyResult.policyVersion,
-      expiresAt: policyResult.expiresAt,
-      metadata: policyResult.metadata,
-    };
+function materializePolicyResult(policyResult: PolicyResult): PolicyResult {
+  if (
+    policyResult.decision === "allow" ||
+    typeof policyResult.resultMode !== "undefined"
+  ) {
+    return policyResult;
   }
 
   return {
-    decision: policyResult.decision,
-    reason: policyResult.reason,
-    publicReason: policyResult.publicReason,
-    resultMode: policyResult.resultMode ?? "throw",
-    policyVersion: policyResult.policyVersion,
-    expiresAt: policyResult.expiresAt,
-    metadata: policyResult.metadata,
+    ...policyResult,
+    resultMode: "throw",
   };
+}
+
+function resolveResultMode(policyResult: PolicyResult): PolicyResultMode {
+  return policyResult.resultMode ?? "throw";
 }
 
 async function emitPolicyDecision(
@@ -293,7 +283,7 @@ async function emitPolicyDecision(
         turn: number;
         callId: string;
         toolName: string;
-        policyResult: ResolvedPolicyResult;
+        policyResult: PolicyResult;
         logEmitter: RunLogEmitter;
         onPolicyDecision?: (decision: PendingPolicyDecisionRecord) => void;
       }
@@ -304,7 +294,7 @@ async function emitPolicyDecision(
         callId: string;
         handoffName: string;
         toAgentName: string;
-        policyResult: ResolvedPolicyResult;
+        policyResult: PolicyResult;
         logEmitter: RunLogEmitter;
         onPolicyDecision?: (decision: PendingPolicyDecisionRecord) => void;
       },
@@ -317,6 +307,10 @@ async function emitPolicyDecision(
     logEmitter,
     onPolicyDecision,
   } = params;
+  const resultMode =
+    policyResult.decision === "allow"
+      ? undefined
+      : resolveResultMode(policyResult);
 
   if (params.kind === "tool") {
     await logEmitter.toolPolicyEvaluated(
@@ -327,7 +321,7 @@ async function emitPolicyDecision(
       policyResult.decision,
       policyResult.reason,
       policyResult.publicReason,
-      policyResult.resultMode,
+      resultMode,
       policyResult.policyVersion,
       policyResult.expiresAt,
       policyResult.metadata,
@@ -338,7 +332,7 @@ async function emitPolicyDecision(
       decision: policyResult.decision,
       reason: policyResult.reason,
       publicReason: policyResult.publicReason,
-      resultMode: policyResult.resultMode,
+      resultMode,
       policyVersion: policyResult.policyVersion,
       resource: {
         kind: "tool",
@@ -359,7 +353,7 @@ async function emitPolicyDecision(
     policyResult.decision,
     policyResult.reason,
     policyResult.publicReason,
-    policyResult.resultMode,
+    resultMode,
     policyResult.policyVersion,
     policyResult.expiresAt,
     policyResult.metadata,
@@ -370,7 +364,7 @@ async function emitPolicyDecision(
     decision: policyResult.decision,
     reason: policyResult.reason,
     publicReason: policyResult.publicReason,
-    resultMode: policyResult.resultMode,
+    resultMode,
     policyVersion: policyResult.policyVersion,
     resource: {
       kind: "handoff",
@@ -386,13 +380,13 @@ function handleBlockedPolicyResult(
     | {
         kind: "tool";
         toolName: string;
-        policyResult: ResolvedPolicyResult;
+        policyResult: PolicyResult;
       }
     | {
         kind: "handoff";
         fromAgent: string;
         toAgent: string;
-        policyResult: ResolvedPolicyResult;
+        policyResult: PolicyResult;
       },
 ): ToolResultEnvelope {
   const { policyResult } = params;
@@ -402,7 +396,7 @@ function handleBlockedPolicyResult(
     );
   }
 
-  if (policyResult.resultMode === "tool_result") {
+  if (resolveResultMode(policyResult) === "tool_result") {
     return toBlockedToolResultEnvelope(policyResult);
   }
 
@@ -442,7 +436,7 @@ async function evaluateToolPolicy<TContext>(
   runContext: RunContext<TContext>,
   turn: number,
   policies?: PolicyConfiguration<TContext>,
-): Promise<ResolvedPolicyResult> {
+): Promise<PolicyResult> {
   const policy = policies?.toolPolicy;
   if (!policy) {
     return createDeniedPolicyResult("policy_not_configured");
@@ -474,10 +468,7 @@ async function evaluateToolPolicy<TContext>(
     return createDeniedPolicyResult("invalid_policy_result");
   }
 
-  return (
-    normalizePolicyResult(rawResult) ??
-    createDeniedPolicyResult("invalid_policy_result")
-  );
+  return materializePolicyResult(rawResult);
 }
 
 async function evaluateHandoffPolicy<TContext>(
@@ -488,7 +479,7 @@ async function evaluateHandoffPolicy<TContext>(
   runContext: RunContext<TContext>,
   turn: number,
   policies?: PolicyConfiguration<TContext>,
-): Promise<ResolvedPolicyResult> {
+): Promise<PolicyResult> {
   const policy = policies?.handoffPolicy;
   if (!policy) {
     return createDeniedPolicyResult("policy_not_configured");
@@ -519,10 +510,7 @@ async function evaluateHandoffPolicy<TContext>(
     return createDeniedPolicyResult("invalid_policy_result");
   }
 
-  return (
-    normalizePolicyResult(rawResult) ??
-    createDeniedPolicyResult("invalid_policy_result")
-  );
+  return materializePolicyResult(rawResult);
 }
 
 async function executeToolCall<TContext>(
