@@ -1,21 +1,22 @@
 import { Agent } from "./agent";
 import { getDefaultProvider } from "./config";
 import {
-  HandoffApprovalRequiredError,
-  HandoffPolicyDeniedError,
   MaxTurnsExceededError,
   OutputGuardrailTripwireTriggered,
-  ToolCallApprovalRequiredError,
   ToolCallError,
-  ToolCallPolicyDeniedError,
 } from "./errors";
 import type { RunLogger } from "./logger";
 import { user } from "./messages";
-import type {
-  PolicyConfiguration,
-  PolicyResult,
-  PolicyResultMode,
-} from "./policy";
+import type { PolicyConfiguration, PolicyResult } from "./policy";
+import {
+  createDeniedPolicyResult,
+  createDeprecatedPolicyFieldResult,
+  handleBlockedPolicyResult,
+  materializePolicyResult,
+  resolveResultMode,
+  toAllowedToolResultEnvelope,
+  type ToolResultEnvelope,
+} from "./policy-outcomes";
 import { ModelProvider } from "./providers/base";
 import { RunLogEmitter } from "./run-log-emitter";
 import type { SuspendedProposal } from "./run-record";
@@ -57,15 +58,10 @@ type MutableRunState<TContext> = {
 };
 
 type HandoffRegistry<TContext> = Map<string, Agent<TContext>>;
-
-export type ToolResultEnvelopeStatus = "ok" | "denied" | "approval_required";
-
-export interface ToolResultEnvelope {
-  status: ToolResultEnvelopeStatus;
-  code: string | null;
-  publicReason: string | null;
-  data: unknown | null;
-}
+export type {
+  ToolResultEnvelope,
+  ToolResultEnvelopeStatus,
+} from "./policy-outcomes";
 
 function toToolParameterSchema(schema: z.ZodTypeAny): Record<string, unknown> {
   try {
@@ -177,57 +173,6 @@ function toErrorMetadata(error: unknown): Record<string, unknown> {
   };
 }
 
-function createDeniedPolicyResult(
-  reason: string,
-  metadata?: Record<string, unknown>,
-): PolicyResult {
-  return {
-    decision: "deny",
-    reason,
-    resultMode: "throw",
-    metadata,
-  };
-}
-
-function createDeprecatedPolicyFieldResult(
-  fieldName: string,
-  replacementField: string,
-  receivedValue?: unknown,
-): PolicyResult {
-  return createDeniedPolicyResult(`deprecated_policy_field_${fieldName}`, {
-    deprecatedField: fieldName,
-    replacementField,
-    receivedValue,
-  });
-}
-
-function toAllowedToolResultEnvelope(data: unknown): ToolResultEnvelope {
-  return {
-    status: "ok",
-    code: null,
-    publicReason: null,
-    data,
-  };
-}
-
-function toBlockedToolResultEnvelope(
-  policyResult: PolicyResult,
-): ToolResultEnvelope {
-  return {
-    status:
-      policyResult.decision === "require_approval"
-        ? "approval_required"
-        : "denied",
-    code: policyResult.reason,
-    publicReason:
-      policyResult.publicReason?.trim() ||
-      (policyResult.decision === "require_approval"
-        ? "Action requires approval."
-        : "Action not allowed."),
-    data: null,
-  };
-}
-
 function isPolicyResultShape(value: unknown): value is PolicyResult {
   if (typeof value !== "object" || value === null) {
     return false;
@@ -261,24 +206,6 @@ function isPolicyResultShape(value: unknown): value is PolicyResult {
 // TODO: Remove this beta-only migration guard before stable.
 function hasLegacyDenyMode(value: unknown): value is { denyMode?: unknown } {
   return typeof value === "object" && value !== null && "denyMode" in value;
-}
-
-function materializePolicyResult(policyResult: PolicyResult): PolicyResult {
-  if (
-    policyResult.decision === "allow" ||
-    typeof policyResult.resultMode !== "undefined"
-  ) {
-    return policyResult;
-  }
-
-  return {
-    ...policyResult,
-    resultMode: "throw",
-  };
-}
-
-function resolveResultMode(policyResult: PolicyResult): PolicyResultMode {
-  return policyResult.resultMode ?? "throw";
 }
 
 async function emitPolicyDecision(
@@ -378,70 +305,6 @@ async function emitPolicyDecision(
     },
     expiresAt: policyResult.expiresAt,
     metadata: policyResult.metadata,
-  });
-}
-
-function handleBlockedPolicyResult(
-  params:
-    | {
-        kind: "tool";
-        toolName: string;
-        policyResult: PolicyResult;
-        suspendedProposal?: SuspendedProposal;
-      }
-    | {
-        kind: "handoff";
-        fromAgent: string;
-        toAgent: string;
-        policyResult: PolicyResult;
-        suspendedProposal?: SuspendedProposal;
-      },
-): ToolResultEnvelope {
-  const { policyResult } = params;
-  if (policyResult.decision === "allow") {
-    throw new Error(
-      "Blocked policy result handler received an allow decision.",
-    );
-  }
-
-  if (resolveResultMode(policyResult) === "tool_result") {
-    return toBlockedToolResultEnvelope(policyResult);
-  }
-
-  if (policyResult.decision === "require_approval") {
-    if (!params.suspendedProposal) {
-      throw new Error(
-        "Approval-required policy result is missing a suspended proposal.",
-      );
-    }
-
-    if (params.kind === "tool") {
-      throw new ToolCallApprovalRequiredError({
-        toolName: params.toolName,
-        policyResult,
-        suspendedProposal: params.suspendedProposal,
-      });
-    }
-
-    throw new HandoffApprovalRequiredError({
-      fromAgent: params.fromAgent,
-      toAgent: params.toAgent,
-      policyResult,
-      suspendedProposal: params.suspendedProposal,
-    });
-  }
-
-  if (params.kind === "tool") {
-    throw new ToolCallPolicyDeniedError({
-      toolName: params.toolName,
-      policyResult,
-    });
-  }
-
-  throw new HandoffPolicyDeniedError({
-    fromAgent: params.fromAgent,
-    toAgent: params.toAgent,
-    policyResult,
   });
 }
 
