@@ -5,12 +5,12 @@ import {
   allow,
   deny,
   run,
-  setupMistral,
   tool,
   type RunRecord,
   type RunRecordSink,
   type ToolPolicy,
 } from "../../index";
+import { getExampleProviderConfig } from "../support/live-provider";
 
 interface FinanceContext {
   actor: {
@@ -68,8 +68,9 @@ async function runScenario(
 }
 
 async function main(): Promise<void> {
-  // Configure default provider from MISTRAL_API_KEY.
-  setupMistral();
+  // Choose provider via AIOC_EXAMPLE_PROVIDER and call setup().
+  const { setup, model } = getExampleProviderConfig();
+  setup();
 
   const getFinanceReport = tool<FinanceContext>({
     name: "get_finance_report",
@@ -88,7 +89,7 @@ async function main(): Promise<void> {
 
   const agent = new Agent<FinanceContext>({
     name: "Finance Analyst Agent",
-    model: "mistral-small-latest",
+    model,
     promptVersion: "finance-analyst.v1",
     instructions:
       "If asked about a finance report, call get_finance_report first, then provide a short business summary.",

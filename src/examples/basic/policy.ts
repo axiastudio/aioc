@@ -3,14 +3,15 @@ import {
   Agent,
   deny,
   run,
-  setupMistral,
   tool,
   type ToolPolicy,
 } from "../../index";
+import { getExampleProviderConfig } from "../support/live-provider";
 
 async function main(): Promise<void> {
-  // Minimal setup: configure default provider from MISTRAL_API_KEY.
-  setupMistral();
+  // Choose provider via AIOC_EXAMPLE_PROVIDER and call setup().
+  const { setup, model } = getExampleProviderConfig();
+  setup();
 
   const get_resource = tool({
     name: "get_resource",
@@ -29,7 +30,7 @@ async function main(): Promise<void> {
 
   const agent = new Agent({
     name: "Policy check agent",
-    model: "mistral-small-latest",
+    model,
     instructions: "Use the get_resource if the users asks for the resource.",
     tools: [get_resource],
   });

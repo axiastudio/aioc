@@ -6,7 +6,14 @@ All commands are run from the repository root.
 
 ## Prerequisite
 
-Set `MISTRAL_API_KEY` in your environment (or `.env`), then run:
+Set:
+
+- `AIOC_EXAMPLE_PROVIDER=openai` with `OPENAI_API_KEY`, or
+- `AIOC_EXAMPLE_PROVIDER=mistral` with `MISTRAL_API_KEY`
+
+Optionally set `AIOC_EXAMPLE_MODEL` to override the default model for live examples.
+
+Then run:
 
 ```bash
 npm install
@@ -26,7 +33,7 @@ File:
 
 What it demonstrates:
 
-- minimal provider setup (`setupMistral()`)
+- minimal live-provider setup via `src/examples/support/live-provider.ts`
 - single-agent execution with default non-stream mode
 - reading `result.finalOutput`
 

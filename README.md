@@ -216,18 +216,19 @@ This repository also contains `aioc-inspect`, a private reference example UI for
 
 | Command | Purpose | Needs API key |
 |---|---|---|
-| `npm run example:hello` | Minimal single-agent run | Yes (`MISTRAL_API_KEY`) |
-| `npm run example:policy` | Minimal denied tool + policy flow | Yes (`MISTRAL_API_KEY`) |
-| `npm run example:tool-policy` | Straight tool + policy flow with allowed execution | Yes (`MISTRAL_API_KEY`) |
-| `npm run example:run-record` | Run-record persistence with redaction + audit | Yes (`MISTRAL_API_KEY`) |
+| `npm run example:hello` | Minimal single-agent run | Yes (`AIOC_EXAMPLE_PROVIDER` + matching provider API key) |
+| `npm run example:policy` | Minimal denied tool + policy flow | Yes (`AIOC_EXAMPLE_PROVIDER` + matching provider API key) |
+| `npm run example:tool-policy` | Straight tool + policy flow with allowed execution | Yes (`AIOC_EXAMPLE_PROVIDER` + matching provider API key) |
+| `npm run example:run-record` | Run-record persistence with redaction + audit | Yes (`AIOC_EXAMPLE_PROVIDER` + matching provider API key) |
 | `npm run example:rru:01-extract` | Minimal `extractToolCalls(...)` | No |
 | `npm run example:rru:02-compare` | Minimal `compareRunRecords(...)` | No |
 | `npm run example:rru:03-replay-strict` | Minimal strict replay | No |
 | `npm run example:rru:04-replay-hybrid` | Minimal hybrid replay | No |
-| `npm run example:non-regression` | Advanced v1/v2 run-record diff | Yes (`MISTRAL_API_KEY`) |
+| `npm run example:non-regression` | Advanced v1/v2 run-record diff | Yes (`AIOC_EXAMPLE_PROVIDER` + matching provider API key) |
 
 Notes:
 
+- for live-provider examples, set `AIOC_EXAMPLE_PROVIDER` to `openai` or `mistral`; the matching API key must also be available
 - `example:non-regression` is educational and can be non-deterministic because it uses a live provider.
 - canonical examples guide: `docs/CANONICAL-EXAMPLES.md`.
 

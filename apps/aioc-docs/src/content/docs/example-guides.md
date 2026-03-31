@@ -13,7 +13,7 @@ All example commands are run from the repository root.
 - `npm run example:run-record`
 - `npm run example:non-regression`
 
-These examples require `MISTRAL_API_KEY`.
+Set `AIOC_EXAMPLE_PROVIDER` to `openai` or `mistral` and provide the matching API key. Optionally set `AIOC_EXAMPLE_MODEL` to override the default live model.
 
 ## Deterministic run-record utility examples
 

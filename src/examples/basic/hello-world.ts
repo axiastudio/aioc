@@ -1,13 +1,15 @@
 import "dotenv/config";
-import { Agent, run, setupMistral } from "../../index";
+import { Agent, run } from "../../index";
+import { getExampleProviderConfig } from "../support/live-provider";
 
 async function main(): Promise<void> {
-  // Minimal setup: configure default provider from MISTRAL_API_KEY.
-  setupMistral();
+  // Minimal setup: choose provider via AIOC_EXAMPLE_PROVIDER and call setup().
+  const { setup, model } = getExampleProviderConfig();
+  setup();
 
   const agent = new Agent({
     name: "Hello run agent",
-    model: "mistral-small-latest",
+    model,
     instructions: "Answer in 2 short sentences.",
   });
 

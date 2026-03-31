@@ -6,11 +6,11 @@ import {
   compareRunRecords,
   extractToolCalls,
   run,
-  setupMistral,
   tool,
   type RunRecord,
   type ToolPolicy,
 } from "../../index";
+import { getExampleProviderConfig } from "../support/live-provider";
 
 interface SupportContext {
   actor: {
@@ -141,8 +141,9 @@ async function executeVersion(
 }
 
 async function main(): Promise<void> {
-  // Live provider setup from MISTRAL_API_KEY (non-deterministic by nature).
-  setupMistral();
+  // Live provider setup from AIOC_EXAMPLE_PROVIDER (non-deterministic by nature).
+  const { setup, model } = getExampleProviderConfig();
+  setup();
 
   const getCustomerProfile = tool<SupportContext>({
     name: "get_customer_profile",
@@ -160,7 +161,7 @@ async function main(): Promise<void> {
 
   const supportAgentV1 = new Agent<SupportContext>({
     name: "Customer Support Agent",
-    model: "mistral-small-latest",
+    model,
     promptVersion: "customer-support.v1",
     instructions:
       "You must call get_customer_profile exactly once before producing the final answer. Include one concise next action.",
@@ -169,7 +170,7 @@ async function main(): Promise<void> {
 
   const supportAgentV2 = new Agent<SupportContext>({
     name: "Customer Support Agent",
-    model: "mistral-small-latest",
+    model,
     promptVersion: "customer-support.v2",
     instructions:
       "Answer directly without using any tool. Provide one concise next action.",
