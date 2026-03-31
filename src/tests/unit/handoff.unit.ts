@@ -2,8 +2,10 @@ import assert from "node:assert/strict";
 import { z } from "zod";
 import {
   Agent,
+  HandoffApprovalRequiredError,
   HandoffPolicyDeniedError,
   deny,
+  requireApproval,
   type HandoffPolicy,
   run,
   setDefaultProvider,
@@ -188,6 +190,70 @@ export async function runHandoffUnitTests(): Promise<void> {
         return true;
       },
     );
+  }
+
+  {
+    const { sourceAgent, handoffToolName } = createAgents();
+    const approvalHandoffPolicy: HandoffPolicy = () =>
+      requireApproval("manager_approval_required", {
+        publicReason: "Manager approval is required.",
+      });
+
+    setDefaultProvider(
+      new ScriptedProvider(createHandoffTurns(handoffToolName)),
+    );
+    await assert.rejects(
+      () =>
+        run(sourceAgent, "hello", {
+          policies: {
+            handoffPolicy: approvalHandoffPolicy,
+          },
+        }),
+      (error: unknown) => {
+        assert.ok(error instanceof HandoffApprovalRequiredError);
+        assert.equal(
+          error.result.policyResult.reason,
+          "manager_approval_required",
+        );
+        assert.equal(error.result.policyResult.resultMode, "throw");
+        return true;
+      },
+    );
+  }
+
+  {
+    const { sourceAgent, handoffToolName } = createAgents();
+    const softApprovalHandoffPolicy: HandoffPolicy = () =>
+      requireApproval("manager_approval_required", {
+        publicReason: "Manager approval is required.",
+        resultMode: "tool_result",
+      });
+
+    setDefaultProvider(
+      new ScriptedProvider(createHandoffTurns(handoffToolName)),
+    );
+    const result = await run(sourceAgent, "hello", {
+      policies: {
+        handoffPolicy: softApprovalHandoffPolicy,
+      },
+    });
+
+    assert.equal(result.finalOutput, "Handled by target.");
+    assert.equal(result.lastAgent.name, "Source Agent");
+    const toolOutputItem = result.history.find(
+      (
+        item,
+      ): item is Extract<
+        (typeof result.history)[number],
+        { type: "tool_call_output_item" }
+      > => item.type === "tool_call_output_item",
+    );
+    assert.deepEqual(toolOutputItem?.output, {
+      status: "approval_required",
+      code: "manager_approval_required",
+      publicReason: "Manager approval is required.",
+      data: null,
+    });
   }
 
   {

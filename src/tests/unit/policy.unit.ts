@@ -2,9 +2,11 @@ import assert from "node:assert/strict";
 import { z } from "zod";
 import {
   Agent,
+  ToolCallApprovalRequiredError,
   ToolCallPolicyDeniedError,
   allow,
   deny,
+  requireApproval,
   type ToolPolicy,
   run,
   setDefaultProvider,
@@ -77,24 +79,49 @@ export async function runPolicyUnitTests(): Promise<void> {
       decision: "allow",
       reason: "allow_reason",
       publicReason: undefined,
+      resultMode: undefined,
       denyMode: undefined,
       policyVersion: "v1",
+      expiresAt: undefined,
       metadata: { scope: "tool" },
     });
     assert.deepEqual(denyResult, {
       decision: "deny",
       reason: "deny_reason",
       publicReason: undefined,
+      resultMode: undefined,
       denyMode: undefined,
       policyVersion: undefined,
+      expiresAt: undefined,
       metadata: undefined,
     });
     assert.deepEqual(denyAsToolResult, {
       decision: "deny",
       reason: "deny_reason_public",
       publicReason: "Not allowed for this user.",
+      resultMode: undefined,
       denyMode: "tool_result",
       policyVersion: undefined,
+      expiresAt: undefined,
+      metadata: undefined,
+    });
+
+    const approvalRequiredResult = requireApproval(
+      "manager_approval_required",
+      {
+        publicReason: "Manager approval is required.",
+        resultMode: "tool_result",
+        expiresAt: "2026-04-01T00:00:00Z",
+      },
+    );
+    assert.deepEqual(approvalRequiredResult, {
+      decision: "require_approval",
+      reason: "manager_approval_required",
+      publicReason: "Manager approval is required.",
+      resultMode: "tool_result",
+      denyMode: undefined,
+      policyVersion: undefined,
+      expiresAt: "2026-04-01T00:00:00Z",
       metadata: undefined,
     });
   }
@@ -239,6 +266,72 @@ export async function runPolicyUnitTests(): Promise<void> {
 
   {
     let executions = 0;
+    const approvalPolicy: ToolPolicy = () =>
+      requireApproval("manager_approval_required", {
+        publicReason: "Manager approval is required.",
+      });
+
+    setDefaultProvider(new ScriptedProvider(createToolProposalTurns()));
+    await assert.rejects(
+      () =>
+        run(
+          createToolAgent(() => (executions += 1)),
+          "hello",
+          {
+            policies: { toolPolicy: approvalPolicy },
+          },
+        ),
+      (error: unknown) => {
+        assert.ok(error instanceof ToolCallApprovalRequiredError);
+        assert.equal(
+          error.result.policyResult.reason,
+          "manager_approval_required",
+        );
+        assert.equal(error.result.policyResult.resultMode, "throw");
+        return true;
+      },
+    );
+    assert.equal(executions, 0);
+  }
+
+  {
+    let executions = 0;
+    const softApprovalPolicy: ToolPolicy = () =>
+      requireApproval("manager_approval_required", {
+        publicReason: "Manager approval is required.",
+        resultMode: "tool_result",
+        expiresAt: "2026-04-01T00:00:00Z",
+      });
+
+    setDefaultProvider(new ScriptedProvider(createToolProposalTurns()));
+    const result = await run(
+      createToolAgent(() => (executions += 1)),
+      "hello",
+      {
+        policies: { toolPolicy: softApprovalPolicy },
+      },
+    );
+
+    assert.equal(result.finalOutput, "done");
+    assert.equal(executions, 0);
+    const toolOutputItem = result.history.find(
+      (
+        item,
+      ): item is Extract<
+        (typeof result.history)[number],
+        { type: "tool_call_output_item" }
+      > => item.type === "tool_call_output_item",
+    );
+    assert.deepEqual(toolOutputItem?.output, {
+      status: "approval_required",
+      code: "manager_approval_required",
+      publicReason: "Manager approval is required.",
+      data: null,
+    });
+  }
+
+  {
+    let executions = 0;
     const explodingPolicy: ToolPolicy = () => {
       throw new Error("boom");
     };
@@ -277,6 +370,33 @@ export async function runPolicyUnitTests(): Promise<void> {
           "hello",
           {
             policies: { toolPolicy: invalidPolicy },
+          },
+        ),
+      (error: unknown) => {
+        assert.ok(error instanceof ToolCallPolicyDeniedError);
+        assert.equal(error.result.policyResult.reason, "invalid_policy_result");
+        return true;
+      },
+    );
+    assert.equal(executions, 0);
+  }
+
+  {
+    let executions = 0;
+    const conflictingModePolicy = (() =>
+      deny("tool_not_allowlisted", {
+        denyMode: "throw",
+        resultMode: "tool_result",
+      })) as ToolPolicy;
+
+    setDefaultProvider(new ScriptedProvider(createToolProposalTurns()));
+    await assert.rejects(
+      () =>
+        run(
+          createToolAgent(() => (executions += 1)),
+          "hello",
+          {
+            policies: { toolPolicy: conflictingModePolicy },
           },
         ),
       (error: unknown) => {

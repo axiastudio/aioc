@@ -50,6 +50,22 @@ export class ToolCallPolicyDeniedError extends ToolCallError {
   }
 }
 
+export interface ToolCallApprovalRequiredResult {
+  toolName: string;
+  policyResult: PolicyResult;
+}
+
+export class ToolCallApprovalRequiredError extends ToolCallError {
+  result: ToolCallApprovalRequiredResult;
+
+  constructor(result: ToolCallApprovalRequiredResult) {
+    super(
+      `Tool "${result.toolName}" requires approval: ${result.policyResult.reason}`,
+    );
+    this.result = result;
+  }
+}
+
 export interface HandoffPolicyDeniedResult {
   fromAgent: string;
   toAgent: string;
@@ -62,6 +78,23 @@ export class HandoffPolicyDeniedError extends AIOCError {
   constructor(result: HandoffPolicyDeniedResult) {
     super(
       `Handoff "${result.fromAgent}" -> "${result.toAgent}" denied by policy: ${result.policyResult.reason}`,
+    );
+    this.result = result;
+  }
+}
+
+export interface HandoffApprovalRequiredResult {
+  fromAgent: string;
+  toAgent: string;
+  policyResult: PolicyResult;
+}
+
+export class HandoffApprovalRequiredError extends AIOCError {
+  result: HandoffApprovalRequiredResult;
+
+  constructor(result: HandoffApprovalRequiredResult) {
+    super(
+      `Handoff "${result.fromAgent}" -> "${result.toAgent}" requires approval: ${result.policyResult.reason}`,
     );
     this.result = result;
   }

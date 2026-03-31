@@ -1,15 +1,21 @@
 import { Agent } from "./agent";
 import { getDefaultProvider } from "./config";
 import {
+  HandoffApprovalRequiredError,
   HandoffPolicyDeniedError,
   MaxTurnsExceededError,
   OutputGuardrailTripwireTriggered,
+  ToolCallApprovalRequiredError,
   ToolCallError,
   ToolCallPolicyDeniedError,
 } from "./errors";
 import type { RunLogger } from "./logger";
 import { user } from "./messages";
-import type { PolicyConfiguration, PolicyResult } from "./policy";
+import type {
+  PolicyConfiguration,
+  PolicyResult,
+  PolicyResultMode,
+} from "./policy";
 import { ModelProvider } from "./providers/base";
 import { RunLogEmitter } from "./run-log-emitter";
 import {
@@ -46,7 +52,11 @@ type MutableRunState<TContext> = {
 };
 
 type HandoffRegistry<TContext> = Map<string, Agent<TContext>>;
-export type ToolResultEnvelopeStatus = "ok" | "denied";
+type ResolvedPolicyResult = Omit<PolicyResult, "denyMode" | "resultMode"> & {
+  resultMode?: PolicyResultMode;
+};
+
+export type ToolResultEnvelopeStatus = "ok" | "denied" | "approval_required";
 
 export interface ToolResultEnvelope {
   status: ToolResultEnvelopeStatus;
@@ -168,18 +178,13 @@ function toErrorMetadata(error: unknown): Record<string, unknown> {
 function createDeniedPolicyResult(
   reason: string,
   metadata?: Record<string, unknown>,
-): PolicyResult {
+): ResolvedPolicyResult {
   return {
     decision: "deny",
     reason,
+    resultMode: "throw",
     metadata,
   };
-}
-
-function shouldReturnDeniedAsToolResult(policyResult: PolicyResult): boolean {
-  return (
-    policyResult.decision === "deny" && policyResult.denyMode === "tool_result"
-  );
 }
 
 function toAllowedToolResultEnvelope(data: unknown): ToolResultEnvelope {
@@ -191,39 +196,247 @@ function toAllowedToolResultEnvelope(data: unknown): ToolResultEnvelope {
   };
 }
 
-function toDeniedToolResultEnvelope(
-  policyResult: PolicyResult,
+function toBlockedToolResultEnvelope(
+  policyResult: ResolvedPolicyResult,
 ): ToolResultEnvelope {
   return {
-    status: "denied",
+    status:
+      policyResult.decision === "require_approval"
+        ? "approval_required"
+        : "denied",
     code: policyResult.reason,
-    publicReason: policyResult.publicReason?.trim() || "Action not allowed.",
+    publicReason:
+      policyResult.publicReason?.trim() ||
+      (policyResult.decision === "require_approval"
+        ? "Action requires approval."
+        : "Action not allowed."),
     data: null,
   };
 }
 
-function isPolicyResult(value: unknown): value is PolicyResult {
+function isPolicyResultShape(value: unknown): value is PolicyResult {
   if (typeof value !== "object" || value === null) {
     return false;
   }
 
   const candidate = value as Partial<PolicyResult>;
   const validDecision =
-    candidate.decision === "allow" || candidate.decision === "deny";
+    candidate.decision === "allow" ||
+    candidate.decision === "deny" ||
+    candidate.decision === "require_approval";
   const validPublicReason =
     typeof candidate.publicReason === "undefined" ||
     typeof candidate.publicReason === "string";
+  const validResultMode =
+    typeof candidate.resultMode === "undefined" ||
+    candidate.resultMode === "throw" ||
+    candidate.resultMode === "tool_result";
   const validDenyMode =
     typeof candidate.denyMode === "undefined" ||
     candidate.denyMode === "throw" ||
     candidate.denyMode === "tool_result";
+  const validExpiresAt =
+    typeof candidate.expiresAt === "undefined" ||
+    typeof candidate.expiresAt === "string";
   return (
     validDecision &&
     typeof candidate.reason === "string" &&
     candidate.reason.trim().length > 0 &&
     validPublicReason &&
-    validDenyMode
+    validResultMode &&
+    validDenyMode &&
+    validExpiresAt
   );
+}
+
+function normalizePolicyResult(
+  policyResult: PolicyResult,
+): ResolvedPolicyResult | null {
+  if (policyResult.decision === "allow") {
+    return {
+      decision: policyResult.decision,
+      reason: policyResult.reason,
+      publicReason: policyResult.publicReason,
+      policyVersion: policyResult.policyVersion,
+      expiresAt: policyResult.expiresAt,
+      metadata: policyResult.metadata,
+    };
+  }
+
+  if (
+    policyResult.decision === "require_approval" &&
+    typeof policyResult.denyMode !== "undefined"
+  ) {
+    return null;
+  }
+
+  if (
+    typeof policyResult.resultMode !== "undefined" &&
+    typeof policyResult.denyMode !== "undefined" &&
+    policyResult.resultMode !== policyResult.denyMode
+  ) {
+    return null;
+  }
+
+  return {
+    decision: policyResult.decision,
+    reason: policyResult.reason,
+    publicReason: policyResult.publicReason,
+    resultMode: policyResult.resultMode ?? policyResult.denyMode ?? "throw",
+    policyVersion: policyResult.policyVersion,
+    expiresAt: policyResult.expiresAt,
+    metadata: policyResult.metadata,
+  };
+}
+
+async function emitPolicyDecision(
+  params:
+    | {
+        kind: "tool";
+        agentName: string;
+        turn: number;
+        callId: string;
+        toolName: string;
+        policyResult: ResolvedPolicyResult;
+        logEmitter: RunLogEmitter;
+        onPolicyDecision?: (decision: PendingPolicyDecisionRecord) => void;
+      }
+    | {
+        kind: "handoff";
+        agentName: string;
+        turn: number;
+        callId: string;
+        handoffName: string;
+        toAgentName: string;
+        policyResult: ResolvedPolicyResult;
+        logEmitter: RunLogEmitter;
+        onPolicyDecision?: (decision: PendingPolicyDecisionRecord) => void;
+      },
+): Promise<void> {
+  const {
+    agentName,
+    turn,
+    callId,
+    policyResult,
+    logEmitter,
+    onPolicyDecision,
+  } = params;
+
+  if (params.kind === "tool") {
+    await logEmitter.toolPolicyEvaluated(
+      agentName,
+      turn,
+      params.toolName,
+      callId,
+      policyResult.decision,
+      policyResult.reason,
+      policyResult.publicReason,
+      policyResult.resultMode,
+      policyResult.policyVersion,
+      policyResult.expiresAt,
+      policyResult.metadata,
+    );
+    onPolicyDecision?.({
+      turn,
+      callId,
+      decision: policyResult.decision,
+      reason: policyResult.reason,
+      publicReason: policyResult.publicReason,
+      resultMode: policyResult.resultMode,
+      policyVersion: policyResult.policyVersion,
+      resource: {
+        kind: "tool",
+        name: params.toolName,
+      },
+      expiresAt: policyResult.expiresAt,
+      metadata: policyResult.metadata,
+    });
+    return;
+  }
+
+  await logEmitter.handoffPolicyEvaluated(
+    agentName,
+    turn,
+    params.handoffName,
+    callId,
+    params.toAgentName,
+    policyResult.decision,
+    policyResult.reason,
+    policyResult.publicReason,
+    policyResult.resultMode,
+    policyResult.policyVersion,
+    policyResult.expiresAt,
+    policyResult.metadata,
+  );
+  onPolicyDecision?.({
+    turn,
+    callId,
+    decision: policyResult.decision,
+    reason: policyResult.reason,
+    publicReason: policyResult.publicReason,
+    resultMode: policyResult.resultMode,
+    policyVersion: policyResult.policyVersion,
+    resource: {
+      kind: "handoff",
+      name: params.toAgentName,
+    },
+    expiresAt: policyResult.expiresAt,
+    metadata: policyResult.metadata,
+  });
+}
+
+function handleBlockedPolicyResult(
+  params:
+    | {
+        kind: "tool";
+        toolName: string;
+        policyResult: ResolvedPolicyResult;
+      }
+    | {
+        kind: "handoff";
+        fromAgent: string;
+        toAgent: string;
+        policyResult: ResolvedPolicyResult;
+      },
+): ToolResultEnvelope {
+  const { policyResult } = params;
+  if (policyResult.decision === "allow") {
+    throw new Error(
+      "Blocked policy result handler received an allow decision.",
+    );
+  }
+
+  if (policyResult.resultMode === "tool_result") {
+    return toBlockedToolResultEnvelope(policyResult);
+  }
+
+  if (policyResult.decision === "require_approval") {
+    if (params.kind === "tool") {
+      throw new ToolCallApprovalRequiredError({
+        toolName: params.toolName,
+        policyResult,
+      });
+    }
+
+    throw new HandoffApprovalRequiredError({
+      fromAgent: params.fromAgent,
+      toAgent: params.toAgent,
+      policyResult,
+    });
+  }
+
+  if (params.kind === "tool") {
+    throw new ToolCallPolicyDeniedError({
+      toolName: params.toolName,
+      policyResult,
+    });
+  }
+
+  throw new HandoffPolicyDeniedError({
+    fromAgent: params.fromAgent,
+    toAgent: params.toAgent,
+    policyResult,
+  });
 }
 
 async function evaluateToolPolicy<TContext>(
@@ -233,7 +446,7 @@ async function evaluateToolPolicy<TContext>(
   runContext: RunContext<TContext>,
   turn: number,
   policies?: PolicyConfiguration<TContext>,
-): Promise<PolicyResult> {
+): Promise<ResolvedPolicyResult> {
   const policy = policies?.toolPolicy;
   if (!policy) {
     return createDeniedPolicyResult("policy_not_configured");
@@ -253,11 +466,14 @@ async function evaluateToolPolicy<TContext>(
     return createDeniedPolicyResult("policy_error", toErrorMetadata(error));
   }
 
-  if (!isPolicyResult(rawResult)) {
+  if (!isPolicyResultShape(rawResult)) {
     return createDeniedPolicyResult("invalid_policy_result");
   }
 
-  return rawResult;
+  return (
+    normalizePolicyResult(rawResult) ??
+    createDeniedPolicyResult("invalid_policy_result")
+  );
 }
 
 async function evaluateHandoffPolicy<TContext>(
@@ -268,7 +484,7 @@ async function evaluateHandoffPolicy<TContext>(
   runContext: RunContext<TContext>,
   turn: number,
   policies?: PolicyConfiguration<TContext>,
-): Promise<PolicyResult> {
+): Promise<ResolvedPolicyResult> {
   const policy = policies?.handoffPolicy;
   if (!policy) {
     return createDeniedPolicyResult("policy_not_configured");
@@ -287,11 +503,14 @@ async function evaluateHandoffPolicy<TContext>(
     return createDeniedPolicyResult("policy_error", toErrorMetadata(error));
   }
 
-  if (!isPolicyResult(rawResult)) {
+  if (!isPolicyResultShape(rawResult)) {
     return createDeniedPolicyResult("invalid_policy_result");
   }
 
-  return rawResult;
+  return (
+    normalizePolicyResult(rawResult) ??
+    createDeniedPolicyResult("invalid_policy_result")
+  );
 }
 
 async function executeToolCall<TContext>(
@@ -318,35 +537,20 @@ async function executeToolCall<TContext>(
     policies,
   );
 
-  await logEmitter.toolPolicyEvaluated(
-    agent.name,
-    turn,
-    call.name,
-    call.callId,
-    policyResult.decision,
-    policyResult.reason,
-    policyResult.policyVersion,
-    policyResult.metadata,
-  );
-  onPolicyDecision?.({
+  await emitPolicyDecision({
+    kind: "tool",
+    agentName: agent.name,
     turn,
     callId: call.callId,
-    decision: policyResult.decision,
-    reason: policyResult.reason,
-    policyVersion: policyResult.policyVersion,
-    resource: {
-      kind: "tool",
-      name: call.name,
-    },
-    metadata: policyResult.metadata,
+    toolName: call.name,
+    policyResult,
+    logEmitter,
+    onPolicyDecision,
   });
 
   if (policyResult.decision !== "allow") {
-    if (shouldReturnDeniedAsToolResult(policyResult)) {
-      return toDeniedToolResultEnvelope(policyResult);
-    }
-
-    throw new ToolCallPolicyDeniedError({
+    return handleBlockedPolicyResult({
+      kind: "tool",
       toolName: call.name,
       policyResult,
     });
@@ -570,40 +774,25 @@ async function* runLoop<TContext>(
                 policies,
               );
 
-              await logEmitter.handoffPolicyEvaluated(
-                currentAgent.name,
-                activeTurn,
-                call.name,
-                call.callId,
-                handoffTarget.name,
-                handoffPolicyResult.decision,
-                handoffPolicyResult.reason,
-                handoffPolicyResult.policyVersion,
-                handoffPolicyResult.metadata,
-              );
-              onPolicyDecision?.({
+              await emitPolicyDecision({
+                kind: "handoff",
+                agentName: currentAgent.name,
                 turn: activeTurn,
                 callId: call.callId,
-                decision: handoffPolicyResult.decision,
-                reason: handoffPolicyResult.reason,
-                policyVersion: handoffPolicyResult.policyVersion,
-                resource: {
-                  kind: "handoff",
-                  name: handoffTarget.name,
-                },
-                metadata: handoffPolicyResult.metadata,
+                handoffName: call.name,
+                toAgentName: handoffTarget.name,
+                policyResult: handoffPolicyResult,
+                logEmitter,
+                onPolicyDecision,
               });
 
               if (handoffPolicyResult.decision !== "allow") {
-                if (shouldReturnDeniedAsToolResult(handoffPolicyResult)) {
-                  toolOutput = toDeniedToolResultEnvelope(handoffPolicyResult);
-                } else {
-                  throw new HandoffPolicyDeniedError({
-                    fromAgent: currentAgent.name,
-                    toAgent: handoffTarget.name,
-                    policyResult: handoffPolicyResult,
-                  });
-                }
+                toolOutput = handleBlockedPolicyResult({
+                  kind: "handoff",
+                  fromAgent: currentAgent.name,
+                  toAgent: handoffTarget.name,
+                  policyResult: handoffPolicyResult,
+                });
               } else {
                 toolOutput = toAllowedToolResultEnvelope({
                   handoffTo: handoffTarget.name,

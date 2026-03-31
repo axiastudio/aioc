@@ -7,23 +7,27 @@ Policies are the runtime gate between model proposals and actual execution.
 
 ## Current Stable Outcome Model
 
-Today the stable runtime supports two outcomes:
+Today the stable runtime supports three outcomes:
 
 - `allow`
 - `deny`
+- `require_approval`
 
 The current public shape is:
 
 ```ts
-type PolicyDecision = "allow" | "deny";
-type PolicyDenyMode = "throw" | "tool_result";
+type PolicyDecision = "allow" | "deny" | "require_approval";
+type PolicyResultMode = "throw" | "tool_result";
+type PolicyDenyMode = PolicyResultMode; // compatibility alias during beta
 
 type PolicyResult = {
   decision: PolicyDecision;
   reason: string;
   publicReason?: string;
+  resultMode?: PolicyResultMode;
   denyMode?: PolicyDenyMode;
   policyVersion?: string;
+  expiresAt?: string;
   metadata?: Record<string, unknown>;
 }
 ```
@@ -33,6 +37,7 @@ type PolicyResult = {
 ```ts
 allow(reason, options?)
 deny(reason, options?)
+requireApproval(reason, options?)
 ```
 
 These helpers build `PolicyResult` objects without forcing your application to assemble them manually.
@@ -68,14 +73,16 @@ If no relevant policy is configured, the runtime denies the proposal.
 
 This means the current stable behavior is default deny.
 
-## `denyMode`
+## `resultMode`
 
-`denyMode` controls how a deny is surfaced:
+`resultMode` controls how non-allow outcomes are surfaced:
 
 - `throw`: runtime raises a typed policy-denied error
-- `tool_result`: runtime sends a normalized deny envelope back through tool output handling
+- `tool_result`: runtime sends a normalized envelope back through tool output handling
 
-If you want the model to continue and respond to the user after a deny, `tool_result` is the current mechanism.
+If you want the model to continue and respond to the user after a deny or approval-required outcome, `tool_result` is the current mechanism.
+
+For backward compatibility during beta, `denyMode` is still accepted as an alias for `resultMode` on `deny(...)`.
 
 ## Example
 
@@ -95,13 +102,14 @@ const toolPolicy: ToolPolicy<{ actor: { groups: string[] } }> = ({ runContext })
 };
 ```
 
-## Forward-Looking Note
+## Approval-Oriented Outcomes
 
-Approval-oriented outcomes such as `require_approval` are currently defined only at the RFC level.
+`require_approval` is now part of the runtime contract.
 
-See:
+- with `resultMode = "throw"`, runtime raises approval-required typed errors
+- with `resultMode = "tool_result"`, runtime emits a normalized envelope with `status = "approval_required"`
+
+Approval workflow, queueing, and resume semantics remain outside the core runtime and are still discussed in:
 
 - `RFC-0004`
 - `RFC-0005`
-
-They are not part of the current stable runtime contract yet.

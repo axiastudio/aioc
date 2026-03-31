@@ -82,6 +82,7 @@ export async function runPolicyDefaultDenyRegressionTests(): Promise<void> {
   assert.equal(policyEvent.callId, "call-1");
   assert.equal(policyEvent.decision, "deny");
   assert.equal(policyEvent.reason, "policy_not_configured");
+  assert.equal(policyEvent.resultMode, "throw");
 
   setDefaultProvider(
     new ScriptedProvider([

@@ -97,14 +97,17 @@ export class RunLogEmitter {
     turn: number,
     toolName: string,
     callId: string,
-    decision: "allow" | "deny",
+    decision: "allow" | "deny" | "require_approval",
     reason: string,
+    publicReason?: string,
+    resultMode?: "throw" | "tool_result",
     policyVersion?: string,
+    expiresAt?: string,
     metadata?: Record<string, unknown>,
   ): Promise<void> {
     await this.emit({
       timestamp: this.createTimestamp(),
-      level: decision === "deny" ? "warn" : "info",
+      level: decision === "allow" ? "info" : "warn",
       type: "tool_policy_evaluated",
       agent,
       turn,
@@ -112,7 +115,10 @@ export class RunLogEmitter {
       callId,
       decision,
       reason,
+      publicReason,
+      resultMode,
       policyVersion,
+      expiresAt,
       metadata,
     });
   }
@@ -123,14 +129,17 @@ export class RunLogEmitter {
     handoffName: string,
     callId: string,
     toAgent: string,
-    decision: "allow" | "deny",
+    decision: "allow" | "deny" | "require_approval",
     reason: string,
+    publicReason?: string,
+    resultMode?: "throw" | "tool_result",
     policyVersion?: string,
+    expiresAt?: string,
     metadata?: Record<string, unknown>,
   ): Promise<void> {
     await this.emit({
       timestamp: this.createTimestamp(),
-      level: decision === "deny" ? "warn" : "info",
+      level: decision === "allow" ? "info" : "warn",
       type: "handoff_policy_evaluated",
       agent,
       turn,
@@ -139,7 +148,10 @@ export class RunLogEmitter {
       toAgent,
       decision,
       reason,
+      publicReason,
+      resultMode,
       policyVersion,
+      expiresAt,
       metadata,
     });
   }

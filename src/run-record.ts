@@ -13,10 +13,13 @@ export interface PolicyDecisionRecord {
   timestamp: string;
   turn: number;
   callId: string;
-  decision: "allow" | "deny";
+  decision: "allow" | "deny" | "require_approval";
   reason: string;
+  publicReason?: string;
+  resultMode?: "throw" | "tool_result";
   policyVersion?: string;
   resource: PolicyResourceSnapshot;
+  expiresAt?: string;
   metadata?: Record<string, unknown>;
 }
 

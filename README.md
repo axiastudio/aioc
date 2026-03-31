@@ -69,7 +69,7 @@ console.log(result.finalOutput);
 - `Tool`, `tool(...)`
 - handoffs via `Agent({ handoffs: [...] })`
 - `run(...)` with streaming support (`stream` defaults to `false`)
-- policy helpers `allow(...)` / `deny(...)`
+- policy helpers `allow(...)` / `deny(...)` / `requireApproval(...)`
 - provider setup helpers `setupMistral(...)`, `setupOpenAI(...)`, `setupProvider(...)`
 - run logger hook `run(..., { logger })`
 - run record hook `run(..., { record })`
@@ -98,6 +98,8 @@ await run(agent, "Summarize report Q1.", {
 ```
 
 Default behavior is deny when no policy is configured.
+
+`resultMode` is the canonical non-allow delivery mode (`"throw"` or `"tool_result"`). During beta, `denyMode` is still accepted as a compatibility alias for `deny(...)`.
 
 ## Run Record (Minimal)
 

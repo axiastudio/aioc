@@ -28,9 +28,12 @@ export type RunLogEvent =
       type: "tool_policy_evaluated";
       toolName: string;
       callId: string;
-      decision: "allow" | "deny";
+      decision: "allow" | "deny" | "require_approval";
       reason: string;
+      publicReason?: string;
+      resultMode?: "throw" | "tool_result";
       policyVersion?: string;
+      expiresAt?: string;
       metadata?: Record<string, unknown>;
     })
   | (RunLogEventBase & {
@@ -38,9 +41,12 @@ export type RunLogEvent =
       handoffName: string;
       callId: string;
       toAgent: string;
-      decision: "allow" | "deny";
+      decision: "allow" | "deny" | "require_approval";
       reason: string;
+      publicReason?: string;
+      resultMode?: "throw" | "tool_result";
       policyVersion?: string;
+      expiresAt?: string;
       metadata?: Record<string, unknown>;
     })
   | (RunLogEventBase & {

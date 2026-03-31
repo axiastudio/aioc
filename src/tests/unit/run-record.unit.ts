@@ -6,6 +6,7 @@ import {
   ToolCallPolicyDeniedError,
   defineOutputGuardrail,
   deny,
+  requireApproval,
   run,
   setDefaultProvider,
   tool,
@@ -173,6 +174,7 @@ export async function runRunRecordUnitTests(): Promise<void> {
       records[0]?.policyDecisions[0]?.reason,
       "policy_not_configured",
     );
+    assert.equal(records[0]?.policyDecisions[0]?.resultMode, "throw");
     assert.equal(records[0]?.policyDecisions[0]?.resource.kind, "tool");
     assert.equal(records[0]?.policyDecisions[0]?.resource.name, "ping");
     assert.equal(records[0]?.promptSnapshots.length, 1);
@@ -184,6 +186,97 @@ export async function runRunRecordUnitTests(): Promise<void> {
     assert.equal(records[0]?.requestFingerprints.length, 1);
     assert.equal(records[0]?.requestFingerprints[0]?.turn, 1);
     assert.equal(records[0]?.requestFingerprints[0]?.toolCount, 1);
+  }
+
+  {
+    const records: RunRecord[] = [];
+
+    let executions = 0;
+
+    setDefaultProvider(
+      new ScriptedProvider([
+        [
+          {
+            type: "tool_call",
+            callId: "call-approval-1",
+            name: "ping",
+            arguments: "{}",
+          },
+        ],
+        [{ type: "completed", message: "done" }],
+      ]),
+    );
+
+    const ping = tool({
+      name: "ping",
+      description: "Ping tool",
+      parameters: z.object({}),
+      execute: () => {
+        executions += 1;
+        return { ok: true };
+      },
+    });
+
+    const agent = new Agent({
+      name: "Run record approval required",
+      model: "fake-model",
+      instructions: "Try calling ping when available.",
+      tools: [ping],
+    });
+
+    const result = await run(agent, "hello", {
+      policies: {
+        toolPolicy: () =>
+          requireApproval("manager_approval_required", {
+            publicReason: "Manager approval is required.",
+            resultMode: "tool_result",
+            policyVersion: "approval-policy.v1",
+            expiresAt: "2026-04-01T00:00:00Z",
+          }),
+      },
+      record: {
+        sink: (record) => {
+          records.push(record);
+        },
+      },
+    });
+
+    assert.equal(result.finalOutput, "done");
+    assert.equal(executions, 0);
+    assert.equal(records.length, 1);
+    assert.equal(records[0]?.policyDecisions.length, 1);
+    assert.equal(records[0]?.policyDecisions[0]?.decision, "require_approval");
+    assert.equal(
+      records[0]?.policyDecisions[0]?.reason,
+      "manager_approval_required",
+    );
+    assert.equal(
+      records[0]?.policyDecisions[0]?.publicReason,
+      "Manager approval is required.",
+    );
+    assert.equal(records[0]?.policyDecisions[0]?.resultMode, "tool_result");
+    assert.equal(
+      records[0]?.policyDecisions[0]?.policyVersion,
+      "approval-policy.v1",
+    );
+    assert.equal(
+      records[0]?.policyDecisions[0]?.expiresAt,
+      "2026-04-01T00:00:00Z",
+    );
+    const outputItem = records[0]?.items.find(
+      (
+        item,
+      ): item is Extract<
+        RunRecord["items"][number],
+        { type: "tool_call_output_item" }
+      > => item.type === "tool_call_output_item",
+    );
+    assert.deepEqual(outputItem?.output, {
+      status: "approval_required",
+      code: "manager_approval_required",
+      publicReason: "Manager approval is required.",
+      data: null,
+    });
   }
 
   {
@@ -283,6 +376,11 @@ export async function runRunRecordUnitTests(): Promise<void> {
       records[0]?.policyDecisions[0]?.reason,
       "target_not_allowlisted",
     );
+    assert.equal(
+      records[0]?.policyDecisions[0]?.publicReason,
+      "Escalation not permitted.",
+    );
+    assert.equal(records[0]?.policyDecisions[0]?.resultMode, "tool_result");
     assert.equal(
       records[0]?.policyDecisions[0]?.policyVersion,
       "handoff-policy.v1",

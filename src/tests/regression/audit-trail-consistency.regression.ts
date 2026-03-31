@@ -76,12 +76,16 @@ export async function runAuditTrailConsistencyRegressionTests(): Promise<void> {
   assert.ok(loggerDecision);
   assert.equal(loggerDecision.decision, "deny");
   assert.equal(loggerDecision.reason, "tool_not_allowlisted");
+  assert.equal(loggerDecision.publicReason, "Not allowed in this context.");
+  assert.equal(loggerDecision.resultMode, "tool_result");
   assert.equal(loggerDecision.policyVersion, "policy.v1");
 
   const recordDecision = records[0]?.policyDecisions[0];
   assert.ok(recordDecision);
   assert.equal(recordDecision?.decision, "deny");
   assert.equal(recordDecision?.reason, "tool_not_allowlisted");
+  assert.equal(recordDecision?.publicReason, "Not allowed in this context.");
+  assert.equal(recordDecision?.resultMode, "tool_result");
   assert.equal(recordDecision?.policyVersion, "policy.v1");
 
   const outputItem = records[0]?.items.find(
