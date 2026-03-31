@@ -71,7 +71,7 @@ export async function runPolicyUnitTests(): Promise<void> {
     });
     const denyAsToolResult = deny("deny_reason_public", {
       publicReason: "Not allowed for this user.",
-      denyMode: "tool_result",
+      resultMode: "tool_result",
     });
     const denyResult = deny("deny_reason");
 
@@ -80,7 +80,6 @@ export async function runPolicyUnitTests(): Promise<void> {
       reason: "allow_reason",
       publicReason: undefined,
       resultMode: undefined,
-      denyMode: undefined,
       policyVersion: "v1",
       expiresAt: undefined,
       metadata: { scope: "tool" },
@@ -90,7 +89,6 @@ export async function runPolicyUnitTests(): Promise<void> {
       reason: "deny_reason",
       publicReason: undefined,
       resultMode: undefined,
-      denyMode: undefined,
       policyVersion: undefined,
       expiresAt: undefined,
       metadata: undefined,
@@ -99,8 +97,7 @@ export async function runPolicyUnitTests(): Promise<void> {
       decision: "deny",
       reason: "deny_reason_public",
       publicReason: "Not allowed for this user.",
-      resultMode: undefined,
-      denyMode: "tool_result",
+      resultMode: "tool_result",
       policyVersion: undefined,
       expiresAt: undefined,
       metadata: undefined,
@@ -119,7 +116,6 @@ export async function runPolicyUnitTests(): Promise<void> {
       reason: "manager_approval_required",
       publicReason: "Manager approval is required.",
       resultMode: "tool_result",
-      denyMode: undefined,
       policyVersion: undefined,
       expiresAt: "2026-04-01T00:00:00Z",
       metadata: undefined,
@@ -211,7 +207,7 @@ export async function runPolicyUnitTests(): Promise<void> {
     const softDenyPolicy: ToolPolicy = () =>
       deny("tool_not_allowlisted", {
         publicReason: "You are not allowed to access this tool.",
-        denyMode: "tool_result",
+        resultMode: "tool_result",
       });
 
     setDefaultProvider(new ScriptedProvider(createToolProposalTurns()));
@@ -383,11 +379,11 @@ export async function runPolicyUnitTests(): Promise<void> {
 
   {
     let executions = 0;
-    const conflictingModePolicy = (() =>
-      deny("tool_not_allowlisted", {
-        denyMode: "throw",
-        resultMode: "tool_result",
-      })) as ToolPolicy;
+    const legacyDenyModePolicy = (() => ({
+      decision: "deny" as const,
+      reason: "tool_not_allowlisted",
+      denyMode: "tool_result",
+    })) as unknown as ToolPolicy;
 
     setDefaultProvider(new ScriptedProvider(createToolProposalTurns()));
     await assert.rejects(
@@ -396,12 +392,19 @@ export async function runPolicyUnitTests(): Promise<void> {
           createToolAgent(() => (executions += 1)),
           "hello",
           {
-            policies: { toolPolicy: conflictingModePolicy },
+            policies: { toolPolicy: legacyDenyModePolicy },
           },
         ),
       (error: unknown) => {
         assert.ok(error instanceof ToolCallPolicyDeniedError);
-        assert.equal(error.result.policyResult.reason, "invalid_policy_result");
+        assert.equal(
+          error.result.policyResult.reason,
+          "deprecated_policy_field_denyMode",
+        );
+        assert.equal(
+          error.result.policyResult.metadata?.replacementField,
+          "resultMode",
+        );
         return true;
       },
     );

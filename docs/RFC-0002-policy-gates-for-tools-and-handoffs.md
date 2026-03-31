@@ -13,6 +13,8 @@ RFC-0001 defines governance invariants but does not yet specify the runtime cont
 
 This RFC introduces the minimum API and runtime behavior for deterministic policy gates.
 
+Note (2026-03-31): the current runtime uses `resultMode` as the canonical non-allow delivery field. References to `denyMode` below should be read as historical terminology from the original contract.
+
 ## Decision
 
 `aioc` introduces explicit policy contracts for tool calls and handoff transitions.

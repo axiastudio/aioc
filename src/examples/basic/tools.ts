@@ -51,7 +51,7 @@ async function main(): Promise<void> {
   const toolPolicy: ToolPolicy<FinanceContext> = ({ runContext }) => {
     if (!runContext.context.actor.groups.includes("finance")) {
       return deny("deny_missing_finance_group", {
-        denyMode: "tool_result",
+        resultMode: "tool_result",
         publicReason: "You are not authorized to access finance reports.",
       });
     }

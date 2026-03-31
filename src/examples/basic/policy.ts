@@ -22,7 +22,7 @@ async function main(): Promise<void> {
 
   const toolPolicy: ToolPolicy = () => {
     return deny("deny_resource_access", {
-      denyMode: "tool_result",
+      resultMode: "tool_result",
       publicReason: "You are not authorized to access resource.",
     });
   };

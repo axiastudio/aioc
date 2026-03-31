@@ -84,7 +84,7 @@ import { Agent, allow, deny, run, tool, type ToolPolicy } from "@axiastudio/aioc
 const toolPolicy: ToolPolicy<{ actor: { groups: string[] } }> = ({ runContext }) => {
   if (!runContext.context.actor.groups.includes("finance")) {
     return deny("deny_missing_finance_group", {
-      denyMode: "tool_result",
+      resultMode: "tool_result",
       publicReason: "You are not authorized to access this report.",
     });
   }
@@ -99,7 +99,7 @@ await run(agent, "Summarize report Q1.", {
 
 Default behavior is deny when no policy is configured.
 
-`resultMode` is the canonical non-allow delivery mode (`"throw"` or `"tool_result"`). During beta, `denyMode` is still accepted as a compatibility alias for `deny(...)`.
+`resultMode` is the canonical non-allow delivery mode (`"throw"` or `"tool_result"`). `denyMode` is no longer supported.
 
 ## Run Record (Minimal)
 

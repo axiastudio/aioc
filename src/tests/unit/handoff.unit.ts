@@ -138,7 +138,7 @@ export async function runHandoffUnitTests(): Promise<void> {
     const softDenyHandoffPolicy: HandoffPolicy = () =>
       deny("target_not_allowlisted", {
         publicReason: "Escalation not permitted for this request.",
-        denyMode: "tool_result",
+        resultMode: "tool_result",
       });
 
     setDefaultProvider(

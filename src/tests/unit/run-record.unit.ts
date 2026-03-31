@@ -350,7 +350,7 @@ export async function runRunRecordUnitTests(): Promise<void> {
         handoffPolicy: () =>
           deny("target_not_allowlisted", {
             publicReason: "Escalation not permitted.",
-            denyMode: "tool_result",
+            resultMode: "tool_result",
             policyVersion: "handoff-policy.v1",
           }),
       },

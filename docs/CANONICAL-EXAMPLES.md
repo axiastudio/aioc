@@ -46,7 +46,7 @@ What it demonstrates:
 
 - the smallest useful `tool + policy` example
 - a parameterless tool definition
-- a deterministic soft deny path (`denyMode: "tool_result"`)
+- a deterministic soft deny path (`resultMode: "tool_result"`)
 - how the model receives a denied tool result instead of live tool execution
 
 ## 3) Tool + Policy

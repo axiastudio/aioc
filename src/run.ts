@@ -52,7 +52,7 @@ type MutableRunState<TContext> = {
 };
 
 type HandoffRegistry<TContext> = Map<string, Agent<TContext>>;
-type ResolvedPolicyResult = Omit<PolicyResult, "denyMode" | "resultMode"> & {
+type ResolvedPolicyResult = Omit<PolicyResult, "resultMode"> & {
   resultMode?: PolicyResultMode;
 };
 
@@ -187,6 +187,18 @@ function createDeniedPolicyResult(
   };
 }
 
+function createDeprecatedPolicyFieldResult(
+  fieldName: string,
+  replacementField: string,
+  receivedValue?: unknown,
+): ResolvedPolicyResult {
+  return createDeniedPolicyResult(`deprecated_policy_field_${fieldName}`, {
+    deprecatedField: fieldName,
+    replacementField,
+    receivedValue,
+  });
+}
+
 function toAllowedToolResultEnvelope(data: unknown): ToolResultEnvelope {
   return {
     status: "ok",
@@ -231,10 +243,6 @@ function isPolicyResultShape(value: unknown): value is PolicyResult {
     typeof candidate.resultMode === "undefined" ||
     candidate.resultMode === "throw" ||
     candidate.resultMode === "tool_result";
-  const validDenyMode =
-    typeof candidate.denyMode === "undefined" ||
-    candidate.denyMode === "throw" ||
-    candidate.denyMode === "tool_result";
   const validExpiresAt =
     typeof candidate.expiresAt === "undefined" ||
     typeof candidate.expiresAt === "string";
@@ -244,9 +252,12 @@ function isPolicyResultShape(value: unknown): value is PolicyResult {
     candidate.reason.trim().length > 0 &&
     validPublicReason &&
     validResultMode &&
-    validDenyMode &&
     validExpiresAt
   );
+}
+
+function hasLegacyDenyMode(value: unknown): value is { denyMode?: unknown } {
+  return typeof value === "object" && value !== null && "denyMode" in value;
 }
 
 function normalizePolicyResult(
@@ -263,26 +274,11 @@ function normalizePolicyResult(
     };
   }
 
-  if (
-    policyResult.decision === "require_approval" &&
-    typeof policyResult.denyMode !== "undefined"
-  ) {
-    return null;
-  }
-
-  if (
-    typeof policyResult.resultMode !== "undefined" &&
-    typeof policyResult.denyMode !== "undefined" &&
-    policyResult.resultMode !== policyResult.denyMode
-  ) {
-    return null;
-  }
-
   return {
     decision: policyResult.decision,
     reason: policyResult.reason,
     publicReason: policyResult.publicReason,
-    resultMode: policyResult.resultMode ?? policyResult.denyMode ?? "throw",
+    resultMode: policyResult.resultMode ?? "throw",
     policyVersion: policyResult.policyVersion,
     expiresAt: policyResult.expiresAt,
     metadata: policyResult.metadata,
@@ -466,6 +462,14 @@ async function evaluateToolPolicy<TContext>(
     return createDeniedPolicyResult("policy_error", toErrorMetadata(error));
   }
 
+  if (hasLegacyDenyMode(rawResult)) {
+    return createDeprecatedPolicyFieldResult(
+      "denyMode",
+      "resultMode",
+      rawResult.denyMode,
+    );
+  }
+
   if (!isPolicyResultShape(rawResult)) {
     return createDeniedPolicyResult("invalid_policy_result");
   }
@@ -501,6 +505,14 @@ async function evaluateHandoffPolicy<TContext>(
     });
   } catch (error) {
     return createDeniedPolicyResult("policy_error", toErrorMetadata(error));
+  }
+
+  if (hasLegacyDenyMode(rawResult)) {
+    return createDeprecatedPolicyFieldResult(
+      "denyMode",
+      "resultMode",
+      rawResult.denyMode,
+    );
   }
 
   if (!isPolicyResultShape(rawResult)) {

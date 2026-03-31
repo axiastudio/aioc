@@ -61,7 +61,7 @@ export async function runAuditTrailConsistencyRegressionTests(): Promise<void> {
         deny("tool_not_allowlisted", {
           policyVersion: "policy.v1",
           publicReason: "Not allowed in this context.",
-          denyMode: "tool_result",
+          resultMode: "tool_result",
         }),
     },
   });

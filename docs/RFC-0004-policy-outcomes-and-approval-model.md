@@ -203,18 +203,13 @@ Soft `require_approval` outcomes MUST also be persisted in `RunRecord.items` thr
 
 ## Compatibility and Migration
 
-The design goal is additive migration during beta:
+The design goal is a clean pre-stable contract:
 
-- Existing policies returning `allow` or `deny` remain valid.
-- Existing behavior for hard deny and soft deny remains valid.
+- Existing policies returning `allow` or `deny` remain valid when migrated to `resultMode`.
 - Existing helper functions `allow(...)` and `deny(...)` remain valid.
+- `requireApproval(...)` is additive.
 
-During migration, implementations MAY accept the current `denyMode` field as a compatibility alias for `resultMode` when `decision = "deny"`, but the canonical contract after RFC adoption SHOULD use `resultMode`.
-
-If both `denyMode` and `resultMode` are present during migration:
-
-- identical values MAY be accepted,
-- conflicting values MUST be treated as invalid policy output and therefore hard `deny`.
+The legacy `denyMode` field is not part of the current runtime contract. Implementations returning `denyMode` MUST be rejected deterministically on the hard-deny path (current runtime reason: `deprecated_policy_field_denyMode`).
 
 ## Security and Privacy Notes
 

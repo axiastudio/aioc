@@ -18,14 +18,12 @@ The current public shape is:
 ```ts
 type PolicyDecision = "allow" | "deny" | "require_approval";
 type PolicyResultMode = "throw" | "tool_result";
-type PolicyDenyMode = PolicyResultMode; // compatibility alias during beta
 
 type PolicyResult = {
   decision: PolicyDecision;
   reason: string;
   publicReason?: string;
   resultMode?: PolicyResultMode;
-  denyMode?: PolicyDenyMode;
   policyVersion?: string;
   expiresAt?: string;
   metadata?: Record<string, unknown>;
@@ -82,7 +80,7 @@ This means the current stable behavior is default deny.
 
 If you want the model to continue and respond to the user after a deny or approval-required outcome, `tool_result` is the current mechanism.
 
-For backward compatibility during beta, `denyMode` is still accepted as an alias for `resultMode` on `deny(...)`.
+Legacy `denyMode` is no longer supported. Use `resultMode`.
 
 ## Example
 
@@ -90,7 +88,7 @@ For backward compatibility during beta, `denyMode` is still accepted as an alias
 const toolPolicy: ToolPolicy<{ actor: { groups: string[] } }> = ({ runContext }) => {
   if (!runContext.context.actor.groups.includes("finance")) {
     return deny("deny_missing_finance_group", {
-      denyMode: "tool_result",
+      resultMode: "tool_result",
       publicReason: "You are not authorized to access this report.",
       policyVersion: "finance-policy.v1",
     });
