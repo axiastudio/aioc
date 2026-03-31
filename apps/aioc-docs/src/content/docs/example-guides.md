@@ -8,6 +8,7 @@ All example commands are run from the repository root.
 ## Live-provider examples
 
 - `npm run example:hello`
+- `npm run example:policy`
 - `npm run example:tool-policy`
 - `npm run example:run-record`
 - `npm run example:non-regression`

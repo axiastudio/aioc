@@ -3,7 +3,6 @@ import { z } from "zod";
 import {
   Agent,
   allow,
-  createStdoutLogger,
   deny,
   run,
   setupMistral,
@@ -16,58 +15,6 @@ interface FinanceContext {
     userId: string;
     groups: string[];
   };
-}
-
-async function runScenario(
-  label: string,
-  agent: Agent<FinanceContext>,
-  toolPolicy: ToolPolicy<FinanceContext>,
-  logger: ReturnType<typeof createStdoutLogger>,
-  actor: FinanceContext["actor"],
-): Promise<void> {
-  process.stdout.write(
-    `\n=== Scenario: ${label} (groups: ${actor.groups.join(", ")}) ===\n`,
-  );
-
-  const stream = await run(
-    agent,
-    "Give me a concise summary for report Q1-2026.",
-    {
-      stream: true,
-      context: { actor },
-      policies: { toolPolicy },
-      logger,
-      maxTurns: 6,
-    },
-  );
-
-  for await (const event of stream.toStream()) {
-    if (
-      event.type === "run_item_stream_event" &&
-      event.item.type === "tool_call_item"
-    ) {
-      process.stdout.write(
-        `\n[tool call] ${event.item.name} ${JSON.stringify(event.item.arguments)}\n`,
-      );
-    }
-
-    if (
-      event.type === "run_item_stream_event" &&
-      event.item.type === "tool_call_output_item"
-    ) {
-      process.stdout.write(
-        `[tool result] ${JSON.stringify(event.item.output)}\n\n`,
-      );
-    }
-
-    if (event.type === "raw_model_stream_event") {
-      process.stdout.write(event.data.delta ?? "");
-    }
-  }
-
-  process.stdout.write(
-    `\n\nCompleted. Last agent: ${stream.lastAgent.name}. History items: ${stream.history.length}\n`,
-  );
 }
 
 async function main(): Promise<void> {
@@ -100,11 +47,9 @@ async function main(): Promise<void> {
     tools: [getFinanceReport],
   });
 
-  // Policy gate: the tool is allowed only to users in 'finance' group.
+  // Policy gate: this tool is allowed only to actors in the "finance" group.
   const toolPolicy: ToolPolicy<FinanceContext> = ({ runContext }) => {
-    const hasFinanceAccess =
-      runContext.context.actor.groups.includes("finance");
-    if (!hasFinanceAccess) {
+    if (!runContext.context.actor.groups.includes("finance")) {
       return deny("deny_missing_finance_group", {
         denyMode: "tool_result",
         publicReason: "You are not authorized to access finance reports.",
@@ -113,21 +58,21 @@ async function main(): Promise<void> {
     return allow("allow_finance_group_access");
   };
 
-  // Optional logger: prints only the policy decision event to keep output readable.
-  const logger = createStdoutLogger({
-    pretty: true,
-    events: ["tool_policy_evaluated"],
-  });
+  const result = await run(
+    agent,
+    "Give me a concise summary for report Q1-2026.",
+    {
+      context: {
+        actor: {
+          userId: "u-finance",
+          groups: ["finance"],
+        },
+      },
+      policies: { toolPolicy },
+    },
+  );
 
-  await runScenario("actor in finance", agent, toolPolicy, logger, {
-    userId: "u-finance",
-    groups: ["finance"],
-  });
-
-  await runScenario("actor in sales", agent, toolPolicy, logger, {
-    userId: "u-sales",
-    groups: ["sales"],
-  });
+  process.stdout.write(`${result.finalOutput}\n`);
 }
 
 main().catch((error) => {

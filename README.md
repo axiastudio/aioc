@@ -192,7 +192,8 @@ This repository also contains `aioc-inspect`, a private reference example UI for
 | Command | Purpose | Needs API key |
 |---|---|---|
 | `npm run example:hello` | Minimal single-agent run | Yes (`MISTRAL_API_KEY`) |
-| `npm run example:tool-policy` | Tool calls with deterministic policy gate | Yes (`MISTRAL_API_KEY`) |
+| `npm run example:policy` | Minimal denied tool + policy flow | Yes (`MISTRAL_API_KEY`) |
+| `npm run example:tool-policy` | Straight tool + policy flow with allowed execution | Yes (`MISTRAL_API_KEY`) |
 | `npm run example:run-record` | Run-record persistence with redaction + audit | Yes (`MISTRAL_API_KEY`) |
 | `npm run example:rru:01-extract` | Minimal `extractToolCalls(...)` | No |
 | `npm run example:rru:02-compare` | Minimal `compareRunRecords(...)` | No |

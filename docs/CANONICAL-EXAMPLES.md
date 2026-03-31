@@ -30,7 +30,26 @@ What it demonstrates:
 - single-agent execution with default non-stream mode
 - reading `result.finalOutput`
 
-## 2) Tool + Policy
+## 2) Minimal Policy Gate
+
+Command:
+
+```bash
+npm run example:policy
+```
+
+File:
+
+- `src/examples/basic/policy.ts`
+
+What it demonstrates:
+
+- the smallest useful `tool + policy` example
+- a parameterless tool definition
+- a deterministic soft deny path (`denyMode: "tool_result"`)
+- how the model receives a denied tool result instead of live tool execution
+
+## 3) Tool + Policy
 
 Command:
 
@@ -45,11 +64,11 @@ File:
 What it demonstrates:
 
 - tool definition with Zod schema
-- deterministic policy gate (`allow` / `deny`)
-- soft deny path (`denyMode: "tool_result"`)
-- streamed run events and policy logger output
+- deterministic policy gate on an allowed execution path
+- tool execution after policy approval
+- a straight, single-scenario basic example
 
-## 3) RunRecord Sink
+## 4) RunRecord Sink
 
 Command:
 
@@ -68,7 +87,7 @@ What it demonstrates:
 - prompt snapshots and request fingerprints
 - policy decision audit trail and persisted envelope output
 
-## 4) RunRecord Utilities (Minimal)
+## 5) RunRecord Utilities (Minimal)
 
 Commands:
 
