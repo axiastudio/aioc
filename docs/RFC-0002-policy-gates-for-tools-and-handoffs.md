@@ -13,7 +13,7 @@ RFC-0001 defines governance invariants but does not yet specify the runtime cont
 
 This RFC introduces the minimum API and runtime behavior for deterministic policy gates.
 
-Note (2026-03-31): the current runtime uses `resultMode` as the canonical non-allow delivery field. References to `denyMode` below should be read as historical terminology from the original contract.
+Note (2026-04-01): this RFC is accepted for the introduction of deterministic policy gates, but parts of its original non-allow delivery terminology are historically outdated. The current runtime uses `resultMode` as the canonical non-allow delivery field, and approval-required outcomes are extended by RFC-0004 and RFC-0005.
 
 ## Decision
 
@@ -98,8 +98,8 @@ export interface PolicyConfiguration<TContext = unknown> {
 4. If policy is missing: implicit deny (`reason = "policy_not_configured"`).
 5. If policy returns invalid output: deny (`reason = "invalid_policy_result"`).
 6. Only `decision = "allow"` can proceed to execution/transition.
-7. If `decision = "deny"` and `denyMode = "tool_result"`, runtime returns a denied tool result envelope and continues without tool execution/handoff transition.
-8. If `decision = "deny"` and `denyMode` is missing (or `throw`), runtime raises typed denial errors.
+7. If `decision = "deny"` and `resultMode = "tool_result"`, runtime returns a denied tool result envelope and continues without tool execution/handoff transition.
+8. If `decision = "deny"` and `resultMode` is missing (or `throw`), runtime raises typed denial errors.
 
 ## Default-Deny Rules
 
@@ -121,7 +121,7 @@ export interface ToolResultEnvelope {
 ```
 
 - Allow path: `status = "ok"`, `data = <tool_or_handoff_payload>`.
-- Soft deny path (`denyMode = "tool_result"`): `status = "denied"`, `code = reason`, `publicReason` from policy (or runtime fallback), `data = null`.
+- Soft deny path (`resultMode = "tool_result"`): `status = "denied"`, `code = reason`, `publicReason` from policy (or runtime fallback), `data = null`.
 
 ## Trace Requirements
 
@@ -142,9 +142,9 @@ Each trace record carries:
 
 ## Error Behavior
 
-- Denied tool proposal raises `ToolCallPolicyDeniedError` without executing the tool when deny mode is hard (`throw` or omitted).
-- Denied handoff proposal raises `HandoffPolicyDeniedError` without transitioning agent when deny mode is hard (`throw` or omitted).
-- In soft deny mode (`denyMode = "tool_result"`), runtime must not throw and must emit a denied result envelope.
+- Denied tool proposal raises `ToolCallPolicyDeniedError` without executing the tool when non-allow mode is hard (`throw` or omitted).
+- Denied handoff proposal raises `HandoffPolicyDeniedError` without transitioning agent when non-allow mode is hard (`throw` or omitted).
+- In soft deny mode (`resultMode = "tool_result"`), runtime must not throw and must emit a denied result envelope.
 - Policy engine failures must never bypass denial.
 
 ## Security and Privacy Notes
@@ -162,8 +162,8 @@ Each trace record carries:
 5. Handoff deny path: transition blocked.
 6. Policy throws: denied with deterministic reason.
 7. Invalid policy result: denied.
-8. Tool soft deny path: policy denies with `denyMode = "tool_result"` and runtime emits denied envelope without tool execution.
-9. Handoff soft deny path: policy denies with `denyMode = "tool_result"` and runtime emits denied envelope without transition.
+8. Tool soft deny path: policy denies with `resultMode = "tool_result"` and runtime emits denied envelope without tool execution.
+9. Handoff soft deny path: policy denies with `resultMode = "tool_result"` and runtime emits denied envelope without transition.
 10. Allow path output: runtime emits normalized envelope with `status = "ok"` and `data`.
 
 ## Adoption History (Completed)
@@ -179,5 +179,5 @@ Each trace record carries:
 - Policy contracts and default-deny behavior are implemented.
 - Tool and handoff policy gates are enforced in runtime.
 - Decision trace events are emitted for both tools and handoffs.
-- Hard deny and soft deny (`denyMode = "tool_result"`) are both implemented.
+- Hard deny and soft deny (`resultMode = "tool_result"`) are both implemented.
 - Unit/integration/regression coverage is present and executed in `test:ci`.

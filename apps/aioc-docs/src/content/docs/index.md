@@ -29,7 +29,7 @@ It is designed for applications that must retain full governance control over pe
 The current documentation mixes:
 
 - stable runtime behavior you can use today
-- draft RFC material for approval-related extensions that are not implemented yet
+- draft RFC material for approval lifecycle and stabilization work that is still evolving
 
 ## What Stable Means
 

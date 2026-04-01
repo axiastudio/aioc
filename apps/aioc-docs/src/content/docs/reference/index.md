@@ -27,4 +27,4 @@ It is not a generated API reference for every exported symbol. It focuses on the
 
 This section documents the stable beta surface that is usable today.
 
-Draft RFCs may describe future policy outcomes or approval flows, but those are not part of the current runtime contract until implemented.
+Draft RFCs may still describe lifecycle refinements, stabilization work, or application-side approval patterns beyond the implemented runtime surface.
