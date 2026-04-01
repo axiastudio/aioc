@@ -1,7 +1,8 @@
 # RFC-0004: Policy Outcomes and Approval Model
 
-- Status: Draft
+- Status: Accepted
 - Date: 2026-03-27
+- Accepted: 2026-04-01
 - Owners: aioc maintainers
 - Depends on: RFC-0001, RFC-0002, RFC-0003
 
