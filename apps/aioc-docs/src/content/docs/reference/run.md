@@ -80,6 +80,12 @@ If omitted, `maxTurns` defaults to `10`.
 
 If `input` is a string, it is normalized to a single user message item.
 
+### Runtime logging
+
+If `logger` is configured, `run(...)` emits structured runtime events during execution.
+
+See [`Logging`](../reference/logger/).
+
 ## Example
 
 ```ts

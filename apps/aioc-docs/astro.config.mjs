@@ -38,6 +38,7 @@ export default defineConfig({
             "reference/agent",
             "reference/tools",
             "reference/run",
+            "reference/logger",
             "reference/policies",
             "reference/providers",
             "reference/run-record-utils",
