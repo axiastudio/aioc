@@ -1,5 +1,8 @@
-import { hashCanonicalJson, toCanonicalJson } from "./canonical-json";
 import type { PolicyResult } from "./policy";
+import {
+  createHandoffProposalFingerprint,
+  createToolProposalFingerprint,
+} from "./proposal-hashing";
 import type { SuspendedProposal } from "./run-record";
 
 export function buildSuspendedToolProposal(params: {
@@ -12,18 +15,11 @@ export function buildSuspendedToolProposal(params: {
   parsedArguments: unknown;
   policyResult: PolicyResult;
 }): SuspendedProposal {
-  const argsCanonicalJson = toCanonicalJson(params.parsedArguments);
-  const proposalHash = hashCanonicalJson(
-    toCanonicalJson({
-      kind: "tool",
-      agentName: params.agentName,
-      toolName: params.toolName,
-      argsCanonicalJson,
-      reason: params.policyResult.reason,
-      policyVersion: params.policyResult.policyVersion,
-      expiresAt: params.policyResult.expiresAt,
-    }),
-  );
+  const { argsCanonicalJson, proposalHash } = createToolProposalFingerprint({
+    agentName: params.agentName,
+    toolName: params.toolName,
+    parsedArguments: params.parsedArguments,
+  });
 
   return {
     timestamp: new Date().toISOString(),
@@ -54,18 +50,12 @@ export function buildSuspendedHandoffProposal(params: {
   handoffPayload: unknown;
   policyResult: PolicyResult;
 }): SuspendedProposal {
-  const payloadCanonicalJson = toCanonicalJson(params.handoffPayload);
-  const proposalHash = hashCanonicalJson(
-    toCanonicalJson({
-      kind: "handoff",
+  const { payloadCanonicalJson, proposalHash } =
+    createHandoffProposalFingerprint({
       fromAgentName: params.fromAgentName,
       toAgentName: params.toAgentName,
-      payloadCanonicalJson,
-      reason: params.policyResult.reason,
-      policyVersion: params.policyResult.policyVersion,
-      expiresAt: params.policyResult.expiresAt,
-    }),
-  );
+      handoffPayload: params.handoffPayload,
+    });
 
   return {
     timestamp: new Date().toISOString(),

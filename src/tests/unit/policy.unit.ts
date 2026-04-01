@@ -341,6 +341,125 @@ export async function runPolicyUnitTests(): Promise<void> {
   }
 
   {
+    type ApprovalEvidenceContext = {
+      approvedProposalHashes: string[];
+    };
+
+    let executions = 0;
+    let approvedProposalHash = "";
+    let observedProposalHash = "";
+    let observedArgsCanonicalJson = "";
+
+    const ping = tool({
+      name: "ping",
+      description: "Ping tool for approval replay tests",
+      parameters: z.object({}),
+      execute: () => {
+        executions += 1;
+        return { ok: true };
+      },
+    });
+
+    const agent = new Agent<ApprovalEvidenceContext>({
+      name: "Approval replay policy agent",
+      model: "fake-model",
+      tools: [ping],
+    });
+
+    const approvalReason = "manager_approval_required";
+    const approvalPolicyVersion = "approval-policy.v1";
+    const approvalAwarePolicy: ToolPolicy<ApprovalEvidenceContext> = ({
+      proposalHash,
+      argsCanonicalJson,
+      runContext,
+    }) => {
+      observedProposalHash = proposalHash;
+      observedArgsCanonicalJson = argsCanonicalJson;
+
+      if (runContext.context.approvedProposalHashes.includes(proposalHash)) {
+        return allow("approval_granted", {
+          policyVersion: approvalPolicyVersion,
+        });
+      }
+
+      return requireApproval(approvalReason, {
+        publicReason: "Manager approval is required.",
+        policyVersion: approvalPolicyVersion,
+      });
+    };
+
+    setDefaultProvider(new ScriptedProvider(createToolProposalTurns()));
+    await assert.rejects(
+      () =>
+        run(agent, "hello", {
+          context: {
+            approvedProposalHashes: [],
+          },
+          policies: { toolPolicy: approvalAwarePolicy },
+        }),
+      (error: unknown) => {
+        assert.ok(error instanceof ToolCallApprovalRequiredError);
+        approvedProposalHash = error.result.suspendedProposal.proposalHash;
+        assert.equal(observedProposalHash, approvedProposalHash);
+        const suspendedProposal = error.result.suspendedProposal;
+        assert.equal(suspendedProposal.kind, "tool");
+        if (suspendedProposal.kind !== "tool") {
+          return false;
+        }
+        assert.equal(
+          observedArgsCanonicalJson,
+          suspendedProposal.argsCanonicalJson,
+        );
+        return true;
+      },
+    );
+
+    setDefaultProvider(new ScriptedProvider(createToolProposalTurns()));
+    await assert.rejects(
+      () =>
+        run(agent, "hello", {
+          context: {
+            approvedProposalHashes: ["wrong-hash"],
+          },
+          policies: { toolPolicy: approvalAwarePolicy },
+        }),
+      (error: unknown) => {
+        assert.ok(error instanceof ToolCallApprovalRequiredError);
+        assert.equal(
+          error.result.suspendedProposal.proposalHash,
+          approvedProposalHash,
+        );
+        return true;
+      },
+    );
+
+    setDefaultProvider(new ScriptedProvider(createToolProposalTurns()));
+    const result = await run(agent, "hello", {
+      context: {
+        approvedProposalHashes: [approvedProposalHash],
+      },
+      policies: { toolPolicy: approvalAwarePolicy },
+    });
+
+    assert.equal(result.finalOutput, "done");
+    assert.equal(executions, 1);
+    const toolOutputItem = result.history.find(
+      (
+        item,
+      ): item is Extract<
+        (typeof result.history)[number],
+        { type: "tool_call_output_item" }
+      > => item.type === "tool_call_output_item",
+    );
+    assert.deepEqual(toolOutputItem?.output, {
+      status: "ok",
+      code: null,
+      publicReason: null,
+      data: { ok: true },
+    });
+  }
+
+  {
     let executions = 0;
     const explodingPolicy: ToolPolicy = () => {
       throw new Error("boom");

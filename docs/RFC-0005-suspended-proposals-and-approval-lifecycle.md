@@ -97,9 +97,11 @@ export type SuspendedProposal =
 Normative notes:
 
 - `proposalHash` MUST be stable for the same proposal content across deterministic replays.
+- `proposalHash` MUST identify the operational proposal itself, not the policy rationale that blocked it.
 - `proposalHash` MUST be derived from canonical proposal content, not from transient identifiers alone.
 - `callId` links the artifact to the originating run, but MUST NOT be treated as the replay matching key by itself.
 - `expiresAt` is informational and inherited from RFC-0004; runtime MUST NOT auto-execute based on it.
+- Runtime SHOULD expose `proposalHash` and canonical proposal payloads to policy code so host applications can bind external approval evidence without reimplementing fingerprint logic.
 
 ## Runtime Surface
 
@@ -237,4 +239,5 @@ These UX choices do not change the execution contract:
 - Approval-required typed errors now carry the corresponding `SuspendedProposal`.
 - Run records now persist `suspendedProposals` when run recording is enabled.
 - Stable proposal hashing is implemented for tool and handoff approval-required paths.
+- Public proposal fingerprint helpers are now available for application-side approval-evidence matching in policy code.
 - Approval queues, grants, notifications, and resume semantics remain application-side by design.

@@ -63,6 +63,8 @@ export interface ToolPolicyInput<TContext = unknown> {
   toolName: string;
   rawArguments: string;
   parsedArguments: unknown;
+  proposalHash: string;
+  argsCanonicalJson: string;
   runContext: RunContext<TContext>;
   turn: number;
 }
@@ -71,6 +73,8 @@ export interface HandoffPolicyInput<TContext = unknown> {
   fromAgentName: string;
   toAgentName: string;
   handoffPayload: unknown;
+  proposalHash: string;
+  payloadCanonicalJson: string;
   runContext: RunContext<TContext>;
   turn: number;
 }

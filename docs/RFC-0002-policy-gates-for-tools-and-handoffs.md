@@ -42,15 +42,16 @@ Out of scope:
 ## Policy Contracts
 
 ```ts
-export type PolicyDecision = "allow" | "deny";
-export type PolicyDenyMode = "throw" | "tool_result";
+export type PolicyDecision = "allow" | "deny" | "require_approval";
+export type PolicyResultMode = "throw" | "tool_result";
 
 export interface PolicyResult {
   decision: PolicyDecision;
   reason: string;
   publicReason?: string;
-  denyMode?: PolicyDenyMode;
+  resultMode?: PolicyResultMode;
   policyVersion?: string;
+  expiresAt?: string;
   metadata?: Record<string, unknown>;
 }
 
@@ -59,6 +60,8 @@ export interface ToolPolicyInput<TContext = unknown> {
   toolName: string;
   rawArguments: string;
   parsedArguments: unknown;
+  proposalHash: string;
+  argsCanonicalJson: string;
   runContext: RunContext<TContext>;
   turn: number;
 }
@@ -67,6 +70,8 @@ export interface HandoffPolicyInput<TContext = unknown> {
   fromAgentName: string;
   toAgentName: string;
   handoffPayload: unknown;
+  proposalHash: string;
+  payloadCanonicalJson: string;
   runContext: RunContext<TContext>;
   turn: number;
 }

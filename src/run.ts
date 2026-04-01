@@ -17,6 +17,10 @@ import {
   toAllowedToolResultEnvelope,
   type ToolResultEnvelope,
 } from "./policy-outcomes";
+import {
+  createHandoffProposalFingerprint,
+  createToolProposalFingerprint,
+} from "./proposal-hashing";
 import { ModelProvider } from "./providers/base";
 import { RunLogEmitter } from "./run-log-emitter";
 import type { SuspendedProposal } from "./run-record";
@@ -321,6 +325,12 @@ async function evaluateToolPolicy<TContext>(
     return createDeniedPolicyResult("policy_not_configured");
   }
 
+  const { proposalHash, argsCanonicalJson } = createToolProposalFingerprint({
+    agentName: agent.name,
+    toolName: call.name,
+    parsedArguments,
+  });
+
   let rawResult: unknown;
   try {
     rawResult = await policy({
@@ -328,6 +338,8 @@ async function evaluateToolPolicy<TContext>(
       toolName: call.name,
       rawArguments: call.arguments,
       parsedArguments,
+      proposalHash,
+      argsCanonicalJson,
       runContext,
       turn,
     });
@@ -364,12 +376,21 @@ async function evaluateHandoffPolicy<TContext>(
     return createDeniedPolicyResult("policy_not_configured");
   }
 
+  const { proposalHash, payloadCanonicalJson } =
+    createHandoffProposalFingerprint({
+      fromAgentName: fromAgent.name,
+      toAgentName: toAgent.name,
+      handoffPayload,
+    });
+
   let rawResult: unknown;
   try {
     rawResult = await policy({
       fromAgentName: fromAgent.name,
       toAgentName: toAgent.name,
       handoffPayload,
+      proposalHash,
+      payloadCanonicalJson,
       runContext,
       turn,
     });

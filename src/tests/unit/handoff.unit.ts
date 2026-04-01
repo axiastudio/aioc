@@ -194,10 +194,18 @@ export async function runHandoffUnitTests(): Promise<void> {
 
   {
     const { sourceAgent, handoffToolName } = createAgents();
-    const approvalHandoffPolicy: HandoffPolicy = () =>
-      requireApproval("manager_approval_required", {
+    let observedProposalHash = "";
+    let observedPayloadCanonicalJson = "";
+    const approvalHandoffPolicy: HandoffPolicy = ({
+      proposalHash,
+      payloadCanonicalJson,
+    }) => {
+      observedProposalHash = proposalHash;
+      observedPayloadCanonicalJson = payloadCanonicalJson;
+      return requireApproval("manager_approval_required", {
         publicReason: "Manager approval is required.",
       });
+    };
 
     setDefaultProvider(
       new ScriptedProvider(createHandoffTurns(handoffToolName)),
@@ -232,6 +240,11 @@ export async function runHandoffUnitTests(): Promise<void> {
         assert.equal(
           suspendedProposal.payloadCanonicalJson,
           JSON.stringify({ reason: "route" }),
+        );
+        assert.equal(observedProposalHash, suspendedProposal.proposalHash);
+        assert.equal(
+          observedPayloadCanonicalJson,
+          suspendedProposal.payloadCanonicalJson,
         );
         assert.match(suspendedProposal.proposalHash, /^[a-f0-9]{64}$/);
         assert.ok(suspendedProposal.runId.length > 0);

@@ -48,6 +48,8 @@ type ToolPolicy<TContext> = (input: {
   toolName: string;
   rawArguments: string;
   parsedArguments: unknown;
+  proposalHash: string;
+  argsCanonicalJson: string;
   runContext: RunContext<TContext>;
   turn: number;
 }) => PolicyResult | Promise<PolicyResult>;
@@ -60,10 +62,15 @@ type HandoffPolicy<TContext> = (input: {
   fromAgentName: string;
   toAgentName: string;
   handoffPayload: unknown;
+  proposalHash: string;
+  payloadCanonicalJson: string;
   runContext: RunContext<TContext>;
   turn: number;
 }) => PolicyResult | Promise<PolicyResult>;
 ```
+
+`proposalHash` identifies the operational proposal itself.
+It is stable across deterministic replays of the same tool call or handoff payload, and it can be matched against external approval evidence without recomputing the fingerprint in policy code.
 
 ## Runtime Rule
 
