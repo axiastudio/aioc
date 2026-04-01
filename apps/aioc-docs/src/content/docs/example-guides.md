@@ -10,6 +10,7 @@ All example commands are run from the repository root.
 - `npm run example:hello`
 - `npm run example:policy`
 - `npm run example:approval-required`
+- `npm run example:approval-evidence`
 - `npm run example:tool-policy`
 - `npm run example:run-record`
 - `npm run example:non-regression`
@@ -30,3 +31,7 @@ These examples are intended to remain didactic and runnable without a live provi
 For the curated learning path, see the repository document:
 
 - `/docs/CANONICAL-EXAMPLES.md`
+
+For the approval model and policy-reevaluation flow, see:
+
+- `/approval-flows/`

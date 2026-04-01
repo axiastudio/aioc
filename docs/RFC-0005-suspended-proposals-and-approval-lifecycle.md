@@ -235,9 +235,9 @@ These UX choices do not change the execution contract:
 
 ## Implementation Status
 
-- `aioc` now exposes `SuspendedProposal` as a first-class runtime and run-record artifact.
-- Approval-required typed errors now carry the corresponding `SuspendedProposal`.
-- Run records now persist `suspendedProposals` when run recording is enabled.
+- `SuspendedProposal` is a first-class runtime and run-record artifact.
+- Approval-required typed errors carry the corresponding `SuspendedProposal`.
+- Run records persist `suspendedProposals` when run recording is enabled.
 - Stable proposal hashing is implemented for tool and handoff approval-required paths.
-- Public proposal fingerprint helpers are now available for application-side approval-evidence matching in policy code.
+- Public proposal fingerprint helpers support application-side approval-evidence matching in policy code.
 - Approval queues, grants, notifications, and resume semantics remain application-side by design.

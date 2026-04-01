@@ -109,7 +109,7 @@ const toolPolicy: ToolPolicy<{ actor: { groups: string[] } }> = ({ runContext })
 
 ## Approval-Oriented Outcomes
 
-`require_approval` is now part of the runtime contract.
+`require_approval` is part of the runtime contract.
 
 - with `resultMode = "throw"`, runtime raises approval-required typed errors
 - with `resultMode = "tool_result"`, runtime emits a normalized envelope with `status = "approval_required"`
@@ -118,3 +118,4 @@ Approval workflow, queueing, and resume semantics remain outside the core runtim
 
 - `RFC-0004`
 - `RFC-0005`
+- `/approval-flows/`

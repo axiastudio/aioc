@@ -94,7 +94,26 @@ What it demonstrates:
 - tool execution after policy approval
 - a straight, single-scenario basic example
 
-## 5) RunRecord Sink
+## 5) Approval Evidence Replay
+
+Command:
+
+```bash
+npm run example:approval-evidence
+```
+
+File:
+
+- `src/examples/basic/approval-evidence.ts`
+
+What it demonstrates:
+
+- capturing `proposalHash` from an approval-required error
+- passing approval evidence back through `context`
+- policy reevaluation using `proposalHash`
+- executing the same requested tool after approval is available
+
+## 6) RunRecord Sink
 
 Command:
 
@@ -113,7 +132,7 @@ What it demonstrates:
 - prompt snapshots and request fingerprints
 - policy decision audit trail and persisted envelope output
 
-## 6) RunRecord Utilities (Minimal)
+## 7) RunRecord Utilities (Minimal)
 
 Commands:
 
