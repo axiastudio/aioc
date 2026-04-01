@@ -8,12 +8,12 @@ Project home and documentation: [https://axiastudio.github.io/aioc](https://axia
 
 ## Release Status
 
-This package is currently in beta and is not production-ready.
-Breaking changes may occur before a stable release.
+This package is currently in release-candidate phase (`0.1.0-rc.1`) and is not yet stable.
+The core runtime surface is expected to remain frozen except for bug fixes, cleanup, and documentation adjustments before `0.1.0`.
 
 ### What Stable Means
 
-AIOC will move out of beta when the core runtime surface is stable, the public documentation matches the actual exported contract, `RunRecord` and replay/compare workflows are considered reliable, and the SDK has been validated in real applications beyond toy examples.
+AIOC will move from release candidate to stable when the core runtime surface is confirmed, the public documentation matches the actual exported contract, `RunRecord` and replay/compare workflows are considered reliable, and the SDK has been validated in real applications beyond toy examples.
 
 - Historical beta contract snapshot: `docs/BETA-CONTRACT.md`
 - Historical alpha contract snapshot: `docs/ALPHA-CONTRACT.md`

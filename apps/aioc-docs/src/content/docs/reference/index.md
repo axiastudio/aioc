@@ -25,6 +25,6 @@ It is not a generated API reference for every exported symbol. It focuses on the
 
 ## Stability Note
 
-This section documents the stable beta surface that is usable today.
+This section documents the current release-candidate surface.
 
 Draft RFCs may still describe lifecycle refinements, stabilization work, or application-side approval patterns beyond the implemented runtime surface.

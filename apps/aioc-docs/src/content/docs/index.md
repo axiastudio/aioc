@@ -24,7 +24,7 @@ It is designed for applications that must retain full governance control over pe
 
 ## Status
 
-`aioc` is currently in beta and is not production-ready yet.
+`aioc` is currently in release-candidate phase (`0.1.0-rc.1`) and is not yet stable.
 
 The current documentation mixes:
 
@@ -33,7 +33,7 @@ The current documentation mixes:
 
 ## What Stable Means
 
-`aioc` will leave beta when its governance-first runtime model is stable enough to serve as a dependable foundation for high-accountability applications: core APIs are compatibility-managed, audit artifacts and replay workflows are dependable, and the project has been validated through real implementation use.
+`aioc` will leave release-candidate phase when its governance-first runtime model is stable enough to serve as a dependable foundation for high-accountability applications: core APIs are compatibility-managed, audit artifacts and replay workflows are dependable, and the project has been validated through real implementation use.
 
 ## Install
 
