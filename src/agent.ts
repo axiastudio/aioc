@@ -42,12 +42,6 @@ export class Agent<TContext = unknown> {
     this.outputGuardrails = config.outputGuardrails ?? [];
   }
 
-  static create<TContext = unknown>(
-    config: AgentConfiguration<TContext>,
-  ): Agent<TContext> {
-    return new Agent(config);
-  }
-
   async resolveInstructions(
     runContext: RunContext<TContext>,
   ): Promise<string | undefined> {

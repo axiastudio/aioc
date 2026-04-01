@@ -30,8 +30,6 @@ new Agent<TContext>({
 })
 ```
 
-`Agent.create(...)` is also available as a thin convenience wrapper around `new Agent(...)`.
-
 ## Important Fields
 
 ### `name`
