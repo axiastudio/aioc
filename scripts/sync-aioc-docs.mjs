@@ -38,7 +38,7 @@ const documents = [
     sourceFile: "RFC-0004-policy-outcomes-and-approval-model.md",
     targetDir: "current",
     slug: "rfc-0004-policy-outcomes-and-approval-model",
-    status: "Draft",
+    status: "Accepted",
   },
   {
     sourceFile: "RFC-0005-suspended-proposals-and-approval-lifecycle.md",
