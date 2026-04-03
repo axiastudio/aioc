@@ -53,6 +53,12 @@ const documents = [
     status: "Draft",
   },
   {
+    sourceFile: "RFC-0007-thread-state-utilities.md",
+    targetDir: "current",
+    slug: "rfc-0007-thread-state-utilities",
+    status: "Draft",
+  },
+  {
     sourceFile: "PRIVACY-BASELINE.md",
     targetDir: "current",
     slug: "privacy-baseline",
