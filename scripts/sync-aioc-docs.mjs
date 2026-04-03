@@ -47,6 +47,12 @@ const documents = [
     status: "Draft",
   },
   {
+    sourceFile: "RFC-0006-approval-evidence-helpers.md",
+    targetDir: "current",
+    slug: "rfc-0006-approval-evidence-helpers",
+    status: "Draft",
+  },
+  {
     sourceFile: "PRIVACY-BASELINE.md",
     targetDir: "current",
     slug: "privacy-baseline",
