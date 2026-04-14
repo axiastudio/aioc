@@ -509,38 +509,4 @@ export async function runPolicyUnitTests(): Promise<void> {
     );
     assert.equal(executions, 0);
   }
-
-  {
-    let executions = 0;
-    const legacyDenyModePolicy = (() => ({
-      decision: "deny" as const,
-      reason: "tool_not_allowlisted",
-      denyMode: "tool_result",
-    })) as unknown as ToolPolicy;
-
-    setDefaultProvider(new ScriptedProvider(createToolProposalTurns()));
-    await assert.rejects(
-      () =>
-        run(
-          createToolAgent(() => (executions += 1)),
-          "hello",
-          {
-            policies: { toolPolicy: legacyDenyModePolicy },
-          },
-        ),
-      (error: unknown) => {
-        assert.ok(error instanceof ToolCallPolicyDeniedError);
-        assert.equal(
-          error.result.policyResult.reason,
-          "deprecated_policy_field_denyMode",
-        );
-        assert.equal(
-          error.result.policyResult.metadata?.replacementField,
-          "resultMode",
-        );
-        return true;
-      },
-    );
-    assert.equal(executions, 0);
-  }
 }

@@ -10,7 +10,6 @@ import { user } from "./messages";
 import type { PolicyConfiguration, PolicyResult } from "./policy";
 import {
   createDeniedPolicyResult,
-  createDeprecatedPolicyFieldResult,
   handleBlockedPolicyResult,
   materializePolicyResult,
   resolveResultMode,
@@ -207,11 +206,6 @@ function isPolicyResultShape(value: unknown): value is PolicyResult {
   );
 }
 
-// TODO: Remove this beta-only migration guard before stable.
-function hasLegacyDenyMode(value: unknown): value is { denyMode?: unknown } {
-  return typeof value === "object" && value !== null && "denyMode" in value;
-}
-
 async function emitPolicyDecision(
   params:
     | {
@@ -347,14 +341,6 @@ async function evaluateToolPolicy<TContext>(
     return createDeniedPolicyResult("policy_error", toErrorMetadata(error));
   }
 
-  if (hasLegacyDenyMode(rawResult)) {
-    return createDeprecatedPolicyFieldResult(
-      "denyMode",
-      "resultMode",
-      rawResult.denyMode,
-    );
-  }
-
   if (!isPolicyResultShape(rawResult)) {
     return createDeniedPolicyResult("invalid_policy_result");
   }
@@ -396,14 +382,6 @@ async function evaluateHandoffPolicy<TContext>(
     });
   } catch (error) {
     return createDeniedPolicyResult("policy_error", toErrorMetadata(error));
-  }
-
-  if (hasLegacyDenyMode(rawResult)) {
-    return createDeprecatedPolicyFieldResult(
-      "denyMode",
-      "resultMode",
-      rawResult.denyMode,
-    );
   }
 
   if (!isPolicyResultShape(rawResult)) {

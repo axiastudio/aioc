@@ -28,18 +28,6 @@ export function createDeniedPolicyResult(
   };
 }
 
-export function createDeprecatedPolicyFieldResult(
-  fieldName: string,
-  replacementField: string,
-  receivedValue?: unknown,
-): PolicyResult {
-  return createDeniedPolicyResult(`deprecated_policy_field_${fieldName}`, {
-    deprecatedField: fieldName,
-    replacementField,
-    receivedValue,
-  });
-}
-
 export function toAllowedToolResultEnvelope(data: unknown): ToolResultEnvelope {
   return {
     status: "ok",
