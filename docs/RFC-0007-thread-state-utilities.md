@@ -1,4 +1,4 @@
-# RFC-0007: Thread State Utilities
+# RFC-0007: Thread History Utilities
 
 - Status: Draft
 - Date: 2026-04-03
@@ -11,13 +11,12 @@
 
 - `run(...)` accepts a string or `AgentInputItem[]`,
 - `RunResult.history` returns the updated execution history,
-- approval lifecycle, thread persistence, and resume UX remain application-owned.
+- approval lifecycle, thread persistence, session lifecycle, and resume UX remain application-owned.
 
-That boundary is correct, but it leaves host applications to repeatedly write the same low-value thread-state glue:
+That boundary is correct, but it leaves host applications to repeatedly write the same low-value history-handling glue:
 
 - normalize a user message into the next run input,
 - append a previous history safely before the next prompt,
-- build a resume input that preserves the existing thread,
 - derive an updated thread state from the latest run result,
 - keep application-side thread state aligned with `RunResult.history`.
 
@@ -25,16 +24,16 @@ This repeated code is not policy logic and not product differentiation. It also 
 
 ## Decision
 
-`aioc` should add a small set of optional thread-state utilities.
+`aioc` should add a small set of optional thread-history utilities.
 
-These utilities are not a session framework and do not give the runtime ownership of application threads.
+These utilities are not a session framework, thread store, or approval-resume mechanism, and do not give the runtime ownership of application threads.
 
 The goals are:
 
 - reduce boilerplate around `AgentInputItem[]` handling,
-- make replay and resume inputs easier to construct correctly,
-- keep host applications in control of persistence and UX,
-- avoid introducing a built-in thread store or conversation engine.
+- make multi-turn input construction and history replacement easier to do correctly,
+- keep host applications in control of persistence, UX, approval workflows, and resume behavior,
+- avoid introducing a built-in thread store, session middleware, or conversation engine.
 
 ## Scope
 
@@ -49,9 +48,13 @@ Out of scope:
 
 - persistence adapters,
 - built-in thread IDs or thread stores,
+- history compaction, summarization, editing, branching, or fork semantics,
+- retention, classification, legal-hold, or erase-request metadata,
 - notification state,
-- approval queues or reviewer workflow,
+- approval queues, reviewer workflow, or deterministic resume helpers,
 - automatic resume execution,
+- replay of `SuspendedProposal`,
+- session stores,
 - server-side session lifecycle.
 
 ## Design Principles
@@ -60,8 +63,9 @@ Out of scope:
 2. Utilities operate on plain `AgentInputItem[]`.
 3. Utilities must be pure and deterministic.
 4. Utilities must not assume a storage model.
-5. Utilities must compose with approval-oriented flows without knowing approval semantics.
+5. Utilities may compose with approval-oriented flows, but must not define approval or resume semantics.
 6. Utilities should make the common case smaller, not replace explicit control.
+7. History utilities must not be presented as a substitute for a session API.
 
 ## Proposed Helpers
 
@@ -138,26 +142,22 @@ This helper is a small convenience wrapper around the common case:
 ```ts
 const thread = loadThread(threadId);
 
-const input = appendUserMessage(thread.history, "Export the Q1 vendor payments report as CSV.");
+const input = appendUserMessage(
+  thread.history,
+  "Summarize the latest vendor payments report in one paragraph.",
+);
 
-const result = await run(agent, input, {
-  context,
-  policies: { toolPolicy },
-  record,
-});
+const result = await run(agent, input);
 
 const nextThread = applyRunResultHistory(thread, result);
 saveThread(threadId, nextThread);
 ```
 
-Resume is the same pattern:
+## Relation To Approval Resume
 
-```ts
-const input = appendUserMessage(
-  thread.history,
-  "Resume the approved CSV export for Q1 Vendor Payments.",
-);
-```
+These helpers may be used by applications that also implement approval workflows, but they do not define how an approved suspended proposal is resumed.
+
+Deterministic resume of a previously blocked tool call or handoff remains a separate concern. Applications that need high-accountability approval flows should treat the suspended proposal as the canonical execution artifact and use a dedicated resume mechanism rather than model a resume as a new user message.
 
 ## Why This Stays Outside The Runtime Core
 
@@ -166,8 +166,8 @@ The runtime should continue to treat thread state as input and output, not as an
 That preserves the right architectural split:
 
 - runtime owns execution,
-- applications own persistence, UX, and workflow,
-- utilities reduce boilerplate without turning `aioc` into a session framework.
+- applications own persistence, session lifecycle, approval resume, UX, and workflow,
+- utilities reduce boilerplate around history arrays without turning `aioc` into a session framework.
 
 ## Security and Privacy Notes
 
@@ -187,7 +187,7 @@ Rejected because that would move `aioc` toward an application framework and forc
 
 ### 3. Add resume semantics directly to `run(...)`
 
-Rejected because resume UX and thread lifecycle remain application concerns, not runtime concerns.
+Rejected because resume UX, deterministic replay, and thread lifecycle remain application concerns, not runtime concerns.
 
 ## Implementation Notes
 
@@ -195,7 +195,7 @@ This RFC should be implemented as optional pure helpers in a dedicated module.
 
 A likely initial surface is:
 
-- `src/thread-state.ts`
+- `src/thread-history.ts`
 - exported from `src/index.ts`
 
 These helpers should not require changes to `run.ts`.
@@ -215,8 +215,11 @@ This RFC does not standardize:
 
 - thread identifiers,
 - persistence schemas,
+- history compaction or summarization,
+- branch/fork/merge semantics for conversation state,
 - approval request states,
 - notification workflows,
+- deterministic replay or resume of suspended proposals,
 - background resume jobs,
 - session middleware.
 
