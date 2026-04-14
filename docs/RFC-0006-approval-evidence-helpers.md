@@ -29,6 +29,10 @@ This repeated code is not where applications should differentiate. It is also ea
 
 These helpers are not a workflow engine and do not move approval lifecycle ownership into the core runtime.
 
+This RFC intentionally covers only the approval-evidence slice of the broader approval story.
+
+It is not the full Approval Workflow Kit. Deterministic resume helpers, timeout/escalation behavior, queue adapters, and reference workflow UI remain follow-up concerns.
+
 The design goals are:
 
 - reduce boilerplate around approval evidence,
@@ -50,8 +54,11 @@ Out of scope:
 - approval queue storage schemas,
 - reviewer identity modeling,
 - signatures, segregation of duties, or organizational escalation chains,
-- automatic resume or automatic execution after approval,
-- built-in HTTP APIs, inboxes, or persistence adapters,
+- deterministic or idempotent resume orchestration,
+- automatic execution after approval,
+- timeout, escalation, or SLA-clock behavior,
+- built-in HTTP APIs, inboxes, persistence adapters, or queue adapters,
+- workflow UI or approval triage screens,
 - thread state utilities beyond what is strictly needed to shape approval evidence.
 
 ## Design Principles
@@ -62,6 +69,7 @@ Out of scope:
 4. Policy code remains the only enforcement point.
 5. Helpers must be pure and composable.
 6. Helpers must not force a single application context shape.
+7. Helpers should standardize the evidence layer without pre-committing a workflow engine design.
 
 ## Proposed Contracts
 
@@ -81,7 +89,9 @@ Notes:
 
 - `proposalHash` MUST identify the exact suspended proposal being approved.
 - `approvedAt` SHOULD be an RFC 3339 timestamp string.
+- `approvedAt` is application audit data; when projection helpers need a stable winner across multiple active grants for the same `proposalHash`, the most recent `approvedAt` SHOULD win.
 - `expiresAt` and `revokedAt` are optional application-level constraints.
+- `ApprovalGrant.expiresAt` is distinct from policy-level expiry metadata carried on `SuspendedProposal` and `ApprovalRequestSeed`; one governs grant validity, the other records policy-side intent.
 - Runtime does not consume `ApprovalGrant` directly; these helpers are application-facing.
 
 ### Approval Request Seed
@@ -105,6 +115,7 @@ Notes:
 - It is the smallest normalized artifact that an application can use to create its own approval request record.
 - `resourceName` is `toolName` for tool proposals and `toAgentName` for handoff proposals.
 - `canonicalPayloadJson` is `argsCanonicalJson` for tools and `payloadCanonicalJson` for handoffs.
+- `ApprovalRequestSeed` is not a replay artifact; deterministic resume remains defined outside this RFC.
 
 ## Proposed Helpers
 
@@ -164,6 +175,23 @@ if (runContext.context.approvedProposalHashes.includes(proposalHash)) {
 
 It deliberately does not force applications to use that pattern. Applications may instead pass full grants or grant maps into context.
 
+### Grant Map Projection
+
+```ts
+export function toActiveApprovalGrantMap(
+  grants: ApprovalGrant[],
+  now?: string,
+): Record<string, ApprovalGrant>;
+```
+
+This helper supports policy or orchestration glue that needs more than a boolean approval signal, for example reviewer or workflow metadata carried in `ApprovalGrant.metadata`.
+
+Semantics:
+
+- includes only active grants,
+- keys the result by `proposalHash`,
+- if multiple active grants exist for the same `proposalHash`, the grant with the most recent `approvedAt` wins.
+
 ## Recommended Usage Pattern
 
 1. Runtime blocks a proposal with `require_approval`.
@@ -197,6 +225,19 @@ const toolPolicy: ToolPolicy<typeof context> = ({ proposalHash, runContext }) =>
   });
 };
 ```
+
+Applications that need richer metadata can pass `toActiveApprovalGrantMap(grants)` into context instead of, or alongside, `toApprovedProposalHashes(grants)`.
+
+## Relation To Broader Approval Work
+
+This RFC standardizes the evidence layer only.
+
+Follow-up RFCs may build on top of it to cover:
+
+- deterministic resume helpers,
+- timeout or escalation contracts,
+- queue adapters,
+- reference workflow UX.
 
 ## Security and Privacy Notes
 
@@ -238,6 +279,8 @@ The helpers should not require changes to `run.ts` or provider abstractions.
 4. `isApprovalGrantActive(...)` returns `false` for expired grants.
 5. `findActiveApprovalGrant(...)` returns the correct active grant by `proposalHash`.
 6. `toApprovedProposalHashes(...)` excludes expired or revoked grants.
+7. `toActiveApprovalGrantMap(...)` excludes inactive grants and indexes active grants by `proposalHash`.
+8. `toActiveApprovalGrantMap(...)` prefers the most recent `approvedAt` when multiple active grants share a `proposalHash`.
 
 ## Non-Goals
 
@@ -248,6 +291,8 @@ This RFC does not standardize:
 - queue states,
 - thread persistence,
 - resume APIs,
+- timeout or escalation mechanics,
+- queue adapters,
 - workflow UI.
 
 Those concerns remain application-owned.
