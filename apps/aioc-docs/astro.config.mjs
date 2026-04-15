@@ -9,6 +9,9 @@ export default defineConfig({
       title: "AIOC Docs",
       description:
         "Governance-first SDK for LLM agents with deterministic policy gates and auditable run records.",
+      components: {
+        Hero: "./src/components/Hero.astro",
+      },
       disable404Route: true,
       social: [
         {
