@@ -24,16 +24,16 @@ It is designed for applications that must retain full governance control over pe
 
 ## Status
 
-`aioc` is currently in release-candidate phase (`0.1.0-rc.1`) and is not yet stable.
+`aioc` is stable as of `0.1.0`.
 
 The current documentation mixes:
 
 - stable runtime behavior you can use today
 - draft RFC material for approval lifecycle and stabilization work that is still evolving
 
-## What Stable Means
+## Stable Scope
 
-`aioc` will leave release-candidate phase when its governance-first runtime model is stable enough to serve as a dependable foundation for high-accountability applications: core APIs are compatibility-managed, audit artifacts and replay workflows are dependable, and the project has been validated through real implementation use.
+`aioc` `0.1.0` stabilizes the governance-first runtime model as a dependable foundation for high-accountability applications: core APIs are compatibility-managed, audit artifacts and replay workflows are dependable, and the project has been validated through real implementation use.
 
 ## Install
 
