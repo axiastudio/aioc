@@ -206,6 +206,20 @@ function isPolicyResultShape(value: unknown): value is PolicyResult {
   );
 }
 
+function hasDeprecatedDenyMode(
+  value: unknown,
+): value is { denyMode?: unknown } {
+  return typeof value === "object" && value !== null && "denyMode" in value;
+}
+
+function createDeprecatedDenyModeResult(receivedValue: unknown): PolicyResult {
+  return createDeniedPolicyResult("deprecated_policy_field_denyMode", {
+    deprecatedField: "denyMode",
+    replacementField: "resultMode",
+    receivedValue,
+  });
+}
+
 async function emitPolicyDecision(
   params:
     | {
@@ -341,6 +355,10 @@ async function evaluateToolPolicy<TContext>(
     return createDeniedPolicyResult("policy_error", toErrorMetadata(error));
   }
 
+  if (hasDeprecatedDenyMode(rawResult)) {
+    return createDeprecatedDenyModeResult(rawResult.denyMode);
+  }
+
   if (!isPolicyResultShape(rawResult)) {
     return createDeniedPolicyResult("invalid_policy_result");
   }
@@ -382,6 +400,10 @@ async function evaluateHandoffPolicy<TContext>(
     });
   } catch (error) {
     return createDeniedPolicyResult("policy_error", toErrorMetadata(error));
+  }
+
+  if (hasDeprecatedDenyMode(rawResult)) {
+    return createDeprecatedDenyModeResult(rawResult.denyMode);
   }
 
   if (!isPolicyResultShape(rawResult)) {
