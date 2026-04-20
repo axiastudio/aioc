@@ -35,16 +35,18 @@ function readFileText(file: File): Promise<string> {
   });
 }
 
-async function loadFileToSlot(file: File): Promise<LoadedRunRecord> {
-  const text = await readFileText(file);
-  const record = parseRunRecordJson(text);
+function buildLoadedRunRecord(
+  jsonText: string,
+  sourceName: string,
+): LoadedRunRecord {
+  const record = parseRunRecordJson(jsonText);
 
   if (!isRecordRenderable(record)) {
     throw new Error("RunRecord shape is not renderable by this MVP");
   }
 
   return {
-    fileName: file.name,
+    fileName: sourceName,
     loadedAt: new Date().toISOString(),
     record,
     preview: buildRunRecordPreview(record),
@@ -153,7 +155,10 @@ function InPageLink({
 interface SlotCardProps {
   slotId: RunSlotId;
   slot: RunSlotState;
+  jsonDraft: string;
   onFileSelected: (slotId: RunSlotId, file: File) => void;
+  onJsonDraftChange: (slotId: RunSlotId, value: string) => void;
+  onJsonSubmit: (slotId: RunSlotId) => void;
   onClear: (slotId: RunSlotId) => void;
   onInspect: (slotId: RunSlotId) => void;
 }
@@ -161,11 +166,15 @@ interface SlotCardProps {
 function SlotCard({
   slotId,
   slot,
+  jsonDraft,
   onFileSelected,
+  onJsonDraftChange,
+  onJsonSubmit,
   onClear,
   onInspect,
 }: SlotCardProps): ReactElement {
   const label = slotId === "file1" ? "File 1" : "File 2";
+  const hasJsonDraft = jsonDraft.trim().length > 0;
 
   return (
     <section className="rounded-[2rem] border border-slate-200 bg-white/85 p-5 shadow-[0_20px_70px_rgba(15,23,42,0.08)] backdrop-blur">
@@ -188,52 +197,103 @@ function SlotCard({
         ) : null}
       </div>
 
-      <label
-        className="flex min-h-44 cursor-pointer flex-col justify-between rounded-[1.5rem] border border-dashed border-slate-300 bg-[linear-gradient(145deg,rgba(255,255,255,0.8),rgba(248,250,252,0.95))] p-5 transition hover:border-slate-400 hover:bg-slate-50"
-        onDragOver={(event) => event.preventDefault()}
-        onDrop={(event) => {
-          event.preventDefault();
-          const file = event.dataTransfer.files.item(0);
-          if (file) {
-            onFileSelected(slotId, file);
-          }
-        }}
-      >
-        <div className="flex items-start gap-3">
-          <div className="rounded-2xl bg-slate-950 p-3 text-white">
-            <FileJson2 className="h-5 w-5" />
-          </div>
-          <div>
-            <p className="text-sm font-medium text-slate-950">
-              Drop a single RunRecord JSON file here
-            </p>
-            <p className="mt-1 text-sm text-slate-500">
-              Or click to browse from disk.
-            </p>
-          </div>
-        </div>
-
-        <input
-          type="file"
-          accept="application/json,.json"
-          className="hidden"
-          onChange={(event) => {
-            const file = event.target.files?.item(0);
+      <div className="space-y-4">
+        <label
+          className="flex min-h-44 cursor-pointer flex-col justify-between rounded-[1.5rem] border border-dashed border-slate-300 bg-[linear-gradient(145deg,rgba(255,255,255,0.8),rgba(248,250,252,0.95))] p-5 transition hover:border-slate-400 hover:bg-slate-50"
+          onDragOver={(event) => event.preventDefault()}
+          onDrop={(event) => {
+            event.preventDefault();
+            const file = event.dataTransfer.files.item(0);
             if (file) {
               onFileSelected(slotId, file);
             }
-            event.currentTarget.value = "";
           }}
-        />
+        >
+          <div className="flex items-start gap-3">
+            <div className="rounded-2xl bg-slate-950 p-3 text-white">
+              <FileJson2 className="h-5 w-5" />
+            </div>
+            <div>
+              <p className="text-sm font-medium text-slate-950">
+                Drop a single RunRecord JSON file here
+              </p>
+              <p className="mt-1 text-sm text-slate-500">
+                Or click to browse from disk.
+              </p>
+            </div>
+          </div>
 
-        <div className="mt-6 rounded-[1.25rem] border border-slate-200 bg-slate-50/80 p-4">
+          <input
+            type="file"
+            accept="application/json,.json"
+            className="hidden"
+            onChange={(event) => {
+              const file = event.target.files?.item(0);
+              if (file) {
+                onFileSelected(slotId, file);
+              }
+              event.currentTarget.value = "";
+            }}
+          />
+
+          <div className="mt-6 rounded-[1.25rem] border border-slate-200 bg-slate-50/80 p-4">
+            <p className="text-sm text-slate-500">
+              The selected file is mirrored into the textbox below for quick edits.
+            </p>
+          </div>
+        </label>
+
+        <div className="rounded-[1.5rem] border border-slate-200 bg-slate-50/70 p-4">
+          <div className="flex items-start justify-between gap-4">
+            <div>
+              <p className={sectionTitleClassName()}>Paste JSON</p>
+              <p className="mt-2 text-sm text-slate-500">
+                Paste a single RunRecord object and load it directly into this slot.
+              </p>
+            </div>
+          </div>
+          <textarea
+            value={jsonDraft}
+            rows={12}
+            className="mt-4 w-full resize-y rounded-[1.25rem] border border-slate-200 bg-white px-4 py-3 text-sm leading-6 text-slate-900 shadow-sm outline-none transition placeholder:text-slate-400 focus:border-sky-400 focus:ring-4 focus:ring-sky-100"
+            placeholder='{"runId":"...","agentName":"...","status":"completed","question":"...","response":"...","items":[],"policyDecisions":[],"startedAt":"...","endedAt":"..."}'
+            onChange={(event) => onJsonDraftChange(slotId, event.target.value)}
+            onKeyDown={(event) => {
+              if ((event.metaKey || event.ctrlKey) && event.key === "Enter") {
+                event.preventDefault();
+                onJsonSubmit(slotId);
+              }
+            }}
+          />
+          <div className="mt-3 flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+            <p className="text-xs text-slate-500">
+              Use Cmd/Ctrl+Enter to load the pasted JSON.
+            </p>
+            <button
+              type="button"
+              className={buttonClassName(hasJsonDraft, true)}
+              disabled={!hasJsonDraft}
+              onClick={() => onJsonSubmit(slotId)}
+            >
+              <FileJson2 className="h-4 w-4" />
+              Load JSON
+            </button>
+          </div>
+        </div>
+
+        <div className="rounded-[1.25rem] border border-slate-200 bg-slate-50/80 p-4">
           {slot.status === "empty" ? (
-            <p className="text-sm text-slate-500">No file loaded yet.</p>
+            <p className="text-sm text-slate-500">No RunRecord loaded yet.</p>
           ) : null}
 
           {slot.status === "invalid" ? (
             <div className="space-y-1">
-              <p className="text-sm font-medium text-rose-700">Invalid file</p>
+              <p className="text-sm font-medium text-rose-700">Invalid input</p>
+              {slot.fileName ? (
+                <p className="text-sm font-medium text-rose-600">
+                  {slot.fileName}
+                </p>
+              ) : null}
               <p className="text-sm text-rose-600">{slot.error}</p>
             </div>
           ) : null}
@@ -272,7 +332,7 @@ function SlotCard({
             </div>
           ) : null}
         </div>
-      </label>
+      </div>
 
       <div className="mt-4">
         <button
@@ -1251,11 +1311,23 @@ export function App(): ReactElement {
     file1: EMPTY_SLOT,
     file2: EMPTY_SLOT,
   });
+  const [jsonDrafts, setJsonDrafts] = useState<Record<RunSlotId, string>>({
+    file1: "",
+    file2: "",
+  });
   const [view, setView] = useState<InspectView>({ name: "home" });
 
   async function handleFileSelected(slotId: RunSlotId, file: File): Promise<void> {
+    let text = "";
+
     try {
-      const loaded = await loadFileToSlot(file);
+      text = await readFileText(file);
+      setJsonDrafts((current) => ({
+        ...current,
+        [slotId]: text,
+      }));
+
+      const loaded = buildLoadedRunRecord(text, file.name);
       setSlots((current) => ({
         ...current,
         [slotId]: {
@@ -1276,10 +1348,58 @@ export function App(): ReactElement {
     }
   }
 
+  function handleJsonDraftChange(slotId: RunSlotId, value: string): void {
+    setJsonDrafts((current) => ({
+      ...current,
+      [slotId]: value,
+    }));
+  }
+
+  function handleJsonSubmit(slotId: RunSlotId): void {
+    const jsonText = jsonDrafts[slotId];
+
+    if (jsonText.trim().length === 0) {
+      setSlots((current) => ({
+        ...current,
+        [slotId]: {
+          status: "invalid",
+          fileName: "Pasted JSON",
+          error: "Paste a RunRecord JSON payload before loading it.",
+        },
+      }));
+      return;
+    }
+
+    try {
+      const loaded = buildLoadedRunRecord(jsonText, "Pasted JSON");
+      setSlots((current) => ({
+        ...current,
+        [slotId]: {
+          status: "loaded",
+          fileName: "Pasted JSON",
+          data: loaded,
+        },
+      }));
+    } catch (error) {
+      setSlots((current) => ({
+        ...current,
+        [slotId]: {
+          status: "invalid",
+          fileName: "Pasted JSON",
+          error: error instanceof Error ? error.message : String(error),
+        },
+      }));
+    }
+  }
+
   function clearSlot(slotId: RunSlotId): void {
     setSlots((current) => ({
       ...current,
       [slotId]: EMPTY_SLOT,
+    }));
+    setJsonDrafts((current) => ({
+      ...current,
+      [slotId]: "",
     }));
 
     setView((current) => {
@@ -1340,18 +1460,24 @@ export function App(): ReactElement {
           <SlotCard
             slotId="file1"
             slot={slots.file1}
+            jsonDraft={jsonDrafts.file1}
             onFileSelected={(slotId, file) => {
               void handleFileSelected(slotId, file);
             }}
+            onJsonDraftChange={handleJsonDraftChange}
+            onJsonSubmit={handleJsonSubmit}
             onClear={clearSlot}
             onInspect={(slotId) => setView({ name: "inspect", slotId })}
           />
           <SlotCard
             slotId="file2"
             slot={slots.file2}
+            jsonDraft={jsonDrafts.file2}
             onFileSelected={(slotId, file) => {
               void handleFileSelected(slotId, file);
             }}
+            onJsonDraftChange={handleJsonDraftChange}
+            onJsonSubmit={handleJsonSubmit}
             onClear={clearSlot}
             onInspect={(slotId) => setView({ name: "inspect", slotId })}
           />
@@ -1384,8 +1510,8 @@ export function App(): ReactElement {
             </div>
             <div className="mt-5 grid gap-4 text-sm leading-7 text-slate-600 md:grid-cols-3">
               <p>
-                Each slot accepts one JSON file containing a single RunRecord
-                object.
+                Each slot accepts one JSON file or pasted JSON containing a single
+                RunRecord object.
               </p>
               <p>
                 Inspect a slot independently or compare both records once both are
