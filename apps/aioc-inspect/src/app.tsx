@@ -4,6 +4,7 @@ import type { ReactElement, ReactNode } from "react";
 import {
   buildRunRecordPreview,
   compareRunRecords,
+  deriveRunRecordScope,
   extractToolCalls,
   extractHandoffFlow,
   formatJson,
@@ -18,8 +19,9 @@ import {
   truncateText,
 } from "./lib/run-record";
 import type {
-  InspectView,
   LoadedRunRecord,
+  RunRecordScope,
+  InspectView,
   RunSlotId,
   RunSlotState,
 } from "./types";
@@ -323,9 +325,9 @@ function SlotCard({
                   </dd>
                 </div>
                 <div className="flex justify-between gap-4">
-                  <dt>Question</dt>
+                  <dt>Current Message</dt>
                   <dd className="max-w-[18rem] text-right font-medium text-slate-900">
-                    {truncateText(slot.data.preview.question, 72)}
+                    {truncateText(slot.data.preview.currentUserMessage, 72)}
                   </dd>
                 </div>
               </dl>
@@ -386,6 +388,186 @@ function Section({
   );
 }
 
+function renderInlineFormattedText(text: string): ReactNode[] {
+  const nodes: ReactNode[] = [];
+  const pattern = /(\*\*[^*]+\*\*|`[^`]+`|\\\([^)]*\\\))/g;
+  let lastIndex = 0;
+  let matchIndex = 0;
+
+  for (const match of text.matchAll(pattern)) {
+    const fullMatch = match[0];
+    const index = match.index ?? 0;
+
+    if (index > lastIndex) {
+      nodes.push(text.slice(lastIndex, index));
+    }
+
+    if (fullMatch.startsWith("**") && fullMatch.endsWith("**")) {
+      nodes.push(
+        <strong key={`inline-strong-${matchIndex}`}>
+          {fullMatch.slice(2, -2)}
+        </strong>,
+      );
+    } else if (fullMatch.startsWith("`") && fullMatch.endsWith("`")) {
+      nodes.push(
+        <code
+          key={`inline-code-${matchIndex}`}
+          className="rounded bg-black/10 px-1.5 py-0.5 font-mono text-[0.95em]"
+        >
+          {fullMatch.slice(1, -1)}
+        </code>,
+      );
+    } else {
+      nodes.push(
+        <span
+          key={`inline-math-${matchIndex}`}
+          className="font-mono text-[0.95em]"
+        >
+          {fullMatch}
+        </span>,
+      );
+    }
+
+    lastIndex = index + fullMatch.length;
+    matchIndex += 1;
+  }
+
+  if (lastIndex < text.length) {
+    nodes.push(text.slice(lastIndex));
+  }
+
+  return nodes;
+}
+
+function FormattedResponse({ text, tone = "dark" }: { text: string; tone?: "dark" | "light" }): ReactElement {
+  const blocks = text
+    .split(/\n{2,}/)
+    .map((block) => block.trim())
+    .filter((block) => block.length > 0);
+  const textClassName =
+    tone === "dark" ? "text-slate-100" : "text-slate-700";
+  const mutedClassName =
+    tone === "dark" ? "text-slate-400" : "text-slate-500";
+
+  if (blocks.length === 0) {
+    return <p className={`text-sm leading-7 ${mutedClassName}`}>No response recorded.</p>;
+  }
+
+  return (
+    <div className={`space-y-4 text-sm leading-7 ${textClassName}`}>
+      {blocks.map((block, blockIndex) => {
+        const lines = block
+          .split("\n")
+          .map((line) => line.trim())
+          .filter((line) => line.length > 0);
+        const unorderedList = lines.every((line) => /^[-*]\s+/.test(line));
+        const orderedList = lines.every((line) => /^\d+\.\s+/.test(line));
+
+        if (unorderedList) {
+          return (
+            <ul
+              key={`response-block-${blockIndex}`}
+              className="list-disc space-y-2 pl-5"
+            >
+              {lines.map((line, lineIndex) => (
+                <li key={`response-line-${blockIndex}-${lineIndex}`}>
+                  {renderInlineFormattedText(line.replace(/^[-*]\s+/, ""))}
+                </li>
+              ))}
+            </ul>
+          );
+        }
+
+        if (orderedList) {
+          return (
+            <ol
+              key={`response-block-${blockIndex}`}
+              className="list-decimal space-y-2 pl-5"
+            >
+              {lines.map((line, lineIndex) => (
+                <li key={`response-line-${blockIndex}-${lineIndex}`}>
+                  {renderInlineFormattedText(line.replace(/^\d+\.\s+/, ""))}
+                </li>
+              ))}
+            </ol>
+          );
+        }
+
+        return (
+          <p key={`response-block-${blockIndex}`}>
+            {lines.map((line, lineIndex) => (
+              <span key={`response-line-${blockIndex}-${lineIndex}`}>
+                {lineIndex > 0 ? <br /> : null}
+                {renderInlineFormattedText(line)}
+              </span>
+            ))}
+          </p>
+        );
+      })}
+    </div>
+  );
+}
+
+function inputHistoryItemTitle(item: RunRecordScope["inputItems"][number]): string {
+  if (item.type === "message") {
+    return item.role === "user" ? "User message" : `${item.role} message`;
+  }
+
+  if (item.type === "tool_call_item") {
+    return `Tool call: ${item.name}`;
+  }
+
+  return `Tool output: ${item.callId}`;
+}
+
+function InputHistoryItemCard({
+  item,
+  index,
+}: {
+  item: RunRecordScope["historyItems"][number];
+  index: number;
+}): ReactElement {
+  return (
+    <article className="rounded-[1.25rem] border border-slate-200 bg-slate-50 p-4">
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <div>
+          <p className={sectionTitleClassName()}>
+            Input Item {index + 1}
+          </p>
+          <p className="mt-2 text-sm font-medium text-slate-900">
+            {inputHistoryItemTitle(item)}
+          </p>
+        </div>
+        <span className="inline-flex rounded-full border border-slate-300 bg-white px-3 py-1 text-xs font-medium text-slate-700">
+          {item.type}
+        </span>
+      </div>
+      {item.type === "message" ? (
+        <p className="mt-3 rounded-[1rem] border border-slate-200 bg-white p-4 text-sm leading-7 text-slate-700">
+          {item.content}
+        </p>
+      ) : (
+        <div className="mt-3">
+          <JsonPanel
+            value={
+              item.type === "tool_call_item"
+                ? {
+                    callId: item.callId,
+                    name: item.name,
+                    arguments: item.arguments ?? {},
+                  }
+                : {
+                    callId: item.callId,
+                    output: item.output ?? null,
+                  }
+            }
+          />
+        </div>
+      )}
+    </article>
+  );
+}
+
 function InspectPage({
   loaded,
   otherLoaded,
@@ -400,8 +582,15 @@ function InspectPage({
   onCompare: () => void;
 }): ReactElement {
   const record = loaded.record;
-  const toolCalls = useMemo(() => extractToolCalls(record), [record]);
-  const handoffFlow = useMemo(() => extractHandoffFlow(record), [record]);
+  const scope = useMemo(() => deriveRunRecordScope(record), [record]);
+  const toolCalls = useMemo(
+    () => extractToolCalls(scope.emittedItems),
+    [scope.emittedItems],
+  );
+  const handoffFlow = useMemo(
+    () => extractHandoffFlow(record, scope.emittedItems),
+    [record, scope.emittedItems],
+  );
   const policyDecisionsByCallId = useMemo(() => {
     const grouped = new Map<string, typeof record.policyDecisions>();
 
@@ -429,7 +618,7 @@ function InspectPage({
               {record.agentName}
             </h1>
             <p className="mt-2 max-w-3xl text-sm leading-7 text-slate-600">
-              {record.question}
+              {scope.currentUserMessage}
             </p>
           </div>
           <div className="flex gap-3">
@@ -481,26 +670,59 @@ function InspectPage({
       <div className="grid gap-6">
         <Section
           title="Overview"
-          summary="Question, final response, handoff flow, metadata, and context visibility."
+          summary="Current user message, final response, run scope, metadata, and context visibility."
         >
           <div className="grid gap-6 lg:grid-cols-2">
             <div className="space-y-4">
               <div>
-                <p className={sectionTitleClassName()}>Question</p>
+                <p className={sectionTitleClassName()}>Current User Message</p>
                 <p className="mt-2 rounded-[1.25rem] bg-slate-50 p-4 text-sm leading-7 text-slate-700">
-                  {record.question}
+                  {scope.currentUserMessage}
                 </p>
               </div>
               <div>
                 <p className={sectionTitleClassName()}>Final Response</p>
-                <p className="mt-2 rounded-[1.25rem] bg-slate-950 p-4 text-sm leading-7 text-slate-100">
-                  {record.response}
+                <div className="mt-2 rounded-[1.25rem] bg-slate-950 p-4">
+                  <FormattedResponse text={record.response} tone="dark" />
+                </div>
+              </div>
+              <div className="rounded-[1.25rem] border border-slate-200 bg-slate-50 p-4">
+                <p className={sectionTitleClassName()}>Run Scope</p>
+                <div className="mt-3 flex flex-wrap items-center gap-2 text-xs text-slate-600">
+                  <span className="inline-flex rounded-full border border-slate-300 bg-white px-3 py-1 font-medium">
+                    {scope.inputItemCount} input items
+                  </span>
+                  <span className="inline-flex rounded-full border border-slate-300 bg-white px-3 py-1 font-medium">
+                    {scope.emittedItemCount} emitted items
+                  </span>
+                  {scope.inputItemCount > 1 ? (
+                    <span className="inline-flex rounded-full border border-sky-200 bg-sky-50 px-3 py-1 font-medium text-sky-800">
+                      History-backed run
+                    </span>
+                  ) : null}
+                  {scope.fallbackUsed ? (
+                    <span className="inline-flex rounded-full border border-amber-200 bg-amber-50 px-3 py-1 font-medium text-amber-800">
+                      Scope fallback: full trajectory
+                    </span>
+                  ) : null}
+                </div>
+                <p className="mt-3 text-sm leading-7 text-slate-600">
+                  {scope.fallbackUsed
+                    ? "The first request fingerprint did not expose a usable messageCount, so the page is showing the full trajectory as the current run."
+                    : "The page is scoped to the current run by splitting the recorded trajectory into input history and emitted items."}
+                </p>
+              </div>
+              <div className="rounded-[1.25rem] border border-slate-200 bg-slate-50 p-4">
+                <p className={sectionTitleClassName()}>Recorded Question Field</p>
+                <p className="mt-2 text-sm leading-7 text-slate-700">
+                  {scope.recordedQuestion}
                 </p>
               </div>
             </div>
             <div className="space-y-4">
               <div className="rounded-[1.25rem] border border-slate-200 bg-slate-50 p-4">
                 <p className={sectionTitleClassName()}>Handoff Flow</p>
+                <p className="mt-2 text-sm text-slate-500">Current run only.</p>
                 <div className="mt-3 space-y-4">
                   <div className="rounded-2xl border border-slate-200 bg-white p-4">
                     <p className="text-sm font-medium text-slate-900">
@@ -663,11 +885,13 @@ function InspectPage({
 
         <Section
           title="Tools"
-          summary={`Extracted ${toolCalls.length} tool calls from the item trajectory.`}
+          summary={`Extracted ${toolCalls.length} tool calls emitted during this run.`}
         >
           <div className="space-y-4">
             {toolCalls.length === 0 ? (
-              <p className="text-sm text-slate-500">No tool calls found.</p>
+              <p className="text-sm text-slate-500">
+                No tool calls found for the current run.
+              </p>
             ) : null}
             {toolCalls.map((call) => {
               const relatedPolicyDecisions =
@@ -741,6 +965,35 @@ function InspectPage({
                 </article>
               );
             })}
+          </div>
+        </Section>
+
+        <Section
+          title="Input History"
+          summary={
+            scope.historyItemCount > 0
+              ? `Items already present before the current user message: ${scope.historyItemCount}.`
+              : scope.fallbackUsed
+                ? "Scope reconstruction fell back to the full trajectory, so input history could not be separated."
+                : "No prior history was present in the run input."
+          }
+          defaultOpen={false}
+        >
+          <div className="space-y-4">
+            {scope.historyItems.length === 0 ? (
+              <p className="text-sm text-slate-500">
+                {scope.fallbackUsed
+                  ? "Unable to separate input history from emitted items for this record."
+                  : "This run started from a single prompt with no prior history items."}
+              </p>
+            ) : null}
+            {scope.historyItems.map((item, index) => (
+              <InputHistoryItemCard
+                key={`input-history-${index}-${item.type}`}
+                item={item}
+                index={index}
+              />
+            ))}
           </div>
         </Section>
 
@@ -1000,10 +1253,18 @@ function ComparePage({
     () => compareRunRecords(left.record, right.record),
     [left.record, right.record],
   );
-  const leftTools = useMemo(() => extractToolCalls(left.record), [left.record]);
-  const rightTools = useMemo(
-    () => extractToolCalls(right.record),
+  const leftScope = useMemo(() => deriveRunRecordScope(left.record), [left.record]);
+  const rightScope = useMemo(
+    () => deriveRunRecordScope(right.record),
     [right.record],
+  );
+  const leftTools = useMemo(
+    () => extractToolCalls(leftScope.emittedItems),
+    [leftScope.emittedItems],
+  );
+  const rightTools = useMemo(
+    () => extractToolCalls(rightScope.emittedItems),
+    [rightScope.emittedItems],
   );
 
   return (
@@ -1076,6 +1337,17 @@ function ComparePage({
                     {entry.record.promptSnapshots[0]?.promptVersion ?? "n/a"}
                   </dd>
                 </div>
+                <div className="flex justify-between gap-4">
+                  <dt>Current Message</dt>
+                  <dd className="max-w-[18rem] text-right font-medium text-slate-900">
+                    {truncateText(
+                      index === 0
+                        ? leftScope.currentUserMessage
+                        : rightScope.currentUserMessage,
+                      72,
+                    )}
+                  </dd>
+                </div>
               </dl>
             </article>
           ))}
@@ -1115,7 +1387,10 @@ function ComparePage({
           </div>
         </Section>
 
-        <Section title="Metrics" summary="Structural counts and tool matching metrics.">
+        <Section
+          title="Metrics"
+          summary="Structural counts and current-run tool matching metrics."
+        >
           <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
             <article className="rounded-[1.25rem] border border-slate-200 bg-slate-50 p-4">
               <p className={sectionTitleClassName()}>Response Length</p>
@@ -1150,20 +1425,23 @@ function ComparePage({
           <div className="grid gap-4 lg:grid-cols-2">
             <div>
               <p className={sectionTitleClassName()}>File 1</p>
-              <p className="mt-2 rounded-[1.25rem] bg-slate-50 p-4 text-sm leading-7 text-slate-700">
-                {left.record.response}
-              </p>
+              <div className="mt-2 rounded-[1.25rem] bg-slate-50 p-4">
+                <FormattedResponse text={left.record.response} tone="light" />
+              </div>
             </div>
             <div>
               <p className={sectionTitleClassName()}>File 2</p>
-              <p className="mt-2 rounded-[1.25rem] bg-slate-50 p-4 text-sm leading-7 text-slate-700">
-                {right.record.response}
-              </p>
+              <div className="mt-2 rounded-[1.25rem] bg-slate-50 p-4">
+                <FormattedResponse text={right.record.response} tone="light" />
+              </div>
             </div>
           </div>
         </Section>
 
-        <Section title="Tool Calls" summary="Sequence and normalized argument shape.">
+        <Section
+          title="Tool Calls"
+          summary="Current-run sequence and normalized argument shape."
+        >
           <div className="grid gap-4 lg:grid-cols-2">
             <div className="rounded-[1.25rem] border border-slate-200 bg-slate-50 p-4">
               <p className={sectionTitleClassName()}>File 1</p>
@@ -1541,7 +1819,7 @@ export function App(): ReactElement {
                     <p className="mt-2 text-slate-300">
                       {slot.status === "loaded" && slot.data
                         ? `${slot.data.preview.agentName} • ${truncateText(
-                            slot.data.preview.question,
+                            slot.data.preview.currentUserMessage,
                             56,
                           )}`
                         : slot.status === "invalid"

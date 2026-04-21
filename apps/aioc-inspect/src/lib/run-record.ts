@@ -15,6 +15,7 @@ import type {
   RunRecordComparisonSummary,
   RunRecordDifference,
   RunRecordPreview,
+  RunRecordScope,
 } from "../types";
 
 function isObject(value: unknown): value is Record<string, unknown> {
@@ -92,12 +93,14 @@ export function parseRunRecordJson(jsonText: string): RunRecord<unknown> {
 export function buildRunRecordPreview(
   record: RunRecord<unknown>,
 ): RunRecordPreview {
+  const scope = deriveRunRecordScope(record);
+
   return {
     runId: record.runId,
     agentName: record.agentName,
     startedAt: record.startedAt,
     status: record.status,
-    question: record.question,
+    currentUserMessage: scope.currentUserMessage,
     model: record.model ?? "n/a",
   };
 }
@@ -110,14 +113,80 @@ export function truncateText(value: string, maxLength = 96): string {
   return `${value.slice(0, maxLength - 1)}…`;
 }
 
-export function extractToolCalls(
+function findLastUserMessage(items: AgentInputItem[]): string | undefined {
+  for (let index = items.length - 1; index >= 0; index -= 1) {
+    const item = items[index];
+    if (
+      item?.type === "message" &&
+      item.role === "user" &&
+      item.content.trim().length > 0
+    ) {
+      return item.content.trim();
+    }
+  }
+
+  return undefined;
+}
+
+function findLastUserMessageIndex(items: AgentInputItem[]): number {
+  for (let index = items.length - 1; index >= 0; index -= 1) {
+    const item = items[index];
+    if (
+      item?.type === "message" &&
+      item.role === "user" &&
+      item.content.trim().length > 0
+    ) {
+      return index;
+    }
+  }
+
+  return -1;
+}
+
+export function deriveRunRecordScope(
   record: RunRecord<unknown>,
-): ExtractedToolCall[] {
+): RunRecordScope {
+  const inputItemCount = record.requestFingerprints[0]?.messageCount;
+  const hasScopedInput =
+    Number.isInteger(inputItemCount) &&
+    typeof inputItemCount === "number" &&
+    inputItemCount >= 0 &&
+    inputItemCount <= record.items.length;
+  const inputItems = hasScopedInput
+    ? record.items.slice(0, inputItemCount)
+    : [];
+  const emittedItems = hasScopedInput
+    ? record.items.slice(inputItemCount)
+    : record.items;
+  const currentUserMessageIndex = findLastUserMessageIndex(inputItems);
+  const historyItems =
+    currentUserMessageIndex >= 0
+      ? inputItems.slice(0, currentUserMessageIndex)
+      : inputItems;
+  const currentUserMessage =
+    findLastUserMessage(inputItems) ??
+    findLastUserMessage(record.items) ??
+    record.question;
+
+  return {
+    inputItems,
+    historyItems,
+    emittedItems,
+    inputItemCount: inputItems.length,
+    historyItemCount: historyItems.length,
+    emittedItemCount: emittedItems.length,
+    fallbackUsed: !hasScopedInput,
+    currentUserMessage,
+    recordedQuestion: record.question,
+  };
+}
+
+function extractToolCallsFromItems(items: AgentInputItem[]): ExtractedToolCall[] {
   const orderedCalls: ExtractedToolCall[] = [];
   const callsById = new Map<string, ExtractedToolCall>();
   let toolTurn = 0;
 
-  for (const item of record.items) {
+  for (const item of items) {
     if (item.type === "tool_call_item") {
       toolTurn += 1;
       const rawArguments = item.arguments ?? {};
@@ -158,6 +227,14 @@ export function extractToolCalls(
   }
 
   return orderedCalls;
+}
+
+export function extractToolCalls(record: RunRecord<unknown>): ExtractedToolCall[];
+export function extractToolCalls(items: AgentInputItem[]): ExtractedToolCall[];
+export function extractToolCalls(
+  input: RunRecord<unknown> | AgentInputItem[],
+): ExtractedToolCall[] {
+  return extractToolCallsFromItems(Array.isArray(input) ? input : input.items);
 }
 
 function buildActivatedAgentPath(record: RunRecord<unknown>): string[] {
@@ -214,8 +291,11 @@ function inferHandoffTargetFromToolName(toolName: string): string | undefined {
   return toolName.replace(/^handoff_to_/, "");
 }
 
-export function extractHandoffFlow(record: RunRecord<unknown>): HandoffFlow {
-  const toolCalls = extractToolCalls(record);
+export function extractHandoffFlow(
+  record: RunRecord<unknown>,
+  items: AgentInputItem[] = record.items,
+): HandoffFlow {
+  const toolCalls = extractToolCalls(items);
   const handoffCalls = toolCalls.filter((call) =>
     call.name.startsWith("handoff_to_"),
   );
@@ -350,8 +430,10 @@ export function compareRunRecords(
   right: RunRecord<unknown>,
 ): RunRecordComparison {
   const differences: RunRecordDifference[] = [];
-  const toolCallsLeft = extractToolCalls(left);
-  const toolCallsRight = extractToolCalls(right);
+  const leftScope = deriveRunRecordScope(left);
+  const rightScope = deriveRunRecordScope(right);
+  const toolCallsLeft = extractToolCalls(leftScope.emittedItems);
+  const toolCallsRight = extractToolCalls(rightScope.emittedItems);
   const leftCounts = countToolShapes(toolCallsLeft);
   const rightCounts = countToolShapes(toolCallsRight);
   const allToolKeys = new Set([...leftCounts.keys(), ...rightCounts.keys()]);

@@ -1,4 +1,4 @@
-import type { RunRecord } from "@axiastudio/aioc";
+import type { AgentInputItem, RunRecord } from "@axiastudio/aioc";
 
 export type InspectView =
   | { name: "home" }
@@ -12,8 +12,20 @@ export interface RunRecordPreview {
   agentName: string;
   startedAt: string;
   status: string;
-  question: string;
+  currentUserMessage: string;
   model: string;
+}
+
+export interface RunRecordScope {
+  inputItems: AgentInputItem[];
+  historyItems: AgentInputItem[];
+  emittedItems: AgentInputItem[];
+  inputItemCount: number;
+  historyItemCount: number;
+  emittedItemCount: number;
+  fallbackUsed: boolean;
+  currentUserMessage: string;
+  recordedQuestion: string;
 }
 
 export interface HandoffAttempt {
