@@ -1,4 +1,12 @@
-import { FileJson2, FolderSearch, GitCompareArrows, Search, X } from "lucide-react";
+import {
+  Check,
+  Copy,
+  FileJson2,
+  FolderSearch,
+  GitCompareArrows,
+  Search,
+  X,
+} from "lucide-react";
 import { useMemo, useState } from "react";
 import type { ReactElement, ReactNode } from "react";
 import {
@@ -354,19 +362,65 @@ function SlotCard({
 function JsonPanel({
   value,
   maxHeightClassName,
+  copyable = false,
 }: {
   value: unknown;
   maxHeightClassName?: string;
+  copyable?: boolean;
 }): ReactElement {
   const jsonText = formatJson(value);
   const heightClassName = maxHeightClassName ?? "";
+  const [copyState, setCopyState] = useState<"idle" | "copied" | "error">(
+    "idle",
+  );
+
+  async function handleCopy(): Promise<void> {
+    try {
+      if (
+        typeof navigator === "undefined" ||
+        typeof navigator.clipboard?.writeText !== "function"
+      ) {
+        throw new Error("Clipboard API unavailable");
+      }
+
+      await navigator.clipboard.writeText(jsonText);
+      setCopyState("copied");
+    } catch {
+      setCopyState("error");
+    }
+
+    window.setTimeout(() => {
+      setCopyState("idle");
+    }, 1400);
+  }
 
   return (
-    <pre
-      className={`w-full max-w-full overflow-auto whitespace-pre-wrap break-words rounded-[1.25rem] border border-slate-200 bg-slate-950 p-4 text-xs leading-6 text-slate-100 ${heightClassName}`.trim()}
-    >
-      <code>{renderHighlightedJson(jsonText)}</code>
-    </pre>
+    <div className="group relative">
+      {copyable ? (
+        <button
+          type="button"
+          aria-label="Copy JSON to clipboard"
+          title={copyState === "error" ? "Copy failed" : "Copy JSON"}
+          className="absolute right-3 top-3 z-10 inline-flex items-center justify-center rounded-full border border-white/15 bg-slate-900/85 p-2 text-slate-200 opacity-0 shadow-sm transition hover:border-sky-300/60 hover:bg-slate-800 group-hover:opacity-100 group-focus-within:opacity-100"
+          onClick={() => {
+            void handleCopy();
+          }}
+        >
+          {copyState === "copied" ? (
+            <Check className="h-4 w-4 text-emerald-300" />
+          ) : copyState === "error" ? (
+            <X className="h-4 w-4 text-rose-300" />
+          ) : (
+            <Copy className="h-4 w-4" />
+          )}
+        </button>
+      ) : null}
+      <pre
+        className={`w-full max-w-full overflow-auto whitespace-pre-wrap break-words rounded-[1.25rem] border border-slate-200 bg-slate-950 p-4 text-xs leading-6 text-slate-100 ${copyable ? "pr-14" : ""} ${heightClassName}`.trim()}
+      >
+        <code>{renderHighlightedJson(jsonText)}</code>
+      </pre>
+    </div>
   );
 }
 
@@ -613,6 +667,7 @@ function InputHistoryItemCard({
       ) : (
         <div className="mt-3 min-w-0">
           <JsonPanel
+            copyable
             maxHeightClassName="max-h-[26rem]"
             value={
               item.type === "tool_call_item"
@@ -935,7 +990,7 @@ function InspectPage({
               </div>
               <div className="rounded-[1.25rem] border border-slate-200 bg-slate-50 p-4">
                 <p className={sectionTitleClassName()}>Metadata</p>
-                <JsonPanel value={record.metadata ?? {}} />
+                <JsonPanel copyable value={record.metadata ?? {}} />
               </div>
               <div className="rounded-[1.25rem] border border-slate-200 bg-slate-50 p-4">
                 <p className={sectionTitleClassName()}>Context Snapshot</p>
@@ -944,6 +999,7 @@ function InspectPage({
                 </p>
                 <div className="mt-3">
                   <JsonPanel
+                    copyable
                     value={record.contextSnapshot}
                     maxHeightClassName="max-h-[26rem]"
                   />
@@ -1021,6 +1077,7 @@ function InspectPage({
                       <p className={sectionTitleClassName()}>Arguments</p>
                       <div className="mt-2">
                         <JsonPanel
+                          copyable
                           value={call.arguments}
                           maxHeightClassName="max-h-[26rem]"
                         />
@@ -1032,6 +1089,7 @@ function InspectPage({
                       </p>
                       <div className="mt-2">
                         <JsonPanel
+                          copyable
                           value={call.output ?? null}
                           maxHeightClassName="max-h-[26rem]"
                         />
@@ -1221,7 +1279,7 @@ function InspectPage({
                   <div className="mt-4">
                     <p className={sectionTitleClassName()}>Prompt Text</p>
                     <div className="mt-2">
-                      <JsonPanel value={snapshot.promptText} />
+                      <JsonPanel copyable value={snapshot.promptText} />
                     </div>
                   </div>
                 ) : null}
@@ -1307,7 +1365,7 @@ function InspectPage({
         </Section>
 
         <Section title="Raw JSON" summary="Complete RunRecord payload." defaultOpen={false}>
-          <JsonPanel value={record} maxHeightClassName="max-h-[26rem]" />
+          <JsonPanel copyable value={record} maxHeightClassName="max-h-[26rem]" />
         </Section>
       </div>
     </div>
