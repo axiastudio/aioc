@@ -351,11 +351,20 @@ function SlotCard({
   );
 }
 
-function JsonPanel({ value }: { value: unknown }): ReactElement {
+function JsonPanel({
+  value,
+  maxHeightClassName,
+}: {
+  value: unknown;
+  maxHeightClassName?: string;
+}): ReactElement {
   const jsonText = formatJson(value);
+  const heightClassName = maxHeightClassName ?? "";
 
   return (
-    <pre className="w-full max-w-full overflow-x-auto whitespace-pre-wrap break-words rounded-[1.25rem] border border-slate-200 bg-slate-950 p-4 text-xs leading-6 text-slate-100">
+    <pre
+      className={`w-full max-w-full overflow-auto whitespace-pre-wrap break-words rounded-[1.25rem] border border-slate-200 bg-slate-950 p-4 text-xs leading-6 text-slate-100 ${heightClassName}`.trim()}
+    >
       <code>{renderHighlightedJson(jsonText)}</code>
     </pre>
   );
@@ -604,6 +613,7 @@ function InputHistoryItemCard({
       ) : (
         <div className="mt-3 min-w-0">
           <JsonPanel
+            maxHeightClassName="max-h-[26rem]"
             value={
               item.type === "tool_call_item"
                 ? {
@@ -933,7 +943,10 @@ function InspectPage({
                   Redacted: {record.contextRedacted ? "yes" : "no"}
                 </p>
                 <div className="mt-3">
-                  <JsonPanel value={record.contextSnapshot} />
+                  <JsonPanel
+                    value={record.contextSnapshot}
+                    maxHeightClassName="max-h-[26rem]"
+                  />
                 </div>
               </div>
             </div>
@@ -1007,7 +1020,10 @@ function InspectPage({
                     <div className="min-w-0">
                       <p className={sectionTitleClassName()}>Arguments</p>
                       <div className="mt-2">
-                        <JsonPanel value={call.arguments} />
+                        <JsonPanel
+                          value={call.arguments}
+                          maxHeightClassName="max-h-[26rem]"
+                        />
                       </div>
                     </div>
                     <div className="min-w-0">
@@ -1015,7 +1031,10 @@ function InspectPage({
                         Output {call.hasOutput ? "" : "(missing)"}
                       </p>
                       <div className="mt-2">
-                        <JsonPanel value={call.output ?? null} />
+                        <JsonPanel
+                          value={call.output ?? null}
+                          maxHeightClassName="max-h-[26rem]"
+                        />
                       </div>
                     </div>
                   </div>
@@ -1288,7 +1307,7 @@ function InspectPage({
         </Section>
 
         <Section title="Raw JSON" summary="Complete RunRecord payload." defaultOpen={false}>
-          <JsonPanel value={record} />
+          <JsonPanel value={record} maxHeightClassName="max-h-[26rem]" />
         </Section>
       </div>
     </div>
