@@ -27,6 +27,7 @@ import {
   truncateText,
 } from "./lib/run-record";
 import type {
+  HandoffFlow,
   LoadedRunRecord,
   RunRecordScope,
   InspectView,
@@ -688,6 +689,152 @@ function InputHistoryItemCard({
   );
 }
 
+function HandoffFlowPanel({
+  flow,
+  showLinks = false,
+}: {
+  flow: HandoffFlow;
+  showLinks?: boolean;
+}): ReactElement {
+  return (
+    <div className="space-y-4">
+      <div className="rounded-2xl border border-slate-200 bg-white p-4">
+        <p className="text-sm font-medium text-slate-900">Activated agent path</p>
+        {flow.activatedAgentPath.length > 0 ? (
+          <div className="mt-3 flex flex-wrap items-center gap-2">
+            {flow.activatedAgentPath.map((agentName, index) => (
+              <div key={`${agentName}-${index}`} className="flex items-center gap-2">
+                <AgentChip name={agentName} />
+                {index < flow.activatedAgentPath.length - 1 ? (
+                  <span className="text-slate-400" aria-hidden="true">
+                    <svg
+                      viewBox="0 0 24 24"
+                      className="h-5 w-5"
+                      fill="none"
+                      xmlns="http://www.w3.org/2000/svg"
+                    >
+                      <path
+                        d="M4 12H18"
+                        stroke="currentColor"
+                        strokeWidth="1.8"
+                        strokeLinecap="round"
+                      />
+                      <path
+                        d="M13 7L18 12L13 17"
+                        stroke="currentColor"
+                        strokeWidth="1.8"
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                      />
+                    </svg>
+                  </span>
+                ) : null}
+              </div>
+            ))}
+          </div>
+        ) : (
+          <p className="mt-2 text-sm leading-7 text-slate-700">
+            No activated agents recorded.
+          </p>
+        )}
+      </div>
+
+      <div className="rounded-2xl border border-slate-200 bg-white p-4">
+        <div className="flex flex-wrap items-center gap-3 text-sm text-slate-600">
+          <span>{flow.attempts.length} attempts</span>
+          <span>{flow.acceptedCount} accepted</span>
+          <span>{flow.deniedCount} denied</span>
+        </div>
+
+        {flow.attempts.length === 0 ? (
+          <p className="mt-3 text-sm text-slate-500">No handoff attempts found.</p>
+        ) : (
+          <div className="mt-4 space-y-3">
+            {flow.attempts.map((attempt) => (
+              <article
+                key={`${attempt.callId}-${attempt.turn ?? "na"}`}
+                className="rounded-2xl border border-slate-200 bg-slate-50 p-3"
+              >
+                <div className="flex flex-col gap-2 md:flex-row md:items-start md:justify-between">
+                  <div className="min-w-0">
+                    <div className="flex flex-wrap items-center gap-2">
+                      <AgentChip name={attempt.fromAgent} />
+                      <span className="text-slate-400" aria-hidden="true">
+                        <svg
+                          viewBox="0 0 24 24"
+                          className="h-5 w-5"
+                          fill="none"
+                          xmlns="http://www.w3.org/2000/svg"
+                        >
+                          <path
+                            d="M4 12H18"
+                            stroke="currentColor"
+                            strokeWidth="1.8"
+                            strokeLinecap="round"
+                          />
+                          <path
+                            d="M13 7L18 12L13 17"
+                            stroke="currentColor"
+                            strokeWidth="1.8"
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                          />
+                        </svg>
+                      </span>
+                      <AgentChip name={attempt.toAgent} />
+                    </div>
+                    <p className="mt-1 break-all text-xs text-slate-500">
+                      Turn {attempt.turn ?? "n/a"} • {attempt.callId}
+                    </p>
+                  </div>
+                  <span
+                    className={`inline-flex w-fit rounded-full px-3 py-1 text-xs font-medium ${
+                      attempt.decision === "allow"
+                        ? "bg-emerald-100 text-emerald-800"
+                        : attempt.decision === "deny"
+                          ? "bg-rose-100 text-rose-800"
+                          : "bg-slate-200 text-slate-700"
+                    }`}
+                  >
+                    {attempt.decision}
+                  </span>
+                </div>
+                {attempt.reason ? (
+                  <p className="mt-3 text-sm leading-7 text-slate-700">
+                    {attempt.reason}
+                  </p>
+                ) : null}
+                {showLinks ? (
+                  <div className="mt-3 flex flex-wrap items-center gap-2">
+                    <InPageLink targetId={toolCallAnchorId(attempt.callId)}>
+                      Open tool call
+                    </InPageLink>
+                    {attempt.decision !== "unknown" ? (
+                      <InPageLink
+                        targetId={policyDecisionAnchorId(
+                          attempt.callId,
+                          attempt.turn,
+                        )}
+                      >
+                        Open policy
+                      </InPageLink>
+                    ) : null}
+                  </div>
+                ) : null}
+                {attempt.policyVersion ? (
+                  <p className="mt-2 text-xs text-slate-500">
+                    Policy version: {attempt.policyVersion}
+                  </p>
+                ) : null}
+              </article>
+            ))}
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
 function InspectPage({
   loaded,
   otherLoaded,
@@ -845,147 +992,8 @@ function InspectPage({
               <div className="rounded-[1.25rem] border border-slate-200 bg-slate-50 p-4">
                 <p className={sectionTitleClassName()}>Handoff Flow</p>
                 <p className="mt-2 text-sm text-slate-500">Current run only.</p>
-                <div className="mt-3 space-y-4">
-                  <div className="rounded-2xl border border-slate-200 bg-white p-4">
-                    <p className="text-sm font-medium text-slate-900">
-                      Activated agent path
-                    </p>
-                    {handoffFlow.activatedAgentPath.length > 0 ? (
-                      <div className="mt-3 flex flex-wrap items-center gap-2">
-                        {handoffFlow.activatedAgentPath.map((agentName, index) => (
-                          <div
-                            key={`${agentName}-${index}`}
-                            className="flex items-center gap-2"
-                          >
-                            <AgentChip name={agentName} />
-                            {index < handoffFlow.activatedAgentPath.length - 1 ? (
-                              <span className="text-slate-400" aria-hidden="true">
-                                <svg
-                                  viewBox="0 0 24 24"
-                                  className="h-5 w-5"
-                                  fill="none"
-                                  xmlns="http://www.w3.org/2000/svg"
-                                >
-                                  <path
-                                    d="M4 12H18"
-                                    stroke="currentColor"
-                                    strokeWidth="1.8"
-                                    strokeLinecap="round"
-                                  />
-                                  <path
-                                    d="M13 7L18 12L13 17"
-                                    stroke="currentColor"
-                                    strokeWidth="1.8"
-                                    strokeLinecap="round"
-                                    strokeLinejoin="round"
-                                  />
-                                </svg>
-                              </span>
-                            ) : null}
-                          </div>
-                        ))}
-                      </div>
-                    ) : (
-                      <p className="mt-2 text-sm leading-7 text-slate-700">
-                        No activated agents recorded.
-                      </p>
-                    )}
-                  </div>
-
-                  <div className="rounded-2xl border border-slate-200 bg-white p-4">
-                    <div className="flex flex-wrap items-center gap-3 text-sm text-slate-600">
-                      <span>{handoffFlow.attempts.length} attempts</span>
-                      <span>{handoffFlow.acceptedCount} accepted</span>
-                      <span>{handoffFlow.deniedCount} denied</span>
-                    </div>
-
-                    {handoffFlow.attempts.length === 0 ? (
-                      <p className="mt-3 text-sm text-slate-500">
-                        No handoff attempts found.
-                      </p>
-                    ) : (
-                      <div className="mt-4 space-y-3">
-                        {handoffFlow.attempts.map((attempt) => (
-                          <article
-                            key={`${attempt.callId}-${attempt.turn ?? "na"}`}
-                            className="rounded-2xl border border-slate-200 bg-slate-50 p-3"
-                          >
-                            <div className="flex flex-col gap-2 md:flex-row md:items-start md:justify-between">
-                              <div className="min-w-0">
-                                <div className="flex flex-wrap items-center gap-2">
-                                  <AgentChip name={attempt.fromAgent} />
-                                  <span className="text-slate-400" aria-hidden="true">
-                                    <svg
-                                      viewBox="0 0 24 24"
-                                      className="h-5 w-5"
-                                      fill="none"
-                                      xmlns="http://www.w3.org/2000/svg"
-                                    >
-                                      <path
-                                        d="M4 12H18"
-                                        stroke="currentColor"
-                                        strokeWidth="1.8"
-                                        strokeLinecap="round"
-                                      />
-                                      <path
-                                        d="M13 7L18 12L13 17"
-                                        stroke="currentColor"
-                                        strokeWidth="1.8"
-                                        strokeLinecap="round"
-                                        strokeLinejoin="round"
-                                      />
-                                    </svg>
-                                  </span>
-                                  <AgentChip name={attempt.toAgent} />
-                                </div>
-                                <p className="mt-1 break-all text-xs text-slate-500">
-                                  Turn {attempt.turn ?? "n/a"} • {attempt.callId}
-                                </p>
-                              </div>
-                              <span
-                                className={`inline-flex w-fit rounded-full px-3 py-1 text-xs font-medium ${
-                                  attempt.decision === "allow"
-                                    ? "bg-emerald-100 text-emerald-800"
-                                    : attempt.decision === "deny"
-                                      ? "bg-rose-100 text-rose-800"
-                                      : "bg-slate-200 text-slate-700"
-                                }`}
-                              >
-                                {attempt.decision}
-                              </span>
-                            </div>
-                            {attempt.reason ? (
-                              <p className="mt-3 text-sm leading-7 text-slate-700">
-                                {attempt.reason}
-                              </p>
-                            ) : null}
-                            <div className="mt-3 flex flex-wrap items-center gap-2">
-                              <InPageLink
-                                targetId={toolCallAnchorId(attempt.callId)}
-                              >
-                                Open tool call
-                              </InPageLink>
-                              {attempt.decision !== "unknown" ? (
-                                <InPageLink
-                                  targetId={policyDecisionAnchorId(
-                                    attempt.callId,
-                                    attempt.turn,
-                                  )}
-                                >
-                                  Open policy
-                                </InPageLink>
-                              ) : null}
-                            </div>
-                            {attempt.policyVersion ? (
-                              <p className="mt-2 text-xs text-slate-500">
-                                Policy version: {attempt.policyVersion}
-                              </p>
-                            ) : null}
-                          </article>
-                        ))}
-                      </div>
-                    )}
-                  </div>
+                <div className="mt-3">
+                  <HandoffFlowPanel flow={handoffFlow} showLinks />
                 </div>
               </div>
               <div className="rounded-[1.25rem] border border-slate-200 bg-slate-50 p-4">
@@ -1400,6 +1408,14 @@ function ComparePage({
     () => extractToolCalls(rightScope.emittedItems),
     [rightScope.emittedItems],
   );
+  const leftHandoffFlow = useMemo(
+    () => extractHandoffFlow(left.record, leftScope.emittedItems),
+    [left.record, leftScope.emittedItems],
+  );
+  const rightHandoffFlow = useMemo(
+    () => extractHandoffFlow(right.record, rightScope.emittedItems),
+    [right.record, rightScope.emittedItems],
+  );
 
   return (
     <div className="space-y-6">
@@ -1518,6 +1534,27 @@ function ComparePage({
                 {comparison.summary.samePolicyDecisions ? "same" : "different"}
               </p>
             </article>
+          </div>
+        </Section>
+
+        <Section
+          title="Handoff Flow"
+          summary="Current-run handoff path and attempt outcomes for both files."
+          defaultOpen={false}
+        >
+          <div className="grid gap-4 lg:grid-cols-2">
+            <div className="min-w-0 rounded-[1.25rem] border border-slate-200 bg-slate-50 p-4">
+              <p className={sectionTitleClassName()}>File 1</p>
+              <div className="mt-3">
+                <HandoffFlowPanel flow={leftHandoffFlow} />
+              </div>
+            </div>
+            <div className="min-w-0 rounded-[1.25rem] border border-slate-200 bg-slate-50 p-4">
+              <p className={sectionTitleClassName()}>File 2</p>
+              <div className="mt-3">
+                <HandoffFlowPanel flow={rightHandoffFlow} />
+              </div>
+            </div>
           </div>
         </Section>
 
