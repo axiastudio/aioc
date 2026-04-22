@@ -179,7 +179,7 @@ function SlotCard({
   const hasJsonDraft = jsonDraft.trim().length > 0;
 
   return (
-    <section className="rounded-[2rem] border border-slate-200 bg-white/85 p-5 shadow-[0_20px_70px_rgba(15,23,42,0.08)] backdrop-blur">
+    <section className="w-full min-w-0 overflow-hidden rounded-[2rem] border border-slate-200 bg-white/85 p-5 shadow-[0_20px_70px_rgba(15,23,42,0.08)] backdrop-blur">
       <div className="mb-4 flex items-start justify-between gap-4">
         <div>
           <p className={sectionTitleClassName()}>{label}</p>
@@ -353,7 +353,7 @@ function SlotCard({
 
 function JsonPanel({ value }: { value: unknown }): ReactElement {
   return (
-    <pre className="overflow-x-auto rounded-[1.25rem] border border-slate-200 bg-slate-950 p-4 text-xs leading-6 text-slate-100">
+    <pre className="w-full max-w-full overflow-x-auto rounded-[1.25rem] border border-slate-200 bg-slate-950 p-4 text-xs leading-6 text-slate-100">
       <code>{formatJson(value)}</code>
     </pre>
   );
@@ -373,7 +373,7 @@ function Section({
   return (
     <details
       open={defaultOpen}
-      className="rounded-[1.75rem] border border-slate-200 bg-white/90 p-5 shadow-[0_18px_50px_rgba(15,23,42,0.05)]"
+      className="w-full min-w-0 overflow-hidden rounded-[1.75rem] border border-slate-200 bg-white/90 p-5 shadow-[0_18px_50px_rgba(15,23,42,0.05)]"
     >
       <summary className="flex cursor-pointer list-none items-center justify-between gap-4">
         <div>
@@ -383,7 +383,7 @@ function Section({
           ) : null}
         </div>
       </summary>
-      <div className="mt-5">{children}</div>
+      <div className="mt-5 min-w-0">{children}</div>
     </details>
   );
 }
@@ -528,26 +528,26 @@ function InputHistoryItemCard({
   index: number;
 }): ReactElement {
   return (
-    <article className="rounded-[1.25rem] border border-slate-200 bg-slate-50 p-4">
+    <article className="w-full min-w-0 overflow-hidden rounded-[1.25rem] border border-slate-200 bg-slate-50 p-4">
       <div className="flex flex-wrap items-center justify-between gap-3">
-        <div>
+        <div className="min-w-0">
           <p className={sectionTitleClassName()}>
             Input Item {index + 1}
           </p>
-          <p className="mt-2 text-sm font-medium text-slate-900">
+          <p className="mt-2 break-words text-sm font-medium text-slate-900">
             {inputHistoryItemTitle(item)}
           </p>
         </div>
-        <span className="inline-flex rounded-full border border-slate-300 bg-white px-3 py-1 text-xs font-medium text-slate-700">
+        <span className="inline-flex shrink-0 rounded-full border border-slate-300 bg-white px-3 py-1 text-xs font-medium text-slate-700">
           {item.type}
         </span>
       </div>
       {item.type === "message" ? (
-        <p className="mt-3 rounded-[1rem] border border-slate-200 bg-white p-4 text-sm leading-7 text-slate-700">
+        <p className="mt-3 break-words whitespace-pre-wrap rounded-[1rem] border border-slate-200 bg-white p-4 text-sm leading-7 text-slate-700">
           {item.content}
         </p>
       ) : (
-        <div className="mt-3">
+        <div className="mt-3 min-w-0">
           <JsonPanel
             value={
               item.type === "tool_call_item"
@@ -642,9 +642,11 @@ function InspectPage({
         </div>
 
         <dl className="mt-6 grid gap-4 border-t border-slate-200 pt-6 text-sm text-slate-600 md:grid-cols-4">
-          <div>
+          <div className="min-w-0">
             <dt className={sectionTitleClassName()}>Run ID</dt>
-            <dd className="mt-2 font-medium text-slate-900">{record.runId}</dd>
+            <dd className="mt-2 break-all font-medium text-slate-900">
+              {record.runId}
+            </dd>
           </div>
           <div>
             <dt className={sectionTitleClassName()}>Status</dt>
@@ -673,7 +675,7 @@ function InspectPage({
           summary="Current user message, final response, run scope, metadata, and context visibility."
         >
           <div className="grid gap-6 lg:grid-cols-2">
-            <div className="space-y-4">
+            <div className="min-w-0 space-y-4">
               <div>
                 <p className={sectionTitleClassName()}>Current User Message</p>
                 <p className="mt-2 rounded-[1.25rem] bg-slate-50 p-4 text-sm leading-7 text-slate-700">
@@ -719,7 +721,7 @@ function InspectPage({
                 </p>
               </div>
             </div>
-            <div className="space-y-4">
+            <div className="min-w-0 space-y-4">
               <div className="rounded-[1.25rem] border border-slate-200 bg-slate-50 p-4">
                 <p className={sectionTitleClassName()}>Handoff Flow</p>
                 <p className="mt-2 text-sm text-slate-500">Current run only.</p>
@@ -789,7 +791,7 @@ function InspectPage({
                             className="rounded-2xl border border-slate-200 bg-slate-50 p-3"
                           >
                             <div className="flex flex-col gap-2 md:flex-row md:items-start md:justify-between">
-                              <div>
+                              <div className="min-w-0">
                                 <div className="flex flex-wrap items-center gap-2">
                                   <AgentChip name={attempt.fromAgent} />
                                   <span className="text-slate-400" aria-hidden="true">
@@ -816,7 +818,7 @@ function InspectPage({
                                   </span>
                                   <AgentChip name={attempt.toAgent} />
                                 </div>
-                                <p className="mt-1 text-xs text-slate-500">
+                                <p className="mt-1 break-all text-xs text-slate-500">
                                   Turn {attempt.turn ?? "n/a"} • {attempt.callId}
                                 </p>
                               </div>
@@ -922,7 +924,7 @@ function InspectPage({
                     </div>
                     <div>
                       <p className={sectionTitleClassName()}>Args Hash</p>
-                      <p className="mt-2 font-mono text-xs text-slate-900">
+                      <p className="mt-2 break-all font-mono text-xs text-slate-900">
                         {call.argsHash}
                       </p>
                     </div>
@@ -947,13 +949,13 @@ function InspectPage({
                     )}
                   </div>
                   <div className="mt-4 grid gap-4 lg:grid-cols-2">
-                    <div>
+                    <div className="min-w-0">
                       <p className={sectionTitleClassName()}>Arguments</p>
                       <div className="mt-2">
                         <JsonPanel value={call.arguments} />
                       </div>
                     </div>
-                    <div>
+                    <div className="min-w-0">
                       <p className={sectionTitleClassName()}>
                         Output {call.hasOutput ? "" : "(missing)"}
                       </p>
@@ -1309,7 +1311,7 @@ function ComparePage({
           {[left, right].map((entry, index) => (
             <article
               key={entry.fileName}
-              className="rounded-[1.5rem] border border-slate-200 bg-slate-50/90 p-4"
+              className="min-w-0 rounded-[1.5rem] border border-slate-200 bg-slate-50/90 p-4"
             >
               <p className={sectionTitleClassName()}>
                 {index === 0 ? "File 1" : "File 2"}
@@ -1423,13 +1425,13 @@ function ComparePage({
 
         <Section title="Response" summary="Exact final output comparison.">
           <div className="grid gap-4 lg:grid-cols-2">
-            <div>
+            <div className="min-w-0">
               <p className={sectionTitleClassName()}>File 1</p>
               <div className="mt-2 rounded-[1.25rem] bg-slate-50 p-4">
                 <FormattedResponse text={left.record.response} tone="light" />
               </div>
             </div>
-            <div>
+            <div className="min-w-0">
               <p className={sectionTitleClassName()}>File 2</p>
               <div className="mt-2 rounded-[1.25rem] bg-slate-50 p-4">
                 <FormattedResponse text={right.record.response} tone="light" />
@@ -1443,7 +1445,7 @@ function ComparePage({
           summary="Current-run sequence and normalized argument shape."
         >
           <div className="grid gap-4 lg:grid-cols-2">
-            <div className="rounded-[1.25rem] border border-slate-200 bg-slate-50 p-4">
+            <div className="min-w-0 rounded-[1.25rem] border border-slate-200 bg-slate-50 p-4">
               <p className={sectionTitleClassName()}>File 1</p>
               <div className="mt-3 space-y-3">
                 {leftTools.map((call) => (
@@ -1451,14 +1453,14 @@ function ComparePage({
                     <p className="text-sm font-medium text-slate-900">
                       {call.turn ?? "n/a"}. {call.name}
                     </p>
-                    <p className="mt-1 font-mono text-xs text-slate-500">
+                    <p className="mt-1 break-all font-mono text-xs text-slate-500">
                       {call.argsHash}
                     </p>
                   </article>
                 ))}
               </div>
             </div>
-            <div className="rounded-[1.25rem] border border-slate-200 bg-slate-50 p-4">
+            <div className="min-w-0 rounded-[1.25rem] border border-slate-200 bg-slate-50 p-4">
               <p className={sectionTitleClassName()}>File 2</p>
               <div className="mt-3 space-y-3">
                 {rightTools.map((call) => (
@@ -1466,7 +1468,7 @@ function ComparePage({
                     <p className="text-sm font-medium text-slate-900">
                       {call.turn ?? "n/a"}. {call.name}
                     </p>
-                    <p className="mt-1 font-mono text-xs text-slate-500">
+                    <p className="mt-1 break-all font-mono text-xs text-slate-500">
                       {call.argsHash}
                     </p>
                   </article>
