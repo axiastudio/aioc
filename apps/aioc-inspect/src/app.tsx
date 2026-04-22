@@ -352,11 +352,66 @@ function SlotCard({
 }
 
 function JsonPanel({ value }: { value: unknown }): ReactElement {
+  const jsonText = formatJson(value);
+
   return (
-    <pre className="w-full max-w-full overflow-x-auto rounded-[1.25rem] border border-slate-200 bg-slate-950 p-4 text-xs leading-6 text-slate-100">
-      <code>{formatJson(value)}</code>
+    <pre className="w-full max-w-full overflow-x-auto whitespace-pre-wrap break-words rounded-[1.25rem] border border-slate-200 bg-slate-950 p-4 text-xs leading-6 text-slate-100">
+      <code>{renderHighlightedJson(jsonText)}</code>
     </pre>
   );
+}
+
+const JSON_TOKEN_PATTERN =
+  /("(?:\\u[a-fA-F0-9]{4}|\\[^u]|[^\\"])*"(?::)?|\btrue\b|\bfalse\b|\bnull\b|-?\d+(?:\.\d+)?(?:[eE][+-]?\d+)?)/g;
+
+function jsonTokenClassName(token: string): string {
+  if (token.startsWith('"') && token.endsWith('":')) {
+    return "text-sky-300";
+  }
+
+  if (token.startsWith('"')) {
+    return "text-emerald-300";
+  }
+
+  if (token === "true" || token === "false") {
+    return "text-amber-300";
+  }
+
+  if (token === "null") {
+    return "text-slate-400";
+  }
+
+  return "text-fuchsia-300";
+}
+
+function renderHighlightedJson(jsonText: string): ReactNode[] {
+  const nodes: ReactNode[] = [];
+  let lastIndex = 0;
+  let matchIndex = 0;
+
+  for (const match of jsonText.matchAll(JSON_TOKEN_PATTERN)) {
+    const token = match[0];
+    const index = match.index ?? 0;
+
+    if (index > lastIndex) {
+      nodes.push(jsonText.slice(lastIndex, index));
+    }
+
+    nodes.push(
+      <span key={`json-token-${matchIndex}`} className={jsonTokenClassName(token)}>
+        {token}
+      </span>,
+    );
+
+    lastIndex = index + token.length;
+    matchIndex += 1;
+  }
+
+  if (lastIndex < jsonText.length) {
+    nodes.push(jsonText.slice(lastIndex));
+  }
+
+  return nodes;
 }
 
 function Section({
