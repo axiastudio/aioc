@@ -45,18 +45,18 @@ export interface HandoffFlow {
   deniedCount: number;
 }
 
-export interface LoadedRunRecord {
-  fileName: string;
-  loadedAt: string;
+export interface InspectRecord {
   record: RunRecord<unknown>;
   preview: RunRecordPreview;
+  sourceName?: string;
+  loadedAt?: string;
 }
 
 export interface RunSlotState {
   status: "empty" | "invalid" | "loaded";
   fileName?: string;
   error?: string;
-  data?: LoadedRunRecord;
+  data?: InspectRecord;
 }
 
 export interface ExtractedToolCall {
