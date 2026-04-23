@@ -5,17 +5,19 @@ import {
   Search,
   X,
 } from "lucide-react";
+import {
+  ComparePage,
+  InspectPage,
+  buttonClassName,
+  createInspectRecord,
+  formatDateTime,
+  isRecordRenderable,
+  parseRunRecordJson,
+  sectionTitleClassName,
+  truncateText,
+} from "@axiastudio/aioc-inspect-ui";
 import { useState } from "react";
 import type { ReactElement, ReactNode } from "react";
-import { ComparePage } from "./components/ComparePage";
-import { InspectPage } from "./components/InspectPage";
-import {
-  buttonClassName,
-  formatDateTime,
-  sectionTitleClassName,
-} from "./components/shared";
-import { createInspectRecord } from "./inspect-record";
-import { isRecordRenderable, parseRunRecordJson, truncateText } from "./lib/run-record";
 import type { InspectView, RunSlotId, RunSlotState } from "./types";
 
 const EMPTY_SLOT: RunSlotState = { status: "empty" };

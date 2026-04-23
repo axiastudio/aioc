@@ -10,6 +10,7 @@
   },
   "dependencies": {
     "@axiastudio/aioc": "file:../..",
+    "@axiastudio/aioc-inspect-ui": "file:../../packages/aioc-inspect-ui",
     "lucide-react": "^0.542.0",
     "react": "^19.1.1",
     "react-dom": "^19.1.1"
