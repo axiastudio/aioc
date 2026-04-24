@@ -1,5 +1,23 @@
 # Changelog
 
+## @axiastudio/aioc-inspect-ui 0.1.0 - 2026-04-24
+
+First public-ready release of the reusable AIOC inspect UI package.
+
+### Added
+
+- Published package metadata for `@axiastudio/aioc-inspect-ui`.
+- Reusable React components for `RunRecord` inspection and comparison.
+- `createInspectRecord(...)` helper for adapting application-owned `RunRecord` values to the UI.
+- Package build output under `dist` with JavaScript and TypeScript declarations.
+- README guidance for Tailwind CSS v4 consumers.
+
+### Notes
+
+- This release does not change the stable core SDK surface of `@axiastudio/aioc`.
+- Consumers must provide `@axiastudio/aioc`, `react`, and `react-dom` as peer dependencies.
+- The package does not currently ship a standalone stylesheet; Tailwind consumers should include the package output in their source scan.
+
 ## 0.1.0 - 2026-04-15
 
 First stable release of `@axiastudio/aioc`.
