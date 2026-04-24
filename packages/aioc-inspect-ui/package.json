@@ -1,18 +1,61 @@
 {
   "name": "@axiastudio/aioc-inspect-ui",
-  "private": true,
-  "version": "0.0.0",
+  "version": "0.1.0",
+  "description": "Reusable React components for inspecting and comparing AIOC RunRecord artifacts.",
   "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
   "exports": {
-    ".": "./src/index.ts"
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    }
   },
-  "types": "./src/index.ts",
+  "files": [
+    "dist",
+    "README.md"
+  ],
+  "scripts": {
+    "clean": "node -e \"require('fs').rmSync('dist',{recursive:true,force:true})\"",
+    "build": "npm run clean && tsc -p tsconfig.build.json",
+    "prepack": "npm run build"
+  },
+  "keywords": [
+    "aioc",
+    "run-records",
+    "inspect",
+    "compare",
+    "react",
+    "governance"
+  ],
+  "author": "Tiziano Lattisi - AXIA Studio S.r.l.",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/axiastudio/aioc.git",
+    "directory": "packages/aioc-inspect-ui"
+  },
+  "bugs": {
+    "url": "https://github.com/axiastudio/aioc/issues"
+  },
+  "homepage": "https://axiastudio.github.io/aioc",
+  "publishConfig": {
+    "access": "public"
+  },
   "dependencies": {
-    "@axiastudio/aioc": "file:../..",
-    "lucide-react": "^0.542.0",
-    "react": "^19.1.1"
+    "lucide-react": "^0.542.0"
   },
   "peerDependencies": {
-    "react-dom": "^19.1.1"
+    "@axiastudio/aioc": "^0.1.0",
+    "react": "^19.0.0",
+    "react-dom": "^19.0.0"
+  },
+  "devDependencies": {
+    "@axiastudio/aioc": "^0.1.0",
+    "@types/react": "^19.1.13",
+    "@types/react-dom": "^19.1.9",
+    "react": "^19.1.1",
+    "react-dom": "^19.1.1",
+    "typescript": "^5.9.2"
   }
 }
