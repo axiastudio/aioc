@@ -1,5 +1,15 @@
 # Changelog
 
+## Unreleased
+
+### Fixed
+
+- OpenAI chat completions serialize resolved `Agent.instructions` as `developer` messages, while Mistral and the shared chat-completions base continue to use `system`.
+
+### Documentation
+
+- Clarified provider-specific instruction role mapping in the Agent and Providers reference pages.
+
 ## @axiastudio/aioc-inspect-ui 0.1.0 - 2026-04-24
 
 First public-ready release of the reusable AIOC inspect UI package.
