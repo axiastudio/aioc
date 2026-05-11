@@ -130,17 +130,20 @@ export async function runChatCompletionsIntegrationTests(): Promise<void> {
       apiKey: "test-key",
     });
 
-    for await (const _event of openAIProvider.stream({
+    for await (const event of openAIProvider.stream({
       model: "gpt-5",
       systemPrompt: "Developer instructions",
       messages: [user("Hi")],
       tools: [],
     })) {
+      void event;
       // Consume the stream to capture the outgoing payload.
     }
 
     const openAIPayload = JSON.parse(capturedBody) as Record<string, unknown>;
-    const openAIMessages = openAIPayload.messages as Array<Record<string, unknown>>;
+    const openAIMessages = openAIPayload.messages as Array<
+      Record<string, unknown>
+    >;
     assert.equal(openAIMessages[0]?.role, "developer");
     assert.equal(openAIMessages[0]?.content, "Developer instructions");
     assert.equal(openAIMessages[1]?.role, "user");
