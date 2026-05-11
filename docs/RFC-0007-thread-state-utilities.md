@@ -119,7 +119,7 @@ export function applyRunResultHistory<
   TThread extends { history: AgentInputItem[] },
 >(
   thread: TThread,
-  result: RunResult<TContext>,
+  result: Pick<RunResult<TContext>, "history">,
 ): TThread;
 ```
 
@@ -128,6 +128,8 @@ This helper is a small convenience wrapper around the common case:
 - take an application-owned thread object,
 - replace its `history` with `result.history`,
 - return a new thread object with the rest of the application metadata preserved.
+
+The helper only requires a `history` field, so it can be used with non-streaming `RunResult` values and with streaming result objects after their stream has been consumed.
 
 ## Recommended Usage Pattern
 
