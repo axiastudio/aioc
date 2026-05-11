@@ -56,6 +56,12 @@ const documents = [
     sourceFile: "RFC-0007-thread-state-utilities.md",
     targetDir: "current",
     slug: "rfc-0007-thread-state-utilities",
+    status: "Accepted",
+  },
+  {
+    sourceFile: "RFC-0008-run-stream-consumer-utilities.md",
+    targetDir: "current",
+    slug: "rfc-0008-run-stream-consumer-utilities",
     status: "Draft",
   },
   {
