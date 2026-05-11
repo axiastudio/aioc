@@ -1,6 +1,6 @@
 # RFC-0007: Thread History Utilities
 
-- Status: Draft
+- Status: Accepted
 - Date: 2026-04-03
 - Owners: aioc maintainers
 - Depends on: RFC-0005
@@ -229,4 +229,4 @@ Those concerns remain application-owned.
 
 ## Status
 
-Draft. Not implemented.
+Accepted. Implemented in `src/thread-history.ts`.

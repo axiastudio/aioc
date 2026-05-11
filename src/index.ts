@@ -16,5 +16,6 @@ export * from "./run";
 export * from "./run-record";
 export * from "./run-record-utils";
 export * from "./run-context";
+export * from "./thread-history";
 export * from "./tool";
 export * from "./types";

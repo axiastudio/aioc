@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+### Added
+
+- Thread history utilities for application-owned conversation state: `toThreadHistory(...)`, `appendUserMessage(...)`, `replaceThreadHistory(...)`, and `applyRunResultHistory(...)`.
+
 ### Fixed
 
 - OpenAI chat completions serialize resolved `Agent.instructions` as `developer` messages, while Mistral and the shared chat-completions base continue to use `system`.

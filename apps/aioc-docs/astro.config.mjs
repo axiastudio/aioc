@@ -45,6 +45,7 @@ export default defineConfig({
             "reference/policies",
             "reference/providers",
             "reference/run-record-utils",
+            "reference/thread-history",
           ],
         },
         {

@@ -16,6 +16,7 @@ It is not a generated API reference for every exported symbol. It focuses on the
 - policy helpers and policy configuration
 - provider setup helpers
 - run-record utilities
+- thread history utilities
 
 ## Related Pages
 

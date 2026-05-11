@@ -7,11 +7,13 @@ import { runProviderSetupUnitTests } from "./provider-setup.unit";
 import { runRunRecordUnitTests } from "./run-record.unit";
 import { runRunRecordUtilsUnitTests } from "./run-record-utils.unit";
 import { runRunUnitTests } from "./run.unit";
+import { runThreadHistoryUnitTests } from "./thread-history.unit";
 
 async function main(): Promise<void> {
   await runRunUnitTests();
   await runRunRecordUnitTests();
   await runRunRecordUtilsUnitTests();
+  await runThreadHistoryUnitTests();
   await runLoggerUnitTests();
   await runJsonUnitTests();
   await runProviderSetupUnitTests();
