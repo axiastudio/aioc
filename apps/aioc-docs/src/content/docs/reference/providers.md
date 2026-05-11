@@ -40,6 +40,18 @@ import { setupMistral } from "@axiastudio/aioc";
 setupMistral();
 ```
 
+## Instruction Role Mapping
+
+`Agent.instructions` is provider-neutral at the runtime level.
+
+The wire role used for those instructions depends on the provider integration:
+
+- `OpenAIProvider` sends resolved agent instructions as a `developer` message
+- `MistralProvider` sends resolved agent instructions as a `system` message
+- the shared `ChatCompletionsProvider` base defaults to `system`
+
+This mapping only affects how the provider request is serialized. It does not change the public `Agent` contract.
+
 ## Low-level Setup
 
 For custom providers, the low-level route is:

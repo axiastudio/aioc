@@ -3,6 +3,7 @@ import { z } from "zod";
 import { user } from "../../messages";
 import { tool } from "../../tool";
 import { ChatCompletionsProvider } from "../../providers/chat-completions";
+import { OpenAIProvider } from "../../providers/openai";
 import type { ProviderEvent } from "../../providers/base";
 
 function createSseBody(chunks: string[]): ReadableStream<Uint8Array> {
@@ -21,7 +22,7 @@ export async function runChatCompletionsIntegrationTests(): Promise<void> {
   const originalFetch = globalThis.fetch;
   let capturedBody = "";
 
-  const streamBody = createSseBody([
+  const streamChunks = [
     `data: ${JSON.stringify({ choices: [{ delta: { content: "Ciao " } }] })}\n\n`,
     `data: ${JSON.stringify({
       choices: [
@@ -43,14 +44,14 @@ export async function runChatCompletionsIntegrationTests(): Promise<void> {
     })}\n\n`,
     `data: ${JSON.stringify({ choices: [{ finish_reason: "tool_calls" }] })}\n\n`,
     "data: [DONE]\n\n",
-  ]);
+  ];
 
   (globalThis as { fetch: typeof fetch }).fetch = (async (
     _input: RequestInfo | URL,
     init?: RequestInit,
   ) => {
     capturedBody = String(init?.body ?? "");
-    return new Response(streamBody, {
+    return new Response(createSseBody(streamChunks), {
       status: 200,
       headers: {
         "Content-Type": "text/event-stream",
@@ -124,6 +125,26 @@ export async function runChatCompletionsIntegrationTests(): Promise<void> {
       (events[2] as Extract<ProviderEvent, { type: "completed" }>).finishReason,
       "tool_calls",
     );
+
+    const openAIProvider = new OpenAIProvider({
+      apiKey: "test-key",
+    });
+
+    for await (const _event of openAIProvider.stream({
+      model: "gpt-5",
+      systemPrompt: "Developer instructions",
+      messages: [user("Hi")],
+      tools: [],
+    })) {
+      // Consume the stream to capture the outgoing payload.
+    }
+
+    const openAIPayload = JSON.parse(capturedBody) as Record<string, unknown>;
+    const openAIMessages = openAIPayload.messages as Array<Record<string, unknown>>;
+    assert.equal(openAIMessages[0]?.role, "developer");
+    assert.equal(openAIMessages[0]?.content, "Developer instructions");
+    assert.equal(openAIMessages[1]?.role, "user");
+    assert.equal(openAIMessages[1]?.content, "Hi");
   } finally {
     (globalThis as { fetch: typeof fetch }).fetch = originalFetch;
   }

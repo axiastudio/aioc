@@ -16,7 +16,7 @@ type PendingToolCall = {
 };
 
 type ChatCompletionMessage = {
-  role: "system" | "user" | "assistant" | "tool";
+  role: "developer" | "system" | "user" | "assistant" | "tool";
   content: string | null | Array<Record<string, unknown>>;
   tool_call_id?: string;
   tool_calls?: Array<{
@@ -150,12 +150,13 @@ function normalizeMessageContent(
 function toChatMessages(
   items: AgentInputItem[],
   systemPrompt?: string,
+  instructionRole: "system" | "developer" = "system",
 ): ChatCompletionMessage[] {
   const messages: ChatCompletionMessage[] = [];
 
   if (systemPrompt) {
     messages.push({
-      role: "system",
+      role: instructionRole,
       content: systemPrompt,
     });
   }
@@ -317,12 +318,20 @@ export class ChatCompletionsProvider implements ModelProvider {
     this.headers = buildHeaders(options);
   }
 
+  protected getInstructionRole(): "system" | "developer" {
+    return "system";
+  }
+
   async *stream<TContext = unknown>(
     request: ProviderRequest<TContext>,
   ): AsyncIterable<ProviderEvent> {
     const payload: Record<string, unknown> = {
       model: request.model,
-      messages: toChatMessages(request.messages, request.systemPrompt),
+      messages: toChatMessages(
+        request.messages,
+        request.systemPrompt,
+        this.getInstructionRole(),
+      ),
       tools: request.tools.length > 0 ? toTools(request.tools) : undefined,
       tool_choice: request.tools.length > 0 ? "auto" : undefined,
       stream: true,

@@ -174,3 +174,8 @@ await agent.resolveInstructions(runContext)
 ```
 
 Most applications do not call this directly. It matters because the resolved text, not only the original function or string, is what gets captured in prompt snapshots when recording is enabled.
+
+The resolved instructions are still provider-neutral at this level. The provider integration decides how they are serialized on the wire:
+
+- OpenAI chat-completions integration sends them as `developer`
+- Mistral chat-completions integration sends them as `system`

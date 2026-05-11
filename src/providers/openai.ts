@@ -33,4 +33,8 @@ export class OpenAIProvider extends ChatCompletionsProvider {
       headers: toOpenAIHeaders(options),
     });
   }
+
+  protected override getInstructionRole(): "developer" {
+    return "developer";
+  }
 }
