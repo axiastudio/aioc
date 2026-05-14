@@ -5,7 +5,7 @@
 ### Added
 
 - Thread history utilities for application-owned conversation state: `toThreadHistory(...)`, `appendUserMessage(...)`, `replaceThreadHistory(...)`, and `applyRunResultHistory(...)`.
-- RFC-0008 draft for run stream consumer utilities.
+- RFC-0008 draft for run output stream adapter utilities.
 
 ### Fixed
 
