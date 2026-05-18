@@ -1,6 +1,6 @@
 # RFC-0008: Run Output Stream Adapter
 
-- Status: Draft
+- Status: Accepted
 - Date: 2026-05-11
 - Owners: aioc maintainers
 
@@ -29,7 +29,7 @@ Callback-based stream consumers also do not compose well with application APIs i
 
 ## Decision
 
-`aioc` should add a small optional adapter for streamed run results.
+`aioc` adds a small optional adapter for streamed run results.
 
 The adapter should consume a `StreamedRunResult<TContext>` and produce a simpler async iterable:
 
@@ -129,6 +129,7 @@ This keeps `tool_call_item` and `tool_call_output_item` pairing inside `aioc`, w
 - A `text_delta` event is yielded for each `raw_model_stream_event.data.delta` when present.
 - By default, only `text_delta` and `completed` events are yielded.
 - An `agent_updated` event is yielded when the active agent changes only if `emitAgentUpdates` is `true`.
+- The initial agent activation is not yielded as `agent_updated`; `completed.lastAgent` still exposes the final active agent.
 - A `tool_call` event is yielded for live tool calls only if `emitToolCalls` is `true`.
 - A `tool_output` event is yielded for live tool outputs only if `emitToolOutputs` is `true`.
 - Live `tool_output` events include the matching `tool_call` item when it has already been observed in the stream.
@@ -259,9 +260,9 @@ Advanced consumers that need full item-by-item control can use the existing `Run
 
 ## Implementation Notes
 
-This RFC is intentionally not part of RFC-0007 implementation.
+This RFC is intentionally separate from RFC-0007 implementation.
 
-A likely initial surface is:
+The implemented surface is:
 
 - `src/run-output-events.ts`
 - exported from `src/index.ts`
@@ -285,4 +286,4 @@ The implementation can reuse `extractToolCalls(...)` from `src/run-record-utils.
 
 ## Status
 
-Draft. Not implemented.
+Accepted. Implemented in `src/run-output-events.ts`.

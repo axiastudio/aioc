@@ -62,7 +62,7 @@ const documents = [
     sourceFile: "RFC-0008-run-stream-consumer-utilities.md",
     targetDir: "current",
     slug: "rfc-0008-run-stream-consumer-utilities",
-    status: "Draft",
+    status: "Accepted",
   },
   {
     sourceFile: "PRIVACY-BASELINE.md",

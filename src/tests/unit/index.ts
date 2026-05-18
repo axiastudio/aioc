@@ -4,6 +4,7 @@ import { runJsonUnitTests } from "./json.unit";
 import { runLoggerUnitTests } from "./logger.unit";
 import { runPolicyUnitTests } from "./policy.unit";
 import { runProviderSetupUnitTests } from "./provider-setup.unit";
+import { runRunOutputEventsUnitTests } from "./run-output-events.unit";
 import { runRunRecordUnitTests } from "./run-record.unit";
 import { runRunRecordUtilsUnitTests } from "./run-record-utils.unit";
 import { runRunUnitTests } from "./run.unit";
@@ -11,6 +12,7 @@ import { runThreadHistoryUnitTests } from "./thread-history.unit";
 
 async function main(): Promise<void> {
   await runRunUnitTests();
+  await runRunOutputEventsUnitTests();
   await runRunRecordUnitTests();
   await runRunRecordUtilsUnitTests();
   await runThreadHistoryUnitTests();
