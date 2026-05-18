@@ -135,7 +135,7 @@ This keeps `tool_call_item` and `tool_call_output_item` pairing inside `aioc`, w
 - The final assistant message is read from `message_output_item`.
 - After the underlying stream completes, the helper yields exactly one `completed` event.
 - `completed.finalOutput` is the final assistant message content, or an empty string if no final message was emitted.
-- `completed.history` is `result.history`.
+- `completed.history` is a shallow copy of `result.history`.
 - `completed.lastAgent` is `result.lastAgent`.
 - `completed.toolCalls` is computed from `result.history` with `extractToolCalls(result.history)`.
 - Tool outputs are not discarded; they remain available through `completed.toolCalls[].output` even when `emitToolOutputs` is not enabled.
@@ -277,7 +277,7 @@ The implementation can reuse `extractToolCalls(...)` from `src/run-record-utils.
 5. Yields `tool_output` events when `emitToolOutputs` is `true`.
 6. Yields exactly one `completed` event after stream completion.
 7. Sets `completed.finalOutput` from the final message output item.
-8. Sets `completed.history` from `StreamedRunResult.history`.
+8. Sets `completed.history` to a shallow copy of `StreamedRunResult.history`.
 9. Sets `completed.lastAgent` from `StreamedRunResult.lastAgent`.
 10. Includes paired tool calls and outputs in `completed.toolCalls`.
 11. Preserves the one-shot consumption behavior of `StreamedRunResult.toStream()`.
