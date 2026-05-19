@@ -12,7 +12,7 @@ This section republishes them in a navigable site structure.
 The current set includes:
 
 - accepted runtime RFCs
-- draft RFCs for approval-related extensions
+- draft RFCs for approval-evidence extensions
 - the privacy baseline
 
 ## Historical Snapshots

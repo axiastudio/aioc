@@ -1,6 +1,6 @@
 # RFC-0005: Suspended Proposals and Approval Lifecycle
 
-- Status: Draft
+- Status: Accepted
 - Date: 2026-03-28
 - Owners: aioc maintainers
 - Depends on: RFC-0001, RFC-0002, RFC-0003, RFC-0004

@@ -44,7 +44,7 @@ const documents = [
     sourceFile: "RFC-0005-suspended-proposals-and-approval-lifecycle.md",
     targetDir: "current",
     slug: "rfc-0005-suspended-proposals-and-approval-lifecycle",
-    status: "Draft",
+    status: "Accepted",
   },
   {
     sourceFile: "RFC-0006-approval-evidence-helpers.md",
