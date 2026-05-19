@@ -46,6 +46,8 @@ The stream can be consumed only once.
 - `history`
 - `lastAgent`
 
+For UI-oriented streaming that keeps text deltas live while collecting final output, history, last agent, and paired tool calls, see [`Run Output Events`](../run-output-events/).
+
 ## Options
 
 The current shared option surface is:
@@ -84,7 +86,7 @@ If `input` is a string, it is normalized to a single user message item.
 
 If `logger` is configured, `run(...)` emits structured runtime events during execution.
 
-See [`Logging`](../reference/logger/).
+See [`Logging`](../logger/).
 
 ## Example
 

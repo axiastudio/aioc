@@ -29,6 +29,7 @@ It is designed for applications that must retain full governance control over pe
 The current documentation mixes:
 
 - stable runtime behavior you can use today
+- implemented additions queued for the next release
 - draft RFC material for approval lifecycle and stabilization work that is still evolving
 
 ## Stable Scope
