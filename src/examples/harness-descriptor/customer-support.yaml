@@ -48,9 +48,9 @@ tools:
     target: example://tool/summarize_refund_policy
 
 agent_defaults:
-  # The example resolves this placeholder from AIOC_EXAMPLE_PROVIDER /
-  # AIOC_EXAMPLE_MODEL so the same YAML can run with OpenAI or Mistral.
-  model: "{{provider.model}}"
+  # The example runner overwrites this marker from AIOC_EXAMPLE_MODEL
+  # or from the selected provider default before building the harness.
+  model: ignored
   modelSettings:
     text:
       verbosity: medium
