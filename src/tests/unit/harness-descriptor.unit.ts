@@ -1,0 +1,236 @@
+import assert from "node:assert/strict";
+import { z } from "zod";
+import {
+  allow,
+  buildAgentHarness,
+  hashAgentHarnessDescriptor,
+  replayFromRunRecord,
+  setDefaultProvider,
+  tool,
+  type AgentHarnessDescriptor,
+  type RunRecord,
+} from "../../index";
+import { ScriptedProvider } from "../support/scripted-provider";
+
+interface HarnessTestContext {
+  actorId: string;
+  turn: {
+    userMessage: string;
+    startedAt: string;
+  };
+}
+
+function createDescriptor(version: string): AgentHarnessDescriptor {
+  return {
+    descriptor_version: "aioc.agent_graph.v0",
+    metadata: {
+      name: "test_harness",
+      version,
+    },
+    runtime: {
+      entry_agent: "candidate",
+      max_turns: 4,
+    },
+    context: {
+      fields: {
+        actorId: {
+          type: "string",
+          default: "actor-1",
+          redact: true,
+        },
+        "turn.userMessage": {
+          type: "string",
+          default: "{{input.message}}",
+        },
+        "turn.startedAt": {
+          type: "string",
+          default: "{{runtime.now_iso}}",
+        },
+      },
+    },
+    tools: {
+      lookup: {
+        target: "test://tool/lookup",
+      },
+    },
+    agent_defaults: {
+      model: "fake-model",
+      modelSettings: {
+        reasoning: {
+          effort: "minimal",
+        },
+      },
+    },
+    agents: {
+      candidate: {
+        name: "Candidate Agent",
+        instructions: `Candidate instructions ${version}`,
+        tools: ["lookup"],
+      },
+    },
+  };
+}
+
+function createRunRecord(
+  overrides: Partial<RunRecord<HarnessTestContext>> = {},
+): RunRecord<HarnessTestContext> {
+  return {
+    runId: "source-run-1",
+    startedAt: "2026-05-19T10:00:00.000Z",
+    completedAt: "2026-05-19T10:00:01.000Z",
+    status: "completed",
+    agentName: "Candidate Agent",
+    providerName: "ScriptedProvider",
+    model: "fake-model",
+    question: "lookup customer",
+    response: "source response",
+    contextSnapshot: {
+      actorId: "actor-1",
+      turn: {
+        userMessage: "lookup customer",
+        startedAt: "2026-05-19T10:00:00.000Z",
+      },
+    },
+    contextRedacted: false,
+    items: [],
+    promptSnapshots: [],
+    requestFingerprints: [],
+    policyDecisions: [],
+    metadata: {},
+    ...overrides,
+  };
+}
+
+export async function runHarnessDescriptorUnitTests(): Promise<void> {
+  {
+    const descriptor = createDescriptor("candidate-v1");
+    const lookup = tool<HarnessTestContext>({
+      name: "lookup",
+      description: "Lookup test data",
+      parameters: z.object({ id: z.string() }),
+      execute: ({ id }) => ({ id, source: "live" }),
+    });
+
+    const harness = buildAgentHarness<HarnessTestContext>(descriptor, {
+      registryVersion: "test-registry@1",
+      tools: {
+        "test://tool/lookup": lookup,
+      },
+    });
+
+    const context = harness.createContext({
+      message: "hello",
+      now: "2026-05-19T12:00:00.000Z",
+    });
+
+    assert.equal(harness.entryAgent.name, "Candidate Agent");
+    assert.equal(harness.entryAgent.model, "fake-model");
+    assert.equal(harness.entryAgent.tools[0]?.name, "lookup");
+    assert.equal(harness.runOptions.maxTurns, 4);
+    assert.equal(harness.metadata.name, "test_harness");
+    assert.equal(harness.metadata.version, "candidate-v1");
+    assert.equal(harness.metadata.registryVersion, "test-registry@1");
+    assert.equal(harness.metadata.descriptorHash, harness.descriptorHash);
+    assert.equal(
+      harness.descriptorHash,
+      hashAgentHarnessDescriptor(descriptor),
+    );
+    assert.deepEqual(context, {
+      actorId: "actor-1",
+      turn: {
+        userMessage: "hello",
+        startedAt: "2026-05-19T12:00:00.000Z",
+      },
+    });
+  }
+
+  {
+    const sourceRunRecord = createRunRecord({
+      items: [
+        {
+          type: "tool_call_item",
+          callId: "source-call-1",
+          name: "lookup",
+          arguments: { id: "42" },
+        },
+        {
+          type: "tool_call_output_item",
+          callId: "source-call-1",
+          output: { id: "42", source: "recorded" },
+        },
+      ],
+    });
+
+    setDefaultProvider(
+      new ScriptedProvider([
+        [
+          {
+            type: "tool_call",
+            callId: "candidate-call-1",
+            name: "lookup",
+            arguments: JSON.stringify({ id: "42" }),
+          },
+        ],
+        [{ type: "completed", message: "candidate response" }],
+      ]),
+    );
+
+    let liveInvocations = 0;
+    const lookup = tool<HarnessTestContext>({
+      name: "lookup",
+      description: "Lookup test data",
+      parameters: z.object({ id: z.string() }),
+      execute: ({ id }) => {
+        liveInvocations += 1;
+        return { id, source: "live" };
+      },
+    });
+
+    const candidateHarness = buildAgentHarness<HarnessTestContext>(
+      createDescriptor("candidate-v2"),
+      {
+        registryVersion: "test-registry@2",
+        tools: {
+          "test://tool/lookup": lookup,
+        },
+      },
+    );
+    const replayRecords: RunRecord<HarnessTestContext>[] = [];
+
+    const replay = await replayFromRunRecord({
+      sourceRunRecord,
+      agent: candidateHarness.entryAgent,
+      mode: "strict",
+      metadataOverrides: {
+        replayOfRunId: sourceRunRecord.runId,
+        harness: candidateHarness.metadata,
+      },
+      runOptions: {
+        ...candidateHarness.runOptions,
+        policies: {
+          toolPolicy: () => allow("allow_descriptor_replay"),
+        },
+        record: {
+          sink: (record) => {
+            replayRecords.push(record);
+          },
+        },
+      },
+    });
+
+    assert.equal(replay.result.finalOutput, "candidate response");
+    assert.equal(liveInvocations, 0);
+    assert.equal(replay.replayStats.recordedToolCalls, 1);
+    assert.equal(replay.replayStats.replayedFromRecord, 1);
+    assert.equal(replay.replayStats.missingToolCalls, 0);
+    assert.equal(replayRecords.length, 1);
+    assert.equal(
+      replay.replayRunRecord?.metadata?.replayOfRunId,
+      "source-run-1",
+    );
+    assert.deepEqual(
+      replay.replayRunRecord?.metadata?.harness,
+      candidateHarness.metadata,
+    );
+  }
+}

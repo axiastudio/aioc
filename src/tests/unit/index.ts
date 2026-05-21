@@ -1,5 +1,6 @@
 import { runHandoffUnitTests } from "./handoff.unit";
 import { runGuardrailUnitTests } from "./guardrail.unit";
+import { runHarnessDescriptorUnitTests } from "./harness-descriptor.unit";
 import { runJsonUnitTests } from "./json.unit";
 import { runLoggerUnitTests } from "./logger.unit";
 import { runPolicyUnitTests } from "./policy.unit";
@@ -22,6 +23,7 @@ async function main(): Promise<void> {
   await runPolicyUnitTests();
   await runHandoffUnitTests();
   await runGuardrailUnitTests();
+  await runHarnessDescriptorUnitTests();
   process.stdout.write("Unit tests passed.\n");
 }
 

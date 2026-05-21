@@ -1,0 +1,102 @@
+descriptor_version: aioc.agent_graph.v0
+
+metadata:
+  name: customer_support_harness
+  version: customer-support.v1
+
+runtime:
+  entry_agent: router
+  max_turns: 8
+
+context:
+  fields:
+    customer.email:
+      type: string
+      default: customer@example.com
+      redact: true
+
+    customer.verified:
+      type: boolean
+      default: false
+      mutable: true
+
+    order.id:
+      type: string
+      default: ORD-1001
+
+    session.channel:
+      type: enum
+      values: [web, mobile]
+      default: web
+
+    turn.userMessage:
+      type: string
+      default: "{{input.message}}"
+
+    turn.startedAt:
+      type: string
+      default: "{{runtime.now_iso}}"
+
+tools:
+  verify_customer:
+    target: example://tool/verify_customer
+
+  lookup_order:
+    target: example://tool/lookup_order
+
+  summarize_refund_policy:
+    target: example://tool/summarize_refund_policy
+
+agent_defaults:
+  # The example resolves this placeholder from AIOC_EXAMPLE_PROVIDER /
+  # AIOC_EXAMPLE_MODEL so the same YAML can run with OpenAI or Mistral.
+  model: "{{provider.model}}"
+  modelSettings:
+    text:
+      verbosity: medium
+
+agents:
+  router:
+    name: Support Router Agent
+    handoffDescription: Entry point that routes customer requests to identity or order support.
+    modelSettings:
+      text:
+        verbosity: low
+    handoffs: [identity, order]
+    instructions: |-
+      You are a customer support router.
+
+      Your only job is to hand off to exactly one specialist agent.
+
+      Routing rules:
+      - If the customer asks about an order and identity has not been verified in the conversation, hand off to Identity Agent.
+      - If the customer asks about an order and identity is already verified, hand off to Order Agent.
+      - If the customer asks about refunds, returns, delivery status, order contents, or an order summary, hand off to Order Agent.
+
+      Do not answer the customer directly.
+
+  identity:
+    name: Identity Agent
+    handoffDescription: Verifies the customer before account or order details are discussed.
+    tools: [verify_customer]
+    handoffs: [order]
+    instructions: |-
+      You verify customer identity for an order-support workflow.
+
+      If the customer provides an email address or asks about their current order, call verify_customer with the email from context or conversation.
+      If verification succeeds, briefly confirm verification and hand off to Order Agent.
+      If verification fails, ask the customer to confirm their email address.
+
+      Keep the response concise.
+
+  order:
+    name: Order Agent
+    handoffDescription: Looks up order details and explains delivery, item, and refund information.
+    tools: [lookup_order, summarize_refund_policy]
+    instructions: |-
+      You are an order support specialist.
+
+      Before answering order-specific questions, call lookup_order with the order id from context or conversation.
+      If the customer asks about refunds or cancellation, also call summarize_refund_policy.
+      Give a concise, practical answer grounded only in tool results.
+      Do not reveal internal IDs other than the customer-facing order id.
