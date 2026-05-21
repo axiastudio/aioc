@@ -5,6 +5,7 @@ import {
   buildAgentHarness,
   hashAgentHarnessDescriptor,
   replayFromRunRecord,
+  RunContext,
   setDefaultProvider,
   tool,
   type AgentHarnessDescriptor,
@@ -17,6 +18,16 @@ interface HarnessTestContext {
   turn: {
     userMessage: string;
     startedAt: string;
+  };
+  language?: "en" | "it";
+  state?: {
+    phase?: string;
+    hero?: {
+      name?: string;
+    };
+    scene?: {
+      pressurePoint?: string;
+    };
   };
 }
 
@@ -142,6 +153,142 @@ export async function runHarnessDescriptorUnitTests(): Promise<void> {
         startedAt: "2026-05-19T12:00:00.000Z",
       },
     });
+  }
+
+  {
+    const descriptor: AgentHarnessDescriptor = {
+      descriptor_version: "aioc.agent_graph.v0",
+      runtime: {
+        entry_agent: "candidate",
+      },
+      context: {
+        fields: {
+          language: {
+            type: "enum",
+            values: ["en", "it"],
+          },
+          state: {
+            type: "object",
+          },
+        },
+        references: {
+          language: {
+            type: "enum",
+            values: ["en", "it"],
+          },
+          "state.phase": {
+            type: "string",
+          },
+          "state.hero.name": {
+            type: "string",
+            optional: true,
+          },
+          "state.scene.pressurePoint": {
+            type: "string",
+            optional: true,
+          },
+        },
+      },
+      agents: {
+        candidate: {
+          instructions:
+            "Language {{context.language}}. Phase {{context.state.phase}}. Hero {{context.state.hero.name}}. Pressure {{context.state.scene.pressurePoint}}.",
+        },
+      },
+    };
+
+    const harness = buildAgentHarness<HarnessTestContext>(descriptor);
+    const context = harness.createContext({
+      overrides: {
+        language: "en",
+        state: {
+          phase: "exploration",
+          hero: {
+            name: "Ada",
+          },
+          scene: {},
+        },
+      },
+    });
+    const instructions = await harness.entryAgent.resolveInstructions(
+      new RunContext(context),
+    );
+
+    assert.equal(
+      instructions,
+      "Language en. Phase exploration. Hero Ada. Pressure .",
+    );
+  }
+
+  {
+    assert.throws(
+      () =>
+        buildAgentHarness<HarnessTestContext>({
+          descriptor_version: "aioc.agent_graph.v0",
+          runtime: {
+            entry_agent: "candidate",
+          },
+          context: {
+            fields: {
+              state: {
+                type: "object",
+              },
+            },
+            references: {
+              "state.phase": {
+                type: "string",
+              },
+            },
+          },
+          agents: {
+            candidate: {
+              instructions: "Hero {{context.state.hero.name}}.",
+            },
+          },
+        }),
+      /undeclared context path/,
+    );
+  }
+
+  {
+    const harness = buildAgentHarness<HarnessTestContext>({
+      descriptor_version: "aioc.agent_graph.v0",
+      runtime: {
+        entry_agent: "candidate",
+      },
+      context: {
+        fields: {
+          state: {
+            type: "object",
+          },
+        },
+        references: {
+          "state.phase": {
+            type: "string",
+          },
+        },
+      },
+      agents: {
+        candidate: {
+          instructions: "Phase {{context.state.phase}}.",
+        },
+      },
+    });
+
+    await assert.rejects(
+      () =>
+        harness.entryAgent.resolveInstructions(
+          new RunContext({
+            actorId: "actor-1",
+            turn: {
+              userMessage: "hello",
+              startedAt: "2026-05-19T12:00:00.000Z",
+            },
+            state: {},
+          }),
+        ),
+      /could not resolve required context path "state.phase"/,
+    );
   }
 
   {

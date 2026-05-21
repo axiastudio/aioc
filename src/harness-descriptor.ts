@@ -1,4 +1,4 @@
-import { Agent } from "./agent";
+import { Agent, type AgentInstructions } from "./agent";
 import { hashCanonicalJsonValue } from "./canonical-json";
 import type { Tool } from "./tool";
 import type { NonStreamRunOptions } from "./types";
@@ -28,6 +28,16 @@ export interface HarnessAgentDescriptor {
   handoffs?: string[];
 }
 
+export interface HarnessContextReferenceDescriptor {
+  type?: string;
+  optional?: boolean;
+  [key: string]: unknown;
+}
+
+export type HarnessContextReferenceEntry =
+  | boolean
+  | HarnessContextReferenceDescriptor;
+
 export interface HarnessContextFieldDescriptor {
   type: string;
   default?: unknown;
@@ -39,6 +49,7 @@ export interface HarnessContextFieldDescriptor {
 
 export interface HarnessContextDescriptor {
   fields?: Record<string, HarnessContextFieldDescriptor>;
+  references?: Record<string, HarnessContextReferenceEntry>;
 }
 
 export interface AgentHarnessDescriptor {
@@ -82,11 +93,186 @@ export interface AgentHarness<TContext = unknown> {
   createContext(input?: CreateHarnessContextInput): TContext;
 }
 
+interface PromptAccessRule {
+  optional: boolean;
+}
+
+const CONTEXT_PROMPT_PLACEHOLDER = /\{\{\s*context\.([^}]+?)\s*\}\}/g;
+
 function cloneJsonValue(value: unknown): unknown {
   if (typeof value === "undefined") {
     return undefined;
   }
   return JSON.parse(JSON.stringify(value)) as unknown;
+}
+
+function isPlainObject(value: unknown): value is Record<string, unknown> {
+  return typeof value === "object" && value !== null && !Array.isArray(value);
+}
+
+function normalizePromptPath(path: string, label: string): string {
+  const segments = path
+    .split(".")
+    .map((segment) => segment.trim())
+    .filter((segment) => segment.length > 0);
+
+  if (segments.length === 0) {
+    throw new Error(`${label} cannot be empty.`);
+  }
+
+  for (const segment of segments) {
+    if (!/^[A-Za-z0-9_-]+$/.test(segment)) {
+      throw new Error(`${label} contains invalid segment "${segment}".`);
+    }
+  }
+
+  return segments.join(".");
+}
+
+function createPromptReferenceRules(
+  descriptor: AgentHarnessDescriptor,
+): Map<string, PromptAccessRule> {
+  const rules = new Map<string, PromptAccessRule>();
+
+  for (const [path, reference] of Object.entries(
+    descriptor.context?.references ?? {},
+  )) {
+    if (reference === false) {
+      continue;
+    }
+
+    const normalizedPath = normalizePromptPath(path, "Context reference path");
+    if (reference === true) {
+      rules.set(normalizedPath, { optional: false });
+      continue;
+    }
+
+    if (!isPlainObject(reference)) {
+      throw new Error(
+        `Context reference "${path}" must be true, false, or an object.`,
+      );
+    }
+
+    rules.set(normalizedPath, { optional: Boolean(reference.optional) });
+  }
+
+  return rules;
+}
+
+function collectContextPromptPaths(template: string): string[] {
+  const paths = new Set<string>();
+
+  for (const match of template.matchAll(CONTEXT_PROMPT_PLACEHOLDER)) {
+    const rawPath = match[1];
+    if (!rawPath) {
+      continue;
+    }
+    paths.add(
+      normalizePromptPath(rawPath, `Context prompt placeholder "${match[0]}"`),
+    );
+  }
+
+  return [...paths];
+}
+
+function readPromptPath(
+  context: unknown,
+  path: string,
+): { exists: boolean; value: unknown } {
+  let cursor = context;
+  for (const segment of normalizePromptPath(path, "Context prompt path").split(
+    ".",
+  )) {
+    if (typeof cursor !== "object" || cursor === null || !(segment in cursor)) {
+      return { exists: false, value: undefined };
+    }
+    cursor = (cursor as Record<string, unknown>)[segment];
+  }
+
+  return { exists: true, value: cursor };
+}
+
+function stringifyPromptValue(value: unknown): string {
+  if (typeof value === "string") {
+    return value;
+  }
+  if (
+    typeof value === "number" ||
+    typeof value === "boolean" ||
+    typeof value === "bigint"
+  ) {
+    return String(value);
+  }
+  if (typeof value === "undefined") {
+    return "";
+  }
+
+  const json = JSON.stringify(value);
+  return typeof json === "undefined" ? String(value) : json;
+}
+
+function renderInstructionTemplate(
+  template: string,
+  context: unknown,
+  promptAccessRules: Map<string, PromptAccessRule>,
+): string {
+  return template.replace(
+    CONTEXT_PROMPT_PLACEHOLDER,
+    (placeholder: string, rawPath: string) => {
+      const path = normalizePromptPath(
+        rawPath,
+        `Context prompt placeholder "${placeholder}"`,
+      );
+      const rule = promptAccessRules.get(path);
+      if (!rule) {
+        throw new Error(
+          `Harness descriptor instruction references undeclared context path "${path}".`,
+        );
+      }
+
+      const resolved = readPromptPath(context, path);
+      if (!resolved.exists || typeof resolved.value === "undefined") {
+        if (rule.optional) {
+          return "";
+        }
+        throw new Error(
+          `Harness descriptor instruction could not resolve required context path "${path}".`,
+        );
+      }
+
+      return stringifyPromptValue(resolved.value);
+    },
+  );
+}
+
+function compileAgentInstructions<TContext>(
+  agentId: string,
+  instructions: string | undefined,
+  promptAccessRules: Map<string, PromptAccessRule>,
+): AgentInstructions<TContext> | undefined {
+  if (typeof instructions === "undefined") {
+    return undefined;
+  }
+
+  const promptPaths = collectContextPromptPaths(instructions);
+  if (promptPaths.length === 0) {
+    return instructions;
+  }
+
+  for (const path of promptPaths) {
+    if (!promptAccessRules.has(path)) {
+      throw new Error(
+        `Agent "${agentId}" instruction references undeclared context path "${path}".`,
+      );
+    }
+  }
+
+  return (runContext) =>
+    renderInstructionTemplate(
+      instructions,
+      runContext.context,
+      promptAccessRules,
+    );
 }
 
 function setPath(
@@ -209,13 +395,19 @@ export function buildAgentHarness<TContext = unknown>(
 ): AgentHarness<TContext> {
   const descriptorHash = hashAgentHarnessDescriptor(descriptor);
   const agents = new Map<string, Agent<TContext>>();
+  const promptAccessRules = createPromptReferenceRules(descriptor);
 
   for (const [agentId, agentDescriptor] of Object.entries(descriptor.agents)) {
+    const instructions =
+      agentDescriptor.instructions ?? descriptor.agent_defaults?.instructions;
     const agent = new Agent<TContext>({
       name: agentDescriptor.name ?? agentId,
       handoffDescription: agentDescriptor.handoffDescription,
-      instructions:
-        agentDescriptor.instructions ?? descriptor.agent_defaults?.instructions,
+      instructions: compileAgentInstructions(
+        agentId,
+        instructions,
+        promptAccessRules,
+      ),
       model: agentDescriptor.model ?? descriptor.agent_defaults?.model,
       modelSettings:
         agentDescriptor.modelSettings ??
