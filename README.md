@@ -265,6 +265,7 @@ AIOC adopts the following non-negotiable principles:
 - `docs/RFC-0006-approval-evidence-helpers.md` (`Draft`)
 - `docs/RFC-0007-thread-state-utilities.md` (`Accepted`)
 - `docs/RFC-0008-run-stream-consumer-utilities.md` (`Accepted`)
+- `docs/RFC-0009-governance-events-and-exporters.md` (`Experimental`)
 - `docs/PRIVACY-BASELINE.md`
 
 ## Historical Snapshots
