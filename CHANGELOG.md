@@ -1,5 +1,11 @@
 # Changelog
 
+## Unreleased
+
+### Added
+
+- Approval evidence helpers for application-owned approval workflows: `createApprovalRequestSeed(...)`, `isApprovalGrantActive(...)`, `findActiveApprovalGrant(...)`, `toApprovedProposalHashes(...)`, and `toActiveApprovalGrantMap(...)`.
+
 ## 0.1.1 - 2026-05-22
 
 Stable patch release for provider compatibility, thread-history helpers, and

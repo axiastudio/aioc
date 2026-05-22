@@ -264,7 +264,7 @@ AIOC adopts the following non-negotiable principles:
 - `docs/RFC-0003-run-record-audit-trail-and-persistence.md` (`Accepted`)
 - `docs/RFC-0004-policy-outcomes-and-approval-model.md` (`Accepted`)
 - `docs/RFC-0005-suspended-proposals-and-approval-lifecycle.md` (`Accepted`)
-- `docs/RFC-0006-approval-evidence-helpers.md` (`Draft`)
+- `docs/RFC-0006-approval-evidence-helpers.md` (`Accepted`)
 - `docs/RFC-0007-thread-state-utilities.md` (`Accepted`)
 - `docs/RFC-0008-run-stream-consumer-utilities.md` (`Accepted`)
 - `docs/PRIVACY-BASELINE.md`

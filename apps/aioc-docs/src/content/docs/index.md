@@ -31,7 +31,7 @@ The current documentation covers:
 
 - stable `0.1.x` runtime behavior you can use today
 - accepted RFC material implemented in the current stable release
-- draft RFC material for approval evidence and stabilization work that is still evolving
+- draft RFC material for future stabilization work that is still evolving
 
 ## Stable Scope
 

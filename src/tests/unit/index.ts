@@ -1,3 +1,4 @@
+import { runApprovalHelpersUnitTests } from "./approval-helpers.unit";
 import { runHandoffUnitTests } from "./handoff.unit";
 import { runGuardrailUnitTests } from "./guardrail.unit";
 import { runJsonUnitTests } from "./json.unit";
@@ -11,6 +12,7 @@ import { runRunUnitTests } from "./run.unit";
 import { runThreadHistoryUnitTests } from "./thread-history.unit";
 
 async function main(): Promise<void> {
+  await runApprovalHelpersUnitTests();
   await runRunUnitTests();
   await runRunOutputEventsUnitTests();
   await runRunRecordUnitTests();

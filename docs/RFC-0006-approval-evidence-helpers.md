@@ -1,6 +1,6 @@
 # RFC-0006: Approval Evidence Helpers
 
-- Status: Draft
+- Status: Accepted
 - Date: 2026-04-03
 - Owners: aioc maintainers
 - Depends on: RFC-0003, RFC-0004, RFC-0005
@@ -299,4 +299,4 @@ Those concerns remain application-owned.
 
 ## Status
 
-Draft. Not implemented.
+Accepted. Implemented in `src/approval-helpers.ts`.

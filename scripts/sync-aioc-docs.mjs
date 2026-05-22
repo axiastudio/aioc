@@ -50,7 +50,7 @@ const documents = [
     sourceFile: "RFC-0006-approval-evidence-helpers.md",
     targetDir: "current",
     slug: "rfc-0006-approval-evidence-helpers",
-    status: "Draft",
+    status: "Accepted",
   },
   {
     sourceFile: "RFC-0007-thread-state-utilities.md",
