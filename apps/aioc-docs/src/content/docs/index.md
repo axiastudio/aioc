@@ -25,16 +25,19 @@ It is designed for applications that must retain full governance control over pe
 ## Status
 
 `aioc` is stable as of `0.1.0`.
+The current stable release is `0.1.1`.
 
-The current documentation mixes:
+The current documentation covers:
 
-- stable runtime behavior you can use today
-- implemented additions queued for the next release
+- stable `0.1.x` runtime behavior you can use today
+- accepted RFC material implemented in the current stable release
 - draft RFC material for approval evidence and stabilization work that is still evolving
 
 ## Stable Scope
 
 `aioc` `0.1.0` stabilizes the governance-first runtime model as a dependable foundation for high-accountability applications: core APIs are compatibility-managed, audit artifacts and replay workflows are dependable, and the project has been validated through real implementation use.
+
+`aioc` `0.1.1` keeps that stable model and adds thread-history helpers, the run-output stream adapter, and provider-specific instruction-role documentation.
 
 ## Install
 
@@ -48,6 +51,8 @@ npm install @axiastudio/aioc
 - `RunRecord` audit artifacts with prompt snapshots and request fingerprints
 - replay and comparison utilities for non-regression analysis
 - provider setup helpers for Mistral and OpenAI
+- thread-history helpers for application-owned conversation state
+- a run-output stream adapter for UI deltas plus final run data
 
 ## Technical Focus
 
