@@ -108,8 +108,8 @@ File:
 
 What it demonstrates:
 
-- capturing `proposalHash` from an approval-required error
-- passing approval evidence back through `context`
+- creating an approval request seed from a suspended proposal
+- projecting an approval grant into policy-friendly context
 - policy reevaluation using `proposalHash`
 - executing the same requested tool after approval is available
 

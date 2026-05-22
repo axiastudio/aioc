@@ -3,9 +3,12 @@ import {
   Agent,
   ToolCallApprovalRequiredError,
   allow,
+  createApprovalRequestSeed,
   requireApproval,
   run,
   tool,
+  toApprovedProposalHashes,
+  type ApprovalGrant,
   type ToolPolicy,
 } from "../../index";
 import { getExampleProviderConfig } from "../support/live-provider";
@@ -44,7 +47,7 @@ async function main(): Promise<void> {
     tools: [export_report],
   });
 
-  let approvedProposalHash = "";
+  let grant: ApprovalGrant | null = null;
 
   try {
     await run(agent, "Export the report.", {
@@ -56,12 +59,25 @@ async function main(): Promise<void> {
       throw error;
     }
 
-    approvedProposalHash = error.result.suspendedProposal.proposalHash;
-    process.stdout.write(`pending approval hash: ${approvedProposalHash}\n`);
+    const approvalRequest = createApprovalRequestSeed(
+      error.result.suspendedProposal,
+    );
+    process.stdout.write(
+      `pending approval: ${JSON.stringify(approvalRequest)}\n`,
+    );
+
+    grant = {
+      proposalHash: approvalRequest.proposalHash,
+      approvedAt: "2026-05-22T10:00:00.000Z",
+    };
+  }
+
+  if (!grant) {
+    throw new Error("Expected the first run to require approval.");
   }
 
   const approvedResult = await run(agent, "Export the report.", {
-    context: { approvedProposalHashes: [approvedProposalHash] },
+    context: { approvedProposalHashes: toApprovedProposalHashes([grant]) },
     policies: { toolPolicy },
   });
 
