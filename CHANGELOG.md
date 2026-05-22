@@ -1,6 +1,9 @@
 # Changelog
 
-## Unreleased
+## 0.1.1 - 2026-05-22
+
+Stable patch release for provider compatibility, thread-history helpers, and
+stream-output ergonomics.
 
 ### Added
 
@@ -14,6 +17,7 @@
 ### Documentation
 
 - Clarified provider-specific instruction role mapping in the Agent and Providers reference pages.
+- Marked the suspended proposal lifecycle RFC as accepted.
 
 ## @axiastudio/aioc-inspect-ui 0.1.0 - 2026-04-24
 
