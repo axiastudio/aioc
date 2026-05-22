@@ -43,6 +43,7 @@ export default defineConfig({
             "reference/run",
             "reference/logger",
             "reference/policies",
+            "reference/approval-helpers",
             "reference/providers",
             "reference/run-output-events",
             "reference/run-record-utils",

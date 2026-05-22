@@ -10,6 +10,7 @@ description: How approval-required actions move from blocked proposal to policy 
 - a typed approval-required outcome
 - a canonical `SuspendedProposal`
 - a stable `proposalHash`
+- helper functions for request seeding and grant projection
 
 Your application still owns:
 
@@ -41,7 +42,14 @@ That proposal contains:
 
 The host application should create its own approval request from the `SuspendedProposal`.
 
-The minimum useful binding key is:
+`createApprovalRequestSeed(...)` extracts the minimum stable data needed to
+start that application-owned approval request:
+
+```ts
+const approvalRequest = createApprovalRequestSeed(suspendedProposal);
+```
+
+The most important binding key is:
 
 - `proposalHash`
 
@@ -55,6 +63,9 @@ The rest is application-specific:
 
 `aioc` does not prescribe this storage model.
 
+`ApprovalRequestSeed` is intentionally not a storage schema. Treat it as the
+stable seed for your own approval-request record.
+
 ## How Approval Evidence Re-Enters Policy
 
 The usual pattern is:
@@ -67,6 +78,12 @@ The usual pattern is:
 Minimal example:
 
 ```ts
+const grants = loadApprovalGrantsForThread(threadId);
+
+const context = {
+  approvedProposalHashes: toApprovedProposalHashes(grants),
+};
+
 type ApprovalEvidenceContext = {
   approvedProposalHashes: string[];
 };
@@ -84,6 +101,17 @@ const toolPolicy: ToolPolicy<ApprovalEvidenceContext> = ({
   });
 };
 ```
+
+Applications that need reviewer or workflow metadata can pass richer evidence
+instead:
+
+```ts
+const context = {
+  activeApprovalGrants: toActiveApprovalGrantMap(grants),
+};
+```
+
+The policy still decides what the grant means.
 
 This is why `ToolPolicyInput` and `HandoffPolicyInput` expose:
 

@@ -96,6 +96,7 @@ console.log(result.finalOutput);
 - handoffs via `Agent({ handoffs: [...] })`
 - `run(...)` with streaming support (`stream` defaults to `false`)
 - policy helpers `allow(...)` / `deny(...)` / `requireApproval(...)`
+- approval evidence helpers `createApprovalRequestSeed(...)`, `toApprovedProposalHashes(...)`, `toActiveApprovalGrantMap(...)`
 - provider setup helpers `setupMistral(...)`, `setupOpenAI(...)`, `setupProvider(...)`
 - run logger hook `run(..., { logger })`
 - run record hook `run(..., { record })`

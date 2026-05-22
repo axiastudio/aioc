@@ -14,6 +14,7 @@ It is not a generated API reference for every exported symbol. It focuses on the
 - `run(...)`
 - runtime logging
 - policy helpers and policy configuration
+- approval evidence helpers
 - provider setup helpers
 - run output events
 - run-record utilities
