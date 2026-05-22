@@ -28,6 +28,6 @@ It is not a generated API reference for every exported symbol. It focuses on the
 
 ## Stability Note
 
-This section documents the stable `0.1.1` surface.
+This section documents the stable `0.1.2` surface.
 
 Draft RFCs may still describe lifecycle refinements, stabilization work, or application-side approval patterns beyond the implemented runtime surface.

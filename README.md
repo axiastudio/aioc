@@ -8,14 +8,15 @@ Project home and documentation: [https://axiastudio.github.io/aioc](https://axia
 
 ## Release Status
 
-Current stable release: `0.1.1`.
-AIOC is stable as of `0.1.0`.
+Current stable release: `0.1.2`.
+The stable `0.1.x` line started with `0.1.0`.
 The core runtime surface is compatibility-managed. Breaking changes to the stable surface should ship only with explicit migration guidance and release notes.
 
 ### Stable Scope
 
 AIOC `0.1.0` stabilized the core runtime surface, public documentation aligned to the exported contract, `RunRecord` and replay/compare workflows, and the governance-first runtime model validated in real applications beyond toy examples.
 AIOC `0.1.1` adds thread-history utilities, the run-output stream adapter, and provider-specific instruction-role documentation without changing the stable governance model.
+AIOC `0.1.2` adds approval evidence helpers for application-owned approval workflows.
 
 - Release notes: `CHANGELOG.md`
 - Historical beta contract snapshot: `docs/BETA-CONTRACT.md`

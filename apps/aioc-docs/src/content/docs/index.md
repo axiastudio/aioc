@@ -24,8 +24,8 @@ It is designed for applications that must retain full governance control over pe
 
 ## Status
 
-`aioc` is stable as of `0.1.0`.
-The current stable release is `0.1.1`.
+The current stable release is `0.1.2`.
+The stable `0.1.x` line started with `0.1.0`.
 
 The current documentation covers:
 
@@ -38,6 +38,8 @@ The current documentation covers:
 `aioc` `0.1.0` stabilizes the governance-first runtime model as a dependable foundation for high-accountability applications: core APIs are compatibility-managed, audit artifacts and replay workflows are dependable, and the project has been validated through real implementation use.
 
 `aioc` `0.1.1` keeps that stable model and adds thread-history helpers, the run-output stream adapter, and provider-specific instruction-role documentation.
+
+`aioc` `0.1.2` adds approval evidence helpers for application-owned approval workflows.
 
 ## Install
 

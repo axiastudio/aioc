@@ -1,6 +1,8 @@
 # Changelog
 
-## Unreleased
+## 0.1.2 - 2026-05-22
+
+Stable patch release for application-owned approval evidence handling.
 
 ### Added
 
