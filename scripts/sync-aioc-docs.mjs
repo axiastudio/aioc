@@ -65,6 +65,12 @@ const documents = [
     status: "Accepted",
   },
   {
+    sourceFile: "RFC-0010-policy-composition-helpers.md",
+    targetDir: "current",
+    slug: "rfc-0010-policy-composition-helpers",
+    status: "Draft",
+  },
+  {
     sourceFile: "PRIVACY-BASELINE.md",
     targetDir: "current",
     slug: "privacy-baseline",
