@@ -65,6 +65,12 @@ const documents = [
     status: "Accepted",
   },
   {
+    sourceFile: "RFC-0009-governance-events-and-exporters.md",
+    targetDir: "current",
+    slug: "rfc-0009-governance-events-and-exporters",
+    status: "Experimental",
+  },
+  {
     sourceFile: "RFC-0010-policy-composition-helpers.md",
     targetDir: "current",
     slug: "rfc-0010-policy-composition-helpers",
