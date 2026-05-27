@@ -420,18 +420,41 @@ The descriptor builder produces normal `Agent` objects and normal `run(...)`
 options, so it composes with existing provider, policy, logging, run-record,
 thread-history, and stream-output APIs.
 
-## Open Questions
+## Decisions For 0.2.0
 
-1. Should the descriptor remain in `@axiastudio/aioc` or move to a separate
-   package after experimentation?
-2. Should descriptor validation be stricter and schema-backed?
-3. Should `context.fields[*].redact` integrate with a redaction helper?
-4. Should descriptor hashing include registry metadata or remain descriptor-only?
-5. Should YAML loading stay fully application-owned?
-6. Should future descriptors support policy composition references, or should
-   policies remain strictly code-owned?
-7. Should descriptor examples be positioned as harness/evaluation artifacts
-   rather than production configuration?
+The `0.2.0` descriptor scope is intentionally narrow:
+
+- The descriptor remains in `@axiastudio/aioc` during the `0.2.x`
+  experimental period.
+- Descriptor validation is lightweight and implemented in the builder. A
+  schema-backed validator is deferred.
+- `context.fields[*].redact` remains metadata only. Applications still provide
+  explicit `record.contextRedactor` implementations.
+- `descriptorHash` remains descriptor-only. Registry version, provider/model,
+  policy version, package version, and prompt material version remain separate
+  metadata.
+- YAML loading remains application-owned. Core accepts JavaScript objects.
+- Policies remain code-owned. The descriptor does not contain policy
+  definitions or policy references.
+- Instruction placeholders remain path-only references. JavaScript expressions,
+  filters, nullish coalescing, ternaries, and function calls are not supported.
+- Prompt file loading and prompt materialization remain application-owned.
+- Descriptor examples are positioned as harness/evaluation or controlled
+  application configuration artifacts, not as no-code production builders.
+
+## Deferred Questions
+
+The following topics are intentionally left for later RFCs or `0.2.x`
+experimentation:
+
+1. Whether descriptor helpers should eventually move to a separate package.
+2. Whether to add schema-backed validation for descriptor files.
+3. Whether descriptor redaction metadata should feed a reusable redaction
+   helper.
+4. Whether policy composition helpers should ever be referenced from
+   descriptors.
+5. Whether a future descriptor layer should standardize prompt file imports or
+   keep them application-specific.
 
 ## Implementation Notes
 
@@ -442,9 +465,11 @@ The current experimental implementation is:
 - covered by `src/tests/unit/harness-descriptor.unit.ts`
 - demonstrated by `src/examples/harness-descriptor/customer-support.ts`
 - descriptor example in `src/examples/harness-descriptor/customer-support.yaml`
+- documented by `apps/aioc-docs/src/content/docs/reference/harness-descriptor.md`
 
 The implementation should remain explicitly experimental during the
-`0.2.0-next.*` line.
+`0.2.0-next.*` line and ship in `0.2.0` as the `aioc.agent_graph.v0`
+descriptor contract.
 
 ## Minimal Test Matrix
 
@@ -459,8 +484,12 @@ The implementation should remain explicitly experimental during the
 9. Rejects undeclared context references in instruction templates.
 10. Rejects missing required context references at instruction-resolution time.
 11. Allows missing optional context references.
-12. Attaches harness metadata to run records in examples or tests.
-13. Composes with strict replay without executing live tools when replay data is
+12. Rejects non-path instruction expressions.
+13. Keeps reference paths exact: parent references do not allow child paths.
+14. Rejects missing entry agents, unknown tool ids, missing registry targets,
+    and unknown handoff ids.
+15. Attaches harness metadata to run records in examples or tests.
+16. Composes with strict replay without executing live tools when replay data is
     available.
 
 ## Status

@@ -4,6 +4,9 @@
 
 ### Added
 
+- Experimental agent harness descriptor APIs: `buildAgentHarness(...)`,
+  `hashAgentHarnessDescriptor(...)`, descriptor metadata, registry-backed tool
+  binding, context defaults, and instruction context references.
 - Thread history utilities for application-owned conversation state: `toThreadHistory(...)`, `appendUserMessage(...)`, `replaceThreadHistory(...)`, and `applyRunResultHistory(...)`.
 - Run output stream adapter `toRunOutputEvents(...)` for streaming text deltas while collecting final output, history, last agent, and paired tool calls.
 
@@ -13,6 +16,8 @@
 
 ### Documentation
 
+- Added harness descriptor reference documentation and an RFC-0011 governance
+  entry.
 - Clarified provider-specific instruction role mapping in the Agent and Providers reference pages.
 
 ## @axiastudio/aioc-inspect-ui 0.1.0 - 2026-04-24
