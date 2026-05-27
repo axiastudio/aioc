@@ -37,6 +37,17 @@ context:
       type: string
       default: "{{runtime.now_iso}}"
 
+  references:
+    customer.verified:
+      type: boolean
+
+    order.id:
+      type: string
+
+    session.channel:
+      type: enum
+      values: [web, mobile]
+
 tools:
   verify_customer:
     target: example://tool/verify_customer
@@ -73,6 +84,8 @@ agents:
       - If the customer asks about an order and identity is already verified, hand off to Order Agent.
       - If the customer asks about refunds, returns, delivery status, order contents, or an order summary, hand off to Order Agent.
 
+      Current verified state: {{context.customer.verified}}.
+
       Do not answer the customer directly.
 
   identity:
@@ -87,6 +100,8 @@ agents:
       If verification succeeds, briefly confirm verification and hand off to Order Agent.
       If verification fails, ask the customer to confirm their email address.
 
+      Known customer-facing order id: {{context.order.id}}.
+
       Keep the response concise.
 
   order:
@@ -100,3 +115,4 @@ agents:
       If the customer asks about refunds or cancellation, also call summarize_refund_policy.
       Give a concise, practical answer grounded only in tool results.
       Do not reveal internal IDs other than the customer-facing order id.
+      Current channel: {{context.session.channel}}.

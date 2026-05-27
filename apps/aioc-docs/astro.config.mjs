@@ -39,6 +39,7 @@ export default defineConfig({
           items: [
             "reference",
             "reference/agent",
+            "reference/harness-descriptor",
             "reference/tools",
             "reference/run",
             "reference/logger",

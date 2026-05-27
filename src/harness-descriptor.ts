@@ -110,6 +110,68 @@ function isPlainObject(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null && !Array.isArray(value);
 }
 
+function assertPlainObject(
+  value: unknown,
+  label: string,
+): asserts value is Record<string, unknown> {
+  if (!isPlainObject(value)) {
+    throw new Error(`${label} must be an object.`);
+  }
+}
+
+function assertOptionalPlainObject(value: unknown, label: string) {
+  if (typeof value === "undefined") {
+    return;
+  }
+  assertPlainObject(value, label);
+}
+
+function assertNonEmptyString(value: unknown, label: string) {
+  if (typeof value !== "string" || value.trim().length === 0) {
+    throw new Error(`${label} must be a non-empty string.`);
+  }
+}
+
+function validateDescriptorShape(descriptor: AgentHarnessDescriptor) {
+  assertPlainObject(descriptor, "Harness descriptor");
+  assertPlainObject(descriptor.runtime, "Harness descriptor runtime");
+  assertNonEmptyString(
+    descriptor.runtime.entry_agent,
+    "Harness descriptor runtime.entry_agent",
+  );
+  assertPlainObject(descriptor.agents, "Harness descriptor agents");
+
+  if (Object.keys(descriptor.agents).length === 0) {
+    throw new Error("Harness descriptor agents must not be empty.");
+  }
+
+  assertOptionalPlainObject(descriptor.metadata, "Harness descriptor metadata");
+  assertOptionalPlainObject(descriptor.tools, "Harness descriptor tools");
+  assertOptionalPlainObject(
+    descriptor.agent_defaults,
+    "Harness descriptor agent_defaults",
+  );
+  assertOptionalPlainObject(descriptor.context, "Harness descriptor context");
+  assertOptionalPlainObject(
+    descriptor.context?.fields,
+    "Harness descriptor context.fields",
+  );
+  assertOptionalPlainObject(
+    descriptor.context?.references,
+    "Harness descriptor context.references",
+  );
+
+  for (const [toolId, toolDescriptor] of Object.entries(
+    descriptor.tools ?? {},
+  )) {
+    assertPlainObject(toolDescriptor, `Harness descriptor tool "${toolId}"`);
+    assertNonEmptyString(
+      toolDescriptor.target,
+      `Harness descriptor tool "${toolId}".target`,
+    );
+  }
+}
+
 function normalizePromptPath(path: string, label: string): string {
   const segments = path
     .split(".")
@@ -393,6 +455,8 @@ export function buildAgentHarness<TContext = unknown>(
   descriptor: AgentHarnessDescriptor,
   registry: AgentHarnessRegistry<TContext> = {},
 ): AgentHarness<TContext> {
+  validateDescriptorShape(descriptor);
+
   const descriptorHash = hashAgentHarnessDescriptor(descriptor);
   const agents = new Map<string, Agent<TContext>>();
   const promptAccessRules = createPromptReferenceRules(descriptor);

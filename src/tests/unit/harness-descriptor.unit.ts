@@ -156,6 +156,105 @@ export async function runHarnessDescriptorUnitTests(): Promise<void> {
   }
 
   {
+    assert.throws(
+      () =>
+        buildAgentHarness({
+          runtime: {
+            entry_agent: "candidate",
+          },
+          agents: {},
+        } as AgentHarnessDescriptor),
+      /agents must not be empty/,
+    );
+  }
+
+  {
+    assert.throws(
+      () =>
+        buildAgentHarness({
+          runtime: {
+            entry_agent: "",
+          },
+          agents: {
+            candidate: {},
+          },
+        }),
+      /runtime\.entry_agent must be a non-empty string/,
+    );
+  }
+
+  {
+    assert.throws(
+      () =>
+        buildAgentHarness({
+          runtime: {
+            entry_agent: "missing",
+          },
+          agents: {
+            candidate: {},
+          },
+        }),
+      /entry_agent "missing" does not exist/,
+    );
+  }
+
+  {
+    assert.throws(
+      () =>
+        buildAgentHarness({
+          runtime: {
+            entry_agent: "candidate",
+          },
+          agents: {
+            candidate: {
+              tools: ["missing_tool"],
+            },
+          },
+        }),
+      /references unknown tool "missing_tool"/,
+    );
+  }
+
+  {
+    assert.throws(
+      () =>
+        buildAgentHarness({
+          runtime: {
+            entry_agent: "candidate",
+          },
+          tools: {
+            lookup: {
+              target: "test://tool/missing",
+            },
+          },
+          agents: {
+            candidate: {
+              tools: ["lookup"],
+            },
+          },
+        }),
+      /registry is missing target "test:\/\/tool\/missing"/,
+    );
+  }
+
+  {
+    assert.throws(
+      () =>
+        buildAgentHarness({
+          runtime: {
+            entry_agent: "candidate",
+          },
+          agents: {
+            candidate: {
+              handoffs: ["missing_agent"],
+            },
+          },
+        }),
+      /references unknown handoff agent "missing_agent"/,
+    );
+  }
+
+  {
     const descriptor: AgentHarnessDescriptor = {
       descriptor_version: "aioc.agent_graph.v0",
       runtime: {
@@ -247,6 +346,54 @@ export async function runHarnessDescriptorUnitTests(): Promise<void> {
           },
         }),
       /undeclared context path/,
+    );
+  }
+
+  {
+    assert.throws(
+      () =>
+        buildAgentHarness<HarnessTestContext>({
+          descriptor_version: "aioc.agent_graph.v0",
+          runtime: {
+            entry_agent: "candidate",
+          },
+          context: {
+            references: {
+              "state.phase": {
+                type: "string",
+              },
+            },
+          },
+          agents: {
+            candidate: {
+              instructions: "Phase {{context.state.phase ?? missing}}.",
+            },
+          },
+        }),
+      /invalid segment/,
+    );
+  }
+
+  {
+    assert.throws(
+      () =>
+        buildAgentHarness<HarnessTestContext>({
+          descriptor_version: "aioc.agent_graph.v0",
+          runtime: {
+            entry_agent: "candidate",
+          },
+          context: {
+            references: {
+              state: true,
+            },
+          },
+          agents: {
+            candidate: {
+              instructions: "Phase {{context.state.phase}}.",
+            },
+          },
+        }),
+      /undeclared context path "state.phase"/,
     );
   }
 
