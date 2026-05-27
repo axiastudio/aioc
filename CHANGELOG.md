@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+## 0.2.0-next.2 - 2026-05-27
+
 ### Added
 
 - Experimental agent harness descriptor APIs: `buildAgentHarness(...)`,
