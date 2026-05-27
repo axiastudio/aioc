@@ -31,6 +31,19 @@ interface HarnessTestContext {
   };
 }
 
+interface CosmoHarnessTestContext {
+  prompt: {
+    kolbEnabledLabel: string;
+    learningStyleLabel: string;
+    assessmentStatus: string;
+    phase: string;
+    styleHint: string;
+    kolbStage: string;
+    lastGate: string;
+    answersCountLabel: string;
+  };
+}
+
 function createDescriptor(version: string): AgentHarnessDescriptor {
   return {
     descriptor_version: "aioc.agent_graph.v0",
@@ -394,6 +407,255 @@ export async function runHarnessDescriptorUnitTests(): Promise<void> {
           },
         }),
       /undeclared context path "state.phase"/,
+    );
+  }
+
+  {
+    const descriptor: AgentHarnessDescriptor = {
+      descriptor_version: "aioc.agent_graph.v0",
+      metadata: {
+        name: "cosmo_ai_runtime",
+        version: "cosmo-shaped.v0",
+      },
+      runtime: {
+        entry_agent: "router",
+        max_turns: 10,
+      },
+      context: {
+        references: {
+          "prompt.kolbEnabledLabel": {
+            type: "string",
+          },
+          "prompt.learningStyleLabel": {
+            type: "string",
+          },
+          "prompt.assessmentStatus": {
+            type: "string",
+          },
+          "prompt.phase": {
+            type: "string",
+          },
+          "prompt.styleHint": {
+            type: "string",
+          },
+          "prompt.kolbStage": {
+            type: "string",
+          },
+          "prompt.lastGate": {
+            type: "string",
+          },
+          "prompt.answersCountLabel": {
+            type: "string",
+          },
+        },
+      },
+      tools: {
+        find_chunks: {
+          target: "cosmo://tool/find_chunks",
+        },
+        get_summary: {
+          target: "cosmo://tool/get_summary",
+        },
+        set_kolb_state: {
+          target: "cosmo://tool/set_kolb_state",
+        },
+        save_assessment_progress: {
+          target: "cosmo://tool/save_assessment_progress",
+        },
+        complete_assessment: {
+          target: "cosmo://tool/complete_assessment",
+        },
+      },
+      agent_defaults: {
+        model: "gpt-5.4-mini",
+      },
+      agents: {
+        router: {
+          name: "Router agent",
+          handoffDescription:
+            "Entry agent that routes each turn to assessment, tutor, or qna.",
+          modelSettings: {
+            reasoning: {
+              effort: "minimal",
+            },
+            text: {
+              verbosity: "low",
+            },
+          },
+          handoffs: ["assessment", "tutor", "qna"],
+          instructions: [
+            "You are Cosmo's routing agent.",
+            "Kolb enabled: {{context.prompt.kolbEnabledLabel}}.",
+            "Learning style: {{context.prompt.learningStyleLabel}}.",
+            "Assessment status: {{context.prompt.assessmentStatus}}.",
+            "Conversation phase: {{context.prompt.phase}}.",
+            "Hand off to exactly one specialist agent.",
+          ].join("\n"),
+        },
+        assessment: {
+          name: "Assessment agent",
+          handoffDescription:
+            "Runs the Kolb assessment flow and hands off to tutor when completed.",
+          modelSettings: {
+            reasoning: {
+              effort: "low",
+            },
+            text: {
+              verbosity: "medium",
+            },
+          },
+          tools: ["save_assessment_progress", "complete_assessment"],
+          handoffs: ["tutor"],
+          instructions: [
+            "You are the Cosmo Kolb assessment agent.",
+            "Assessment status: {{context.prompt.assessmentStatus}}.",
+            "Recorded answers: {{context.prompt.answersCountLabel}}.",
+          ].join("\n"),
+        },
+        tutor: {
+          name: "Tutor agent",
+          handoffDescription:
+            "Kolb tutor that explains, guides, and applies concepts with grounded coaching.",
+          modelSettings: {
+            reasoning: {
+              effort: "low",
+            },
+            text: {
+              verbosity: "medium",
+            },
+          },
+          tools: ["find_chunks", "get_summary", "set_kolb_state"],
+          instructions: [
+            "You are Cosmo's Kolb tutor.",
+            "Current style: {{context.prompt.learningStyleLabel}}.",
+            "Current stage: {{context.prompt.kolbStage}}.",
+            "Last gate result: {{context.prompt.lastGate}}.",
+            "{{context.prompt.styleHint}}",
+          ].join("\n"),
+        },
+        qna: {
+          name: "QnA agent",
+          handoffDescription:
+            "Answers factual and document-grounded questions using retrieval.",
+          modelSettings: {
+            reasoning: {
+              effort: "low",
+            },
+            text: {
+              verbosity: "medium",
+            },
+          },
+          tools: ["find_chunks", "get_summary"],
+          instructions:
+            "Always invoke find_chunks before answering. Phase: {{context.prompt.phase}}.",
+        },
+      },
+    };
+    const findChunks = tool<CosmoHarnessTestContext>({
+      name: "find_chunks",
+      description: "Retrieve knowledge base snippets.",
+      parameters: z.object({
+        query: z.string(),
+      }),
+      execute: ({ query }) => ({ chunks: [], query }),
+    });
+    const getSummary = tool<CosmoHarnessTestContext>({
+      name: "get_summary",
+      description: "Retrieve a lecture summary.",
+      parameters: z.object({
+        uuid: z.string(),
+      }),
+      execute: ({ uuid }) => ({ text: `summary ${uuid}` }),
+    });
+    const setKolbState = tool<CosmoHarnessTestContext>({
+      name: "set_kolb_state",
+      description: "Persist the next Kolb tutoring state.",
+      execute: () => ({ ok: true }),
+    });
+    const saveAssessmentProgress = tool<CosmoHarnessTestContext>({
+      name: "save_assessment_progress",
+      description: "Persist assessment progress.",
+      execute: () => ({ ok: true }),
+    });
+    const completeAssessment = tool<CosmoHarnessTestContext>({
+      name: "complete_assessment",
+      description: "Complete the learning-style assessment.",
+      parameters: z.object({
+        style: z.string(),
+      }),
+      execute: ({ style }) => ({ ok: true, style }),
+    });
+    const harness = buildAgentHarness<CosmoHarnessTestContext>(descriptor, {
+      registryVersion: "cosmo-tools@test",
+      tools: {
+        "cosmo://tool/find_chunks": findChunks,
+        "cosmo://tool/get_summary": getSummary,
+        "cosmo://tool/set_kolb_state": setKolbState,
+        "cosmo://tool/save_assessment_progress": saveAssessmentProgress,
+        "cosmo://tool/complete_assessment": completeAssessment,
+      },
+    });
+    const context: CosmoHarnessTestContext = {
+      prompt: {
+        kolbEnabledLabel: "yes",
+        learningStyleLabel: "missing",
+        assessmentStatus: "not_started",
+        phase: "direct_answer",
+        styleHint: "Style modulation: balanced.",
+        kolbStage: "CE",
+        lastGate: "unknown",
+        answersCountLabel: "0",
+      },
+    };
+    const routerInstructions = await harness.entryAgent.resolveInstructions(
+      new RunContext(context),
+    );
+    const tutorAgent = harness.agents.get("tutor");
+    const tutorInstructions = await tutorAgent?.resolveInstructions(
+      new RunContext(context),
+    );
+
+    assert.equal(harness.entryAgent.name, "Router agent");
+    assert.equal(harness.runOptions.maxTurns, 10);
+    assert.equal(harness.metadata.name, "cosmo_ai_runtime");
+    assert.equal(harness.metadata.version, "cosmo-shaped.v0");
+    assert.equal(harness.metadata.registryVersion, "cosmo-tools@test");
+    assert.deepEqual(
+      harness.entryAgent.handoffs.map((agent) => agent.name),
+      ["Assessment agent", "Tutor agent", "QnA agent"],
+    );
+    assert.deepEqual(
+      harness.agents.get("assessment")?.handoffs.map((agent) => agent.name),
+      ["Tutor agent"],
+    );
+    assert.deepEqual(
+      harness.agents.get("qna")?.tools.map((item) => item.name),
+      ["find_chunks", "get_summary"],
+    );
+    assert.deepEqual(
+      tutorAgent?.tools.map((item) => item.name),
+      ["find_chunks", "get_summary", "set_kolb_state"],
+    );
+    assert.equal(
+      routerInstructions,
+      [
+        "You are Cosmo's routing agent.",
+        "Kolb enabled: yes.",
+        "Learning style: missing.",
+        "Assessment status: not_started.",
+        "Conversation phase: direct_answer.",
+        "Hand off to exactly one specialist agent.",
+      ].join("\n"),
+    );
+    assert.equal(
+      tutorInstructions,
+      [
+        "You are Cosmo's Kolb tutor.",
+        "Current style: missing.",
+        "Current stage: CE.",
+        "Last gate result: unknown.",
+        "Style modulation: balanced.",
+      ].join("\n"),
     );
   }
 

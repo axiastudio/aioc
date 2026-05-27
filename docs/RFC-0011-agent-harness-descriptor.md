@@ -466,6 +466,8 @@ The current experimental implementation is:
 - demonstrated by `src/examples/harness-descriptor/customer-support.ts`
 - descriptor example in `src/examples/harness-descriptor/customer-support.yaml`
 - documented by `apps/aioc-docs/src/content/docs/reference/harness-descriptor.md`
+- validated by a Cosmo-shaped unit fixture covering router/specialist graphs,
+  registry-backed tools, handoffs, and prompt-readable context references
 
 The implementation should remain explicitly experimental during the
 `0.2.0-next.*` line and ship in `0.2.0` as the `aioc.agent_graph.v0`
