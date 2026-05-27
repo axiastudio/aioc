@@ -2,6 +2,14 @@
 
 ## Unreleased
 
+### Added
+
+- Agent harness descriptor loaders:
+  `loadAgentHarnessDescriptor(...)` and
+  `loadAgentHarnessDescriptorFromFile(...)` materialize local
+  `instructions_file` / `instructions_files` prompt files before
+  `buildAgentHarness(...)`.
+
 ## 0.2.0-next.2 - 2026-05-27
 
 ### Added

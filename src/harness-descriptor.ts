@@ -161,6 +161,19 @@ function validateDescriptorShape(descriptor: AgentHarnessDescriptor) {
     "Harness descriptor context.references",
   );
 
+  assertNoUnresolvedInstructionFile(
+    descriptor.agent_defaults,
+    "Harness descriptor agent_defaults",
+  );
+
+  for (const [agentId, agentDescriptor] of Object.entries(descriptor.agents)) {
+    assertPlainObject(agentDescriptor, `Harness descriptor agent "${agentId}"`);
+    assertNoUnresolvedInstructionFile(
+      agentDescriptor,
+      `Harness descriptor agent "${agentId}"`,
+    );
+  }
+
   for (const [toolId, toolDescriptor] of Object.entries(
     descriptor.tools ?? {},
   )) {
@@ -170,6 +183,19 @@ function validateDescriptorShape(descriptor: AgentHarnessDescriptor) {
       `Harness descriptor tool "${toolId}".target`,
     );
   }
+}
+
+function assertNoUnresolvedInstructionFile(value: unknown, label: string) {
+  if (
+    !isPlainObject(value) ||
+    (!("instructions_file" in value) && !("instructions_files" in value))
+  ) {
+    return;
+  }
+
+  throw new Error(
+    `${label}.instructions_file/instructions_files must be materialized by loadAgentHarnessDescriptor(...) before buildAgentHarness(...).`,
+  );
 }
 
 function normalizePromptPath(path: string, label: string): string {

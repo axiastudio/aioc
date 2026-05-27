@@ -60,6 +60,39 @@ const harness = buildAgentHarness(descriptor, {
 });
 ```
 
+If you keep prompts in separate Markdown files, load and materialize the YAML
+first:
+
+```yaml
+agents:
+  router:
+    instructions_file: ./prompts/router.md
+
+  game_master:
+    instructions_files:
+      - ./prompts/shared.md
+      - ./prompts/game-master.md
+    instructions: |-
+      Inline instructions are appended after the listed files.
+```
+
+```ts
+import {
+  buildAgentHarness,
+  loadAgentHarnessDescriptorFromFile,
+} from "@axiastudio/aioc";
+
+const descriptor = await loadAgentHarnessDescriptorFromFile(
+  "./harness.yaml",
+);
+const harness = buildAgentHarness(descriptor, registry);
+```
+
+`instructions_file` and `instructions_files` are resolved relative to the
+descriptor file and replaced by `instructions` before the descriptor reaches
+`buildAgentHarness(...)`. Lists are joined in order with blank lines; inline
+`instructions` after `instructions_files` are appended last.
+
 The returned harness contains:
 
 - `entryAgent`
@@ -155,6 +188,11 @@ Important rules:
 `hashAgentHarnessDescriptor(...)` and `harness.descriptorHash` identify the
 descriptor content passed to `buildAgentHarness(...)`.
 
+When using `loadAgentHarnessDescriptorFromFile(...)` or
+`loadAgentHarnessDescriptor(...)` with a `promptMap`, prompt file content from
+`instructions_file` or `instructions_files` is materialized into `instructions`
+before hashing, so prompt text changes alter the descriptor hash.
+
 The hash does not include executable runtime behavior such as:
 
 - registry implementation
@@ -176,6 +214,8 @@ Keep these outside the descriptor:
 - approval lifecycle logic
 - database or persistence configuration
 - arbitrary JavaScript expressions
+- unresolved `instructions_file` or `instructions_files` entries passed directly to
+  `buildAgentHarness(...)`
 
 The descriptor should make the agent graph inspectable, not replace the
 application runtime.

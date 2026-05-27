@@ -215,6 +215,80 @@ export interface AgentHarness<TContext = unknown> {
 `runOptions` currently maps descriptor runtime settings such as `max_turns` to
 the code-first `run(...)` options.
 
+## Descriptor Loading And External Instructions
+
+`buildAgentHarness(...)` stays pure. It accepts a fully materialized
+`AgentHarnessDescriptor` object and does not read YAML or prompt files.
+
+Applications that load descriptors from YAML can use:
+
+```ts
+export function loadAgentHarnessDescriptor(
+  yaml: string,
+  options?: LoadAgentHarnessDescriptorOptions | Record<string, string>,
+): AgentHarnessDescriptor;
+
+export function loadAgentHarnessDescriptorFromFile(
+  path: string,
+  options?: LoadAgentHarnessDescriptorFromFileOptions,
+): Promise<AgentHarnessDescriptor>;
+```
+
+The YAML/source descriptor may use `instructions_file` or `instructions_files`
+on agents or `agent_defaults`:
+
+```yaml
+agents:
+  router:
+    instructions_file: ./prompts/router.md
+
+  game_master:
+    instructions_files:
+      - ./prompts/shared.md
+      - ./prompts/game-master.md
+    instructions: |-
+      Inline instructions are appended after the listed files.
+```
+
+The loader resolves those files and returns a descriptor where
+`instructions_file` or `instructions_files` has been replaced by
+`instructions`.
+
+Rules:
+
+- `instructions_file` is mutually exclusive with inline `instructions`.
+- `instructions_files` is mutually exclusive with `instructions_file`.
+- `instructions_files` may be combined with inline `instructions`; listed files
+  are joined in order with blank lines, then inline `instructions` is appended.
+- paths are local and relative to the descriptor file;
+- `rootDir` constrains resolved paths and blocks traversal outside the allowed
+  tree;
+- no remote URLs, globbing, conditional imports, or expression evaluation are
+  supported;
+- loaded file content is treated exactly like inline `instructions`, including
+  `{{context.path}}` placeholders;
+- descriptor hashing sees the materialized `instructions` content because
+  `hashAgentHarnessDescriptor(...)` hashes the descriptor returned by the
+  loader.
+
+For environments that already own prompt loading, such as tests, browsers, or
+bundled applications, `loadAgentHarnessDescriptor(...)` accepts a prompt map:
+
+```ts
+const descriptor = loadAgentHarnessDescriptor(yaml, {
+  descriptorPath: "/app/harness.yaml",
+  rootDir: "/app",
+  promptMap: {
+    "./prompts/router.md": "Route the next turn.",
+  },
+});
+```
+
+Passing a descriptor with unresolved `instructions_file` or
+`instructions_files` directly to
+`buildAgentHarness(...)` fails. This keeps file-system policy in the loader and
+keeps the builder deterministic over an already materialized object.
+
 ## Hashing
 
 `hashAgentHarnessDescriptor(...)` produces:
@@ -428,6 +502,10 @@ The `0.2.0` descriptor scope is intentionally narrow:
   experimental period.
 - Descriptor validation is lightweight and implemented in the builder. A
   schema-backed validator is deferred.
+- `buildAgentHarness(...)` remains pure. YAML, `instructions_file`, and
+  `instructions_files`
+  materialization are handled by `loadAgentHarnessDescriptor(...)` and
+  `loadAgentHarnessDescriptorFromFile(...)`.
 - `context.fields[*].redact` remains metadata only. Applications still provide
   explicit `record.contextRedactor` implementations.
 - `descriptorHash` remains descriptor-only. Registry version, provider/model,
