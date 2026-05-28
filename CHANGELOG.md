@@ -1,5 +1,34 @@
 # Changelog
 
+## 0.2.1 - 2026-05-28
+
+Patch release that realigns the `0.2.x` line with the current `main` history
+after `0.2.0` was published from the descriptor release branch.
+
+### Fixed
+
+- Restored the `0.1.2` approval evidence helpers in the `0.2.x` release line.
+- Preserved the experimental Agent Harness Descriptor APIs and loader helpers
+  introduced by `0.2.0`.
+
+## 0.2.0 - 2026-05-28
+
+### Added
+
+- Experimental agent harness descriptor APIs: `buildAgentHarness(...)`,
+  `hashAgentHarnessDescriptor(...)`, descriptor metadata, registry-backed tool
+  binding, context defaults, and instruction context references.
+- Agent harness descriptor loaders:
+  `loadAgentHarnessDescriptor(...)` and
+  `loadAgentHarnessDescriptorFromFile(...)` materialize local
+  `instructions_file` / `instructions_files` prompt files before
+  `buildAgentHarness(...)`.
+
+### Documentation
+
+- Added harness descriptor reference documentation and an RFC-0011 governance
+  entry.
+
 ## 0.1.2 - 2026-05-22
 
 Stable patch release for application-owned approval evidence handling.
@@ -26,6 +55,12 @@ stream-output ergonomics.
 
 - Clarified provider-specific instruction role mapping in the Agent and Providers reference pages.
 - Marked the suspended proposal lifecycle RFC as accepted.
+
+## @axiastudio/aioc-inspect-ui 0.1.1 - 2026-05-28
+
+### Fixed
+
+- Allow `@axiastudio/aioc@0.2.x` in peer dependencies.
 
 ## @axiastudio/aioc-inspect-ui 0.1.0 - 2026-04-24
 

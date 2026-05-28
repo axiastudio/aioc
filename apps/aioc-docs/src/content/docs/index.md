@@ -24,13 +24,14 @@ It is designed for applications that must retain full governance control over pe
 
 ## Status
 
-The current stable release is `0.1.2`.
-The stable `0.1.x` line started with `0.1.0`.
+The current stable release is `0.2.1`.
+The stable line started with `0.1.0`.
 
 The current documentation covers:
 
 - stable `0.1.x` runtime behavior you can use today
 - accepted RFC material implemented in the current stable release
+- implemented `0.2.x` additions, including the experimental descriptor surface
 - draft RFC material for future stabilization work that is still evolving
 
 ## Stable Scope
@@ -40,6 +41,8 @@ The current documentation covers:
 `aioc` `0.1.1` keeps that stable model and adds thread-history helpers, the run-output stream adapter, and provider-specific instruction-role documentation.
 
 `aioc` `0.1.2` adds approval evidence helpers for application-owned approval workflows.
+
+`aioc` `0.2.x` adds runtime utilities and an experimental Agent Harness Descriptor surface. The descriptor API is available for controlled configuration and evaluation workflows, but its shape may still evolve across `0.x` minor releases with migration guidance.
 
 ## Install
 

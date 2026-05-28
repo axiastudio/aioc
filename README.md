@@ -8,8 +8,8 @@ Project home and documentation: [https://axiastudio.github.io/aioc](https://axia
 
 ## Release Status
 
-Current stable release: `0.1.2`.
-The stable `0.1.x` line started with `0.1.0`.
+Current stable release: `0.2.1`.
+The stable line started with `0.1.0`.
 The core runtime surface is compatibility-managed. Breaking changes to the stable surface should ship only with explicit migration guidance and release notes.
 
 ### Stable Scope
@@ -17,6 +17,9 @@ The core runtime surface is compatibility-managed. Breaking changes to the stabl
 AIOC `0.1.0` stabilized the core runtime surface, public documentation aligned to the exported contract, `RunRecord` and replay/compare workflows, and the governance-first runtime model validated in real applications beyond toy examples.
 AIOC `0.1.1` adds thread-history utilities, the run-output stream adapter, and provider-specific instruction-role documentation without changing the stable governance model.
 AIOC `0.1.2` adds approval evidence helpers for application-owned approval workflows.
+
+AIOC `0.2.0` adds implemented runtime utilities and an experimental Agent Harness Descriptor surface. The core runtime remains compatibility-managed; descriptor shape and loader helpers may still evolve across `0.x` minor releases with explicit migration guidance.
+AIOC `0.2.1` realigns the `0.2.x` package line with the current `main` history after `0.2.0` was published from the descriptor release branch.
 
 - Release notes: `CHANGELOG.md`
 - Historical beta contract snapshot: `docs/BETA-CONTRACT.md`
@@ -105,6 +108,16 @@ console.log(result.finalOutput);
 - run-record utilities `extractToolCalls(...)`, `compareRunRecords(...)`, `replayFromRunRecord(...)`
 - thread history utilities `toThreadHistory(...)`, `appendUserMessage(...)`, `replaceThreadHistory(...)`, `applyRunResultHistory(...)`
 - JSON helper `toJsonValue(...)`
+
+## Experimental 0.2.x Surface
+
+- `buildAgentHarness(...)`
+- `hashAgentHarnessDescriptor(...)`
+- `loadAgentHarnessDescriptor(...)`
+- `loadAgentHarnessDescriptorFromFile(...)`
+- `AgentHarnessDescriptor` and related descriptor types
+
+The Agent Harness Descriptor is included in the `0.2.x` line as an experimental `aioc.agent_graph.v0` descriptor surface. Use it for controlled configuration, examples, and evaluation harnesses; keep executable tools, policies, providers, persistence, approvals, and deployment configuration in application code.
 
 ## Policy Gate (Minimal)
 
@@ -271,6 +284,7 @@ AIOC adopts the following non-negotiable principles:
 - `docs/RFC-0008-run-stream-consumer-utilities.md` (`Accepted`)
 - `docs/RFC-0009-governance-events-and-exporters.md` (`Experimental`)
 - `docs/RFC-0010-policy-composition-helpers.md` (`Draft`)
+- `docs/RFC-0011-agent-harness-descriptor.md` (`Experimental`)
 - `docs/PRIVACY-BASELINE.md`
 
 ## Historical Snapshots

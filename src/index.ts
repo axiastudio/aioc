@@ -3,6 +3,8 @@ export * from "./approval-helpers";
 export * from "./config";
 export * from "./errors";
 export * from "./guardrails";
+export * from "./harness-descriptor";
+export * from "./harness-descriptor-loader";
 export * from "./json";
 export * from "./logger";
 export * from "./messages";

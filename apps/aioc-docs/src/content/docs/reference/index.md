@@ -10,6 +10,7 @@ It is not a generated API reference for every exported symbol. It focuses on the
 ## Current Scope
 
 - `Agent`
+- harness descriptors
 - `tool(...)`
 - `run(...)`
 - runtime logging
@@ -23,11 +24,14 @@ It is not a generated API reference for every exported symbol. It focuses on the
 ## Related Pages
 
 - For the run-level audit artifact itself, see [`Run Records`](../run-records/).
+- For descriptor-based agent graph construction, see [`Harness Descriptor`](./harness-descriptor/).
 - For runnable repository examples, see [`Examples`](../example-guides/).
 - For the visual example app built on top of `RunRecord`, see [`Reference UI`](../reference-ui/).
 
 ## Stability Note
 
-This section documents the stable `0.1.2` surface.
+This section documents the compatibility-managed runtime surface plus implemented `0.2.x` additions.
+
+Harness descriptors are included in the `0.2.x` line as an experimental sub-surface. The core runtime remains compatibility-managed; descriptor shape and loader helpers may still evolve across `0.x` minor releases with migration guidance.
 
 Draft RFCs may still describe lifecycle refinements, stabilization work, or application-side approval patterns beyond the implemented runtime surface.
