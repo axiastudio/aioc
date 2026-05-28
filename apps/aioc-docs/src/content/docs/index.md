@@ -29,12 +29,14 @@ It is designed for applications that must retain full governance control over pe
 The current documentation mixes:
 
 - stable runtime behavior you can use today
-- implemented additions queued for the next release
+- implemented additions shipped in `0.2.0`
 - draft RFC material for approval evidence and stabilization work that is still evolving
 
 ## Stable Scope
 
 `aioc` `0.1.0` stabilizes the governance-first runtime model as a dependable foundation for high-accountability applications: core APIs are compatibility-managed, audit artifacts and replay workflows are dependable, and the project has been validated through real implementation use.
+
+`aioc` `0.2.0` adds runtime utilities and an experimental Agent Harness Descriptor surface. The descriptor API is available for controlled configuration and evaluation workflows, but its shape may still evolve across `0.x` minor releases with migration guidance.
 
 ## Install
 

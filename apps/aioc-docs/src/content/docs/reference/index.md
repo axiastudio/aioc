@@ -29,6 +29,8 @@ It is not a generated API reference for every exported symbol. It focuses on the
 
 ## Stability Note
 
-This section documents the stable `0.1.0` surface plus implemented additions queued for the next release.
+This section documents the compatibility-managed runtime surface plus implemented `0.2.0` additions.
+
+Harness descriptors are included in `0.2.0` as an experimental sub-surface. The core runtime remains compatibility-managed; descriptor shape and loader helpers may still evolve across `0.x` minor releases with migration guidance.
 
 Draft RFCs may still describe lifecycle refinements, stabilization work, or application-side approval patterns beyond the implemented runtime surface.

@@ -53,8 +53,8 @@ The host application still owns:
 - context lifecycle,
 - security and deployment configuration.
 
-The first implementation is intentionally narrow and lives in the core package
-only while the shape is validated through `0.2.0-next.*` releases.
+The first implementation is intentionally narrow and ships in the core package
+as the `0.2.0` `aioc.agent_graph.v0` descriptor contract.
 
 ## Goals
 
@@ -72,7 +72,8 @@ only while the shape is validated through `0.2.0-next.*` releases.
 
 - No no-code agent builder.
 - No runtime-owned persistence.
-- No built-in YAML loader in core.
+- No runtime-owned descriptor discovery, deployment configuration, or automatic
+  environment loading.
 - No executable JavaScript inside descriptors.
 - No policy DSL.
 - No tool implementation DSL.
@@ -511,12 +512,16 @@ The `0.2.0` descriptor scope is intentionally narrow:
 - `descriptorHash` remains descriptor-only. Registry version, provider/model,
   policy version, package version, and prompt material version remain separate
   metadata.
-- YAML loading remains application-owned. Core accepts JavaScript objects.
+- `buildAgentHarness(...)` accepts materialized JavaScript objects and remains
+  filesystem-free. YAML parsing and prompt file materialization are limited to
+  explicit loader helpers.
 - Policies remain code-owned. The descriptor does not contain policy
   definitions or policy references.
 - Instruction placeholders remain path-only references. JavaScript expressions,
   filters, nullish coalescing, ternaries, and function calls are not supported.
-- Prompt file loading and prompt materialization remain application-owned.
+- Prompt file loading and prompt materialization are supported only through the
+  explicit local loader helpers. There are no remote URLs, glob imports,
+  conditional imports, or expression evaluation.
 - Descriptor examples are positioned as harness/evaluation or controlled
   application configuration artifacts, not as no-code production builders.
 
@@ -531,25 +536,27 @@ experimentation:
    helper.
 4. Whether policy composition helpers should ever be referenced from
    descriptors.
-5. Whether a future descriptor layer should standardize prompt file imports or
-   keep them application-specific.
+5. Whether future descriptor revisions should add richer prompt composition
+   beyond local `instructions_file` / `instructions_files` materialization.
 
 ## Implementation Notes
 
 The current experimental implementation is:
 
 - `src/harness-descriptor.ts`
+- `src/harness-descriptor-loader.ts`
+- `src/harness-descriptor-loader-paths.ts`
 - exported from `src/index.ts`
 - covered by `src/tests/unit/harness-descriptor.unit.ts`
+- covered by `src/tests/unit/harness-descriptor-loader.unit.ts`
 - demonstrated by `src/examples/harness-descriptor/customer-support.ts`
 - descriptor example in `src/examples/harness-descriptor/customer-support.yaml`
 - documented by `apps/aioc-docs/src/content/docs/reference/harness-descriptor.md`
 - validated by a Cosmo-shaped unit fixture covering router/specialist graphs,
   registry-backed tools, handoffs, and prompt-readable context references
 
-The implementation should remain explicitly experimental during the
-`0.2.0-next.*` line and ship in `0.2.0` as the `aioc.agent_graph.v0`
-descriptor contract.
+The implementation remains explicitly experimental in `0.2.0`, but the
+descriptor shape ships as the `aioc.agent_graph.v0` descriptor contract.
 
 ## Minimal Test Matrix
 
@@ -574,5 +581,7 @@ descriptor contract.
 
 ## Status
 
-Experimental. Implemented in `src/harness-descriptor.ts` and published in the
-`0.2.0-next.*` line for validation.
+Experimental. Implemented in `src/harness-descriptor.ts`,
+`src/harness-descriptor-loader.ts`, and
+`src/harness-descriptor-loader-paths.ts`, and published in `0.2.0` for
+validation.

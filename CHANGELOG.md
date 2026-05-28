@@ -1,22 +1,17 @@
 # Changelog
 
-## Unreleased
-
-### Added
-
-- Agent harness descriptor loaders:
-  `loadAgentHarnessDescriptor(...)` and
-  `loadAgentHarnessDescriptorFromFile(...)` materialize local
-  `instructions_file` / `instructions_files` prompt files before
-  `buildAgentHarness(...)`.
-
-## 0.2.0-next.2 - 2026-05-27
+## 0.2.0 - 2026-05-28
 
 ### Added
 
 - Experimental agent harness descriptor APIs: `buildAgentHarness(...)`,
   `hashAgentHarnessDescriptor(...)`, descriptor metadata, registry-backed tool
   binding, context defaults, and instruction context references.
+- Agent harness descriptor loaders:
+  `loadAgentHarnessDescriptor(...)` and
+  `loadAgentHarnessDescriptorFromFile(...)` materialize local
+  `instructions_file` / `instructions_files` prompt files before
+  `buildAgentHarness(...)`.
 - Thread history utilities for application-owned conversation state: `toThreadHistory(...)`, `appendUserMessage(...)`, `replaceThreadHistory(...)`, and `applyRunResultHistory(...)`.
 - Run output stream adapter `toRunOutputEvents(...)` for streaming text deltas while collecting final output, history, last agent, and paired tool calls.
 
@@ -29,6 +24,12 @@
 - Added harness descriptor reference documentation and an RFC-0011 governance
   entry.
 - Clarified provider-specific instruction role mapping in the Agent and Providers reference pages.
+
+## @axiastudio/aioc-inspect-ui 0.1.1 - 2026-05-28
+
+### Fixed
+
+- Allow `@axiastudio/aioc@0.2.x` in peer dependencies.
 
 ## @axiastudio/aioc-inspect-ui 0.1.0 - 2026-04-24
 

@@ -15,6 +15,8 @@ The core runtime surface is compatibility-managed. Breaking changes to the stabl
 
 AIOC `0.1.0` stabilizes the core runtime surface, public documentation aligned to the exported contract, `RunRecord` and replay/compare workflows, and the governance-first runtime model validated in real applications beyond toy examples.
 
+AIOC `0.2.0` adds implemented runtime utilities and an experimental Agent Harness Descriptor surface. The core runtime remains compatibility-managed; descriptor shape and loader helpers may still evolve across `0.x` minor releases with explicit migration guidance.
+
 - Release notes: `CHANGELOG.md`
 - Historical beta contract snapshot: `docs/BETA-CONTRACT.md`
 - Historical alpha contract snapshot: `docs/ALPHA-CONTRACT.md`
@@ -101,6 +103,16 @@ console.log(result.finalOutput);
 - run-record utilities `extractToolCalls(...)`, `compareRunRecords(...)`, `replayFromRunRecord(...)`
 - thread history utilities `toThreadHistory(...)`, `appendUserMessage(...)`, `replaceThreadHistory(...)`, `applyRunResultHistory(...)`
 - JSON helper `toJsonValue(...)`
+
+## Experimental 0.2.0 Surface
+
+- `buildAgentHarness(...)`
+- `hashAgentHarnessDescriptor(...)`
+- `loadAgentHarnessDescriptor(...)`
+- `loadAgentHarnessDescriptorFromFile(...)`
+- `AgentHarnessDescriptor` and related descriptor types
+
+The Agent Harness Descriptor is included in `0.2.0` as an experimental `aioc.agent_graph.v0` descriptor surface. Use it for controlled configuration, examples, and evaluation harnesses; keep executable tools, policies, providers, persistence, approvals, and deployment configuration in application code.
 
 ## Policy Gate (Minimal)
 
