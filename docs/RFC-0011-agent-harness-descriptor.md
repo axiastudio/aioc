@@ -264,8 +264,8 @@ Rules:
 - paths are local and relative to the descriptor file;
 - `rootDir` constrains resolved paths and blocks traversal outside the allowed
   tree;
-- no remote URLs, globbing, conditional imports, or expression evaluation are
-  supported;
+- in the `0.2.1` contract, no remote URLs, globbing, conditional imports, or
+  expression evaluation are supported;
 - loaded file content is treated exactly like inline `instructions`, including
   `{{context.path}}` placeholders;
 - descriptor hashing sees the materialized `instructions` content because
@@ -354,7 +354,10 @@ References must be declared under `context.references`.
 
 Instruction placeholders are path references only. They do not support
 JavaScript expressions, nullish coalescing, ternaries, function calls, filters,
-or conditional imports.
+or inline conditional logic.
+
+Conditional inclusion, when adopted, belongs to instruction part metadata via
+`where`, not to placeholder syntax.
 
 If an instruction references an undeclared context path, descriptor compilation
 fails.
@@ -365,6 +368,139 @@ time, instruction resolution fails.
 Optional references render as an empty string when missing.
 
 This rule exists to make prompt/context coupling explicit and reviewable.
+
+## Proposed Extension: Conditional Instruction Parts
+
+Status: proposed after `0.2.1` descriptor validation.
+
+The Cosmo descriptor spike showed a recurring prompt-composition problem:
+applications sometimes need to include a complete instruction block only when a
+runtime condition is true.
+
+Without a descriptor-level condition, applications must either:
+
+- keep small prompt fragments in TypeScript, or
+- expose empty string placeholders such as
+  `{{context.prompt.qnaCompanyInstructionsPrepend}}` and
+  `{{context.prompt.qnaCompanyInstructionsAppend}}`.
+
+Both approaches work, but they weaken the descriptor as the reviewable source of
+prompt composition.
+
+The proposed extension is a narrow `where:` clause on instruction parts loaded
+from local files.
+
+Example:
+
+```yaml
+context:
+  references:
+    "prompt.companyInstructionsText":
+      type: string
+    "prompt.includeQnaCompanyInstructionsPrepend":
+      type: boolean
+    "prompt.includeQnaCompanyInstructionsAppend":
+      type: boolean
+
+agents:
+  qna:
+    instructions_files:
+      - path: ./prompts/company-context.md
+        where:
+          context: prompt.includeQnaCompanyInstructionsPrepend
+      - ./prompts/qna.md
+      - path: ./prompts/company-context.md
+        where:
+          context: prompt.includeQnaCompanyInstructionsAppend
+```
+
+`./prompts/company-context.md` can still use ordinary path-only placeholders:
+
+```md
+COMPANY CONTEXT:
+{{context.prompt.companyInstructionsText}}
+---
+```
+
+### Semantics
+
+- `where` is evaluated at instruction-resolution time, not when the descriptor
+  is loaded.
+- `where.context` is a dot path under the run context.
+- The path must be declared under `context.references`.
+- The resolved value must be boolean.
+- The instruction part is included only when the value is exactly `true`.
+- Missing or non-boolean values fail instruction resolution.
+- Included parts are joined in descriptor order.
+- Placeholder rendering runs only on included parts.
+
+This keeps conditional prompt composition deterministic, explicit, and
+reviewable without adding JavaScript expressions to templates.
+
+### Type Shape
+
+The existing string form stays valid:
+
+```yaml
+instructions_files:
+  - ./prompts/base.md
+```
+
+Conditional entries use object form:
+
+```yaml
+instructions_files:
+  - path: ./prompts/company-context.md
+    where:
+      context: prompt.includeCompanyContext
+```
+
+The materialized descriptor shape can represent instructions as a list of
+instruction parts:
+
+```ts
+export interface HarnessInstructionWhereDescriptor {
+  context: string;
+}
+
+export interface HarnessInstructionPartDescriptor {
+  text: string;
+  where?: HarnessInstructionWhereDescriptor;
+}
+
+export type HarnessInstructionsDescriptor =
+  | string
+  | HarnessInstructionPartDescriptor[];
+```
+
+The loader resolves `instructions_file` / `instructions_files` entries to
+`text` before the builder runs. The builder remains filesystem-free.
+
+### Non-Goals
+
+The `where` proposal does not add:
+
+- JavaScript expressions;
+- equality checks;
+- ternaries;
+- string interpolation outside existing placeholders;
+- remote prompt imports;
+- glob imports;
+- policy references;
+- provider-specific prompt selection.
+
+More expressive conditions can be considered later only if a concrete
+application need appears. The first version should support only boolean context
+paths.
+
+### Run Records And Hashing
+
+`descriptorHash` hashes the materialized descriptor, including all conditional
+instruction parts and their `where` clauses.
+
+The exact prompt seen by the model still depends on runtime context. Therefore
+the existing prompt snapshot remains the authoritative record of the resolved
+instruction text for a specific run.
 
 ## Tool Binding
 
@@ -536,8 +672,9 @@ experimentation:
    helper.
 4. Whether policy composition helpers should ever be referenced from
    descriptors.
-5. Whether future descriptor revisions should add richer prompt composition
-   beyond local `instructions_file` / `instructions_files` materialization.
+5. Whether to promote the Conditional Instruction Parts proposal to an
+   implemented descriptor revision, and whether richer prompt composition is
+   needed beyond boolean `where` gates.
 
 ## Implementation Notes
 
