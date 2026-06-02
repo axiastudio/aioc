@@ -1,14 +1,12 @@
 import "dotenv/config";
-import { readFileSync } from "node:fs";
 import { join } from "node:path";
-import { load as loadYaml } from "js-yaml";
 import { z } from "zod";
 import {
   allow,
   buildAgentHarness,
+  loadAgentHarnessDescriptorFromFile,
   run,
   tool,
-  type AgentHarnessDescriptor,
   type ToolPolicy,
 } from "../../index";
 import { getExampleProviderConfig } from "../support/live-provider";
@@ -23,6 +21,7 @@ interface CustomerSupportContext {
   };
   session: {
     channel: "web" | "mobile";
+    includeMobileGuidance: boolean;
   };
   turn: {
     userMessage: string;
@@ -30,19 +29,11 @@ interface CustomerSupportContext {
   };
 }
 
-function loadDescriptor(path: string): AgentHarnessDescriptor {
-  const parsed = loadYaml(readFileSync(path, "utf8"));
-  if (!parsed || typeof parsed !== "object" || Array.isArray(parsed)) {
-    throw new Error(`Invalid harness descriptor YAML: ${path}`);
-  }
-  return parsed as AgentHarnessDescriptor;
-}
-
 async function main(): Promise<void> {
   const { setup, model, provider } = getExampleProviderConfig();
   setup();
   const descriptorPath = join(__dirname, "customer-support.yaml");
-  const descriptor = loadDescriptor(descriptorPath);
+  const descriptor = await loadAgentHarnessDescriptorFromFile(descriptorPath);
 
   const verifyCustomer = tool<CustomerSupportContext>({
     name: "verify_customer",
@@ -126,6 +117,10 @@ async function main(): Promise<void> {
       },
       order: {
         id: "ORD-1001",
+      },
+      session: {
+        channel: "mobile",
+        includeMobileGuidance: true,
       },
     },
   });

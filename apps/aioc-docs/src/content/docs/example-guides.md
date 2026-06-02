@@ -12,10 +12,15 @@ All example commands are run from the repository root.
 - `npm run example:approval-required`
 - `npm run example:approval-evidence`
 - `npm run example:tool-policy`
+- `npm run example:harness`
 - `npm run example:run-record`
 - `npm run example:non-regression`
 
 Set `AIOC_EXAMPLE_PROVIDER` to `openai` or `mistral` and provide the matching API key. Optionally set `AIOC_EXAMPLE_MODEL` to override the default live model.
+
+`example:harness` demonstrates the Agent Harness Descriptor with reusable
+`instruction_parts`, ordered `instructions_sequence`, and a boolean `where`
+gate for optional instruction blocks.
 
 ## Deterministic run-record utility examples
 
