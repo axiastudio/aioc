@@ -157,6 +157,27 @@ What it demonstrates:
 - replaying in strict mode (recorded outputs only)
 - replaying in hybrid mode (recorded outputs + live fallback)
 
+## 8) Agent Harness Descriptor
+
+Command:
+
+```bash
+npm run example:harness
+```
+
+Files:
+
+- `src/examples/harness-descriptor/customer-support.ts`
+- `src/examples/harness-descriptor/customer-support.yaml`
+
+What it demonstrates:
+
+- loading an agent graph from a YAML harness descriptor
+- binding descriptor tools through application-owned registries
+- composing reusable instruction parts with `instructions_sequence`
+- conditionally including instruction blocks through boolean `where` gates
+- computing a stable descriptor hash for audit and deployment checks
+
 ## Advanced (Non-Regression Diff)
 
 Command:

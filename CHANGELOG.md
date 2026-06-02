@@ -2,12 +2,21 @@
 
 ## Unreleased
 
+### Added
+
+- Added descriptor instruction composition with `instruction_parts`,
+  `instructions_sequence`, and boolean `where` gates.
+
 ### Changed
 
 - Promoted RFC-0011 Agent Harness Descriptor out of experimental status into
   the supported `0.2.x` API surface.
-- Added descriptor instruction composition with `instruction_parts`,
-  `instructions_sequence`, and boolean `where` gates.
+
+### Documentation
+
+- Updated the harness descriptor example to use the official descriptor loader
+  and demonstrate reusable instruction parts with conditional instruction
+  blocks.
 
 ## 0.2.1 - 2026-05-28
 
