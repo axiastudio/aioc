@@ -278,8 +278,8 @@ Rules:
 - paths are local and relative to the descriptor file;
 - `rootDir` constrains resolved paths and blocks traversal outside the allowed
   tree;
-- in the `0.2.1` contract, no remote URLs, globbing, conditional imports, or
-  expression evaluation are supported;
+- in the descriptor contract, no remote URLs, globbing, conditional file
+  imports, or expression evaluation are supported;
 - loaded file content is treated exactly like inline `instructions`, including
   `{{context.path}}` placeholders;
 - descriptor hashing sees the materialized `instructions` content because
@@ -385,7 +385,7 @@ This rule exists to make prompt/context coupling explicit and reviewable.
 
 ## Instruction Parts And `where`
 
-Status: implemented after `0.2.1` descriptor validation.
+Status: implemented in `0.2.2`.
 
 The Cosmo descriptor spike showed two recurring prompt-composition problems:
 

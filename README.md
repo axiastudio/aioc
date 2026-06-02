@@ -8,7 +8,7 @@ Project home and documentation: [https://axiastudio.github.io/aioc](https://axia
 
 ## Release Status
 
-Current stable release: `0.2.1`.
+Current stable release: `0.2.2`.
 The stable line started with `0.1.0`.
 The core runtime surface is compatibility-managed. Breaking changes to the stable surface should ship only with explicit migration guidance and release notes.
 
@@ -20,6 +20,7 @@ AIOC `0.1.2` adds approval evidence helpers for application-owned approval workf
 
 AIOC `0.2.0` adds implemented runtime utilities and the Agent Harness Descriptor API. The core runtime remains compatibility-managed; descriptor shape and loader helpers are now part of the supported `0.2.x` surface and may evolve across `0.x` minor releases only with explicit migration guidance.
 AIOC `0.2.1` realigns the `0.2.x` package line with the current `main` history after `0.2.0` was published from the descriptor release branch.
+AIOC `0.2.2` completes the descriptor instruction-composition surface with reusable `instruction_parts`, ordered `instructions_sequence`, and boolean `where` gates.
 
 - Release notes: `CHANGELOG.md`
 - Historical beta contract snapshot: `docs/BETA-CONTRACT.md`

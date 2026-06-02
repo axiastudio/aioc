@@ -2,6 +2,11 @@
 
 ## Unreleased
 
+## 0.2.2 - 2026-06-02
+
+Release that completes the supported `0.2.x` Agent Harness Descriptor surface
+with reusable and conditional instruction composition.
+
 ### Added
 
 - Added descriptor instruction composition with `instruction_parts`,
