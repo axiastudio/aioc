@@ -21,12 +21,25 @@ export interface HarnessToolDescriptor {
 export interface HarnessAgentDescriptor {
   name?: string;
   handoffDescription?: string;
-  instructions?: string;
+  instructions?: HarnessInstructionsDescriptor;
   model?: string;
   modelSettings?: Record<string, unknown>;
   tools?: string[];
   handoffs?: string[];
 }
+
+export interface HarnessInstructionWhereDescriptor {
+  context: string;
+}
+
+export interface HarnessInstructionPartDescriptor {
+  text: string;
+  where?: HarnessInstructionWhereDescriptor;
+}
+
+export type HarnessInstructionsDescriptor =
+  | string
+  | HarnessInstructionPartDescriptor[];
 
 export interface HarnessContextReferenceDescriptor {
   type?: string;
@@ -57,6 +70,7 @@ export interface AgentHarnessDescriptor {
   metadata?: HarnessDescriptorMetadata;
   runtime: HarnessRuntimeDescriptor;
   context?: HarnessContextDescriptor;
+  instruction_parts?: Record<string, string>;
   tools?: Record<string, HarnessToolDescriptor>;
   agent_defaults?: Pick<
     HarnessAgentDescriptor,
@@ -95,6 +109,7 @@ export interface AgentHarness<TContext = unknown> {
 
 interface PromptAccessRule {
   optional: boolean;
+  type?: string;
 }
 
 const CONTEXT_PROMPT_PLACEHOLDER = /\{\{\s*context\.([^}]+?)\s*\}\}/g;
@@ -148,6 +163,10 @@ function validateDescriptorShape(descriptor: AgentHarnessDescriptor) {
   assertOptionalPlainObject(descriptor.metadata, "Harness descriptor metadata");
   assertOptionalPlainObject(descriptor.tools, "Harness descriptor tools");
   assertOptionalPlainObject(
+    descriptor.instruction_parts,
+    "Harness descriptor instruction_parts",
+  );
+  assertOptionalPlainObject(
     descriptor.agent_defaults,
     "Harness descriptor agent_defaults",
   );
@@ -188,13 +207,15 @@ function validateDescriptorShape(descriptor: AgentHarnessDescriptor) {
 function assertNoUnresolvedInstructionFile(value: unknown, label: string) {
   if (
     !isPlainObject(value) ||
-    (!("instructions_file" in value) && !("instructions_files" in value))
+    (!("instructions_file" in value) &&
+      !("instructions_files" in value) &&
+      !("instructions_sequence" in value))
   ) {
     return;
   }
 
   throw new Error(
-    `${label}.instructions_file/instructions_files must be materialized by loadAgentHarnessDescriptor(...) before buildAgentHarness(...).`,
+    `${label}.instructions_file/instructions_files/instructions_sequence must be materialized by loadAgentHarnessDescriptor(...) before buildAgentHarness(...).`,
   );
 }
 
@@ -241,7 +262,10 @@ function createPromptReferenceRules(
       );
     }
 
-    rules.set(normalizedPath, { optional: Boolean(reference.optional) });
+    rules.set(normalizedPath, {
+      optional: Boolean(reference.optional),
+      type: typeof reference.type === "string" ? reference.type : undefined,
+    });
   }
 
   return rules;
@@ -333,13 +357,179 @@ function renderInstructionTemplate(
   );
 }
 
+function readWhereContextValue(
+  context: unknown,
+  path: string,
+): { exists: boolean; value: unknown } {
+  return readPromptPath(context, path);
+}
+
+function assertInstructionWhere(
+  where: unknown,
+  label: string,
+): asserts where is HarnessInstructionWhereDescriptor {
+  if (!isPlainObject(where)) {
+    throw new Error(`${label}.where must be an object.`);
+  }
+  assertNonEmptyString(where.context, `${label}.where.context`);
+}
+
+function assertInstructionPart(
+  part: unknown,
+  label: string,
+): asserts part is HarnessInstructionPartDescriptor {
+  if (!isPlainObject(part)) {
+    throw new Error(`${label} must be an object.`);
+  }
+  if (typeof part.text !== "string") {
+    throw new Error(`${label}.text must be a string.`);
+  }
+  if (typeof part.where !== "undefined") {
+    assertInstructionWhere(part.where, label);
+  }
+}
+
+function assertInstructionParts(
+  agentId: string,
+  instructions: HarnessInstructionPartDescriptor[],
+) {
+  instructions.forEach((part, index) =>
+    assertInstructionPart(part, `Agent "${agentId}" instructions[${index}]`),
+  );
+}
+
+function collectInstructionPartPromptPaths(
+  instructions: HarnessInstructionPartDescriptor[],
+): string[] {
+  const paths = new Set<string>();
+  for (const part of instructions) {
+    for (const path of collectContextPromptPaths(part.text)) {
+      paths.add(path);
+    }
+  }
+  return [...paths];
+}
+
+function collectInstructionWherePaths(
+  instructions: HarnessInstructionPartDescriptor[],
+): string[] {
+  const paths = new Set<string>();
+  for (const part of instructions) {
+    if (!part.where) {
+      continue;
+    }
+    paths.add(
+      normalizePromptPath(part.where.context, "Instruction where.context path"),
+    );
+  }
+  return [...paths];
+}
+
+function assertDeclaredPromptPaths(
+  agentId: string,
+  paths: string[],
+  promptAccessRules: Map<string, PromptAccessRule>,
+) {
+  for (const path of paths) {
+    if (!promptAccessRules.has(path)) {
+      throw new Error(
+        `Agent "${agentId}" instruction references undeclared context path "${path}".`,
+      );
+    }
+  }
+}
+
+function assertDeclaredBooleanWherePaths(
+  agentId: string,
+  paths: string[],
+  promptAccessRules: Map<string, PromptAccessRule>,
+) {
+  for (const path of paths) {
+    const rule = promptAccessRules.get(path);
+    if (!rule) {
+      throw new Error(
+        `Agent "${agentId}" instruction where references undeclared context path "${path}".`,
+      );
+    }
+    if (rule.type !== "boolean") {
+      throw new Error(
+        `Agent "${agentId}" instruction where context path "${path}" must be declared with type "boolean".`,
+      );
+    }
+  }
+}
+
+function shouldIncludeInstructionPart(
+  part: HarnessInstructionPartDescriptor,
+  context: unknown,
+): boolean {
+  if (!part.where) {
+    return true;
+  }
+
+  const path = normalizePromptPath(
+    part.where.context,
+    "Instruction where.context path",
+  );
+  const resolved = readWhereContextValue(context, path);
+  if (!resolved.exists || typeof resolved.value === "undefined") {
+    throw new Error(
+      `Harness descriptor instruction where could not resolve context path "${path}".`,
+    );
+  }
+  if (typeof resolved.value !== "boolean") {
+    throw new Error(
+      `Harness descriptor instruction where context path "${path}" must resolve to a boolean.`,
+    );
+  }
+  return resolved.value === true;
+}
+
+function renderInstructionParts(
+  instructions: HarnessInstructionPartDescriptor[],
+  context: unknown,
+  promptAccessRules: Map<string, PromptAccessRule>,
+): string {
+  const parts: string[] = [];
+  for (const part of instructions) {
+    if (!shouldIncludeInstructionPart(part, context)) {
+      continue;
+    }
+    parts.push(
+      renderInstructionTemplate(part.text, context, promptAccessRules),
+    );
+  }
+  return parts.join("\n\n");
+}
+
 function compileAgentInstructions<TContext>(
   agentId: string,
-  instructions: string | undefined,
+  instructions: HarnessInstructionsDescriptor | undefined,
   promptAccessRules: Map<string, PromptAccessRule>,
 ): AgentInstructions<TContext> | undefined {
   if (typeof instructions === "undefined") {
     return undefined;
+  }
+
+  if (Array.isArray(instructions)) {
+    assertInstructionParts(agentId, instructions);
+    assertDeclaredPromptPaths(
+      agentId,
+      collectInstructionPartPromptPaths(instructions),
+      promptAccessRules,
+    );
+    assertDeclaredBooleanWherePaths(
+      agentId,
+      collectInstructionWherePaths(instructions),
+      promptAccessRules,
+    );
+
+    return (runContext) =>
+      renderInstructionParts(
+        instructions,
+        runContext.context,
+        promptAccessRules,
+      );
   }
 
   const promptPaths = collectContextPromptPaths(instructions);
@@ -347,13 +537,7 @@ function compileAgentInstructions<TContext>(
     return instructions;
   }
 
-  for (const path of promptPaths) {
-    if (!promptAccessRules.has(path)) {
-      throw new Error(
-        `Agent "${agentId}" instruction references undeclared context path "${path}".`,
-      );
-    }
-  }
+  assertDeclaredPromptPaths(agentId, promptPaths, promptAccessRules);
 
   return (runContext) =>
     renderInstructionTemplate(

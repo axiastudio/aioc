@@ -356,8 +356,8 @@ Instruction placeholders are path references only. They do not support
 JavaScript expressions, nullish coalescing, ternaries, function calls, filters,
 or inline conditional logic.
 
-Conditional inclusion, when adopted, belongs to instruction part metadata via
-`where`, not to placeholder syntax.
+Conditional inclusion belongs to instruction part metadata via `where`, not to
+placeholder syntax.
 
 If an instruction references an undeclared context path, descriptor compilation
 fails.
@@ -369,9 +369,9 @@ Optional references render as an empty string when missing.
 
 This rule exists to make prompt/context coupling explicit and reviewable.
 
-## Proposed Extension: Instruction Parts And `where`
+## Instruction Parts And `where`
 
-Status: proposed after `0.2.1` descriptor validation.
+Status: implemented after `0.2.1` descriptor validation.
 
 The Cosmo descriptor spike showed two recurring prompt-composition problems:
 
@@ -390,13 +390,13 @@ Without descriptor-level support, applications must either:
 Both approaches work, but they weaken the descriptor as the reviewable source of
 prompt composition.
 
-The proposed extension has two parts:
+The implemented extension has two parts:
 
 - a top-level `instruction_parts` catalog for reusable inline instruction
   blocks;
 - an agent-level `instructions_sequence` for explicit ordered composition from
-  local files and catalog references, with an optional boolean `where:` gate on
-  each item.
+  local files, catalog references, and agent-local inline text items, with an
+  optional boolean `where:` gate on each item.
 
 The existing `instructions`, `instructions_file`, and `instructions_files`
 fields remain valid shortcuts for simple cases.
@@ -425,14 +425,16 @@ agents:
       - ref: company_context
         where:
           context: prompt.includeQnaCompanyContext
-      - file: ./prompts/qna.md
+      - text: |-
+          You must ALWAYS invoke find_chunks before answering.
 
   tutor:
     instructions_sequence:
       - ref: company_context
         where:
           context: prompt.includeTutorCompanyContext
-      - file: ./prompts/tutor.md
+      - text: |-
+          You are Cosmo's Kolb tutor.
 ```
 
 Local files can still be used when the block deserves to live outside YAML:
@@ -452,10 +454,11 @@ agents:
 - `instruction_parts` is a descriptor-local catalog. It does not execute code and
   does not read files.
 - `instructions_sequence` is an ordered list of instruction items.
-- Each source item must contain exactly one of `file` or `ref`.
+- Each source item must contain exactly one of `file`, `ref`, or `text`.
 - `file` paths follow the same local loading rules as `instructions_file` and
   `instructions_files`.
 - `ref` values must point to entries declared in top-level `instruction_parts`.
+- `text` values are agent-local inline instruction blocks.
 - `instructions_sequence` is mutually exclusive with `instructions`,
   `instructions_file`, and `instructions_files`.
 - `where` is evaluated at instruction-resolution time, not when the descriptor
@@ -501,7 +504,8 @@ agents:
       - ref: company_context
         where:
           context: prompt.includeCompanyContext
-      - file: ./prompts/qna.md
+      - text: |-
+          You must ALWAYS invoke find_chunks before answering.
 ```
 
 The materialized descriptor shape can represent instructions as a list of
@@ -535,17 +539,24 @@ export interface HarnessInstructionRefSourceDescriptor {
   where?: HarnessInstructionWhereDescriptor;
 }
 
+export interface HarnessInstructionTextSourceDescriptor {
+  text: string;
+  where?: HarnessInstructionWhereDescriptor;
+}
+
 export type HarnessInstructionSourceDescriptor =
   | HarnessInstructionFileSourceDescriptor
-  | HarnessInstructionRefSourceDescriptor;
+  | HarnessInstructionRefSourceDescriptor
+  | HarnessInstructionTextSourceDescriptor;
 ```
 
-The loader resolves `file` entries and catalog `ref` entries to `text` before
-the builder runs. The builder remains filesystem-free.
+The loader resolves `file`, catalog `ref`, and source `text` entries to
+materialized `text` parts before the builder runs. The builder remains
+filesystem-free.
 
 ### Non-Goals
 
-This proposal does not add:
+This extension does not add:
 
 - JavaScript expressions;
 - equality checks;
@@ -739,9 +750,8 @@ experimentation:
    helper.
 4. Whether policy composition helpers should ever be referenced from
    descriptors.
-5. Whether to promote the Instruction Parts And `where` proposal to an
-   implemented descriptor revision, and whether richer prompt composition is
-   needed beyond boolean `where` gates and descriptor-local references.
+5. Whether richer prompt composition is needed beyond boolean `where` gates,
+   agent-local `text` items, and descriptor-local references.
 
 ## Implementation Notes
 

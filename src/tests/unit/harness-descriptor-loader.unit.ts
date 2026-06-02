@@ -13,6 +13,7 @@ import {
 interface LoaderHarnessTestContext {
   state: {
     phase: string;
+    includeShared?: boolean;
   };
 }
 
@@ -43,6 +44,28 @@ agents:
       - ./prompts/shared.md
       - ./prompts/router.md
     instructions: Inline phase {{context.state.phase}}.
+`;
+
+const DESCRIPTOR_SEQUENCE_YAML = `
+descriptor_version: aioc.agent_graph.v0
+runtime:
+  entry_agent: router
+context:
+  references:
+    "state.phase":
+      type: string
+    "state.includeShared":
+      type: boolean
+instruction_parts:
+  shared: Shared phase {{context.state.phase}}.
+agents:
+  router:
+    instructions_sequence:
+      - ref: shared
+        where:
+          context: state.includeShared
+      - text: Inline phase {{context.state.phase}}.
+      - file: ./prompts/router.md
 `;
 
 export async function runHarnessDescriptorLoaderUnitTests(): Promise<void> {
@@ -176,6 +199,90 @@ agents:
       hashAgentHarnessDescriptor(firstDescriptor),
       hashAgentHarnessDescriptor(secondDescriptor),
     );
+  }
+
+  {
+    const descriptor = loadAgentHarnessDescriptor(DESCRIPTOR_SEQUENCE_YAML, {
+      descriptorPath: "/workspace/harness.yaml",
+      rootDir: "/workspace",
+      promptMap: {
+        "./prompts/router.md": "File phase {{context.state.phase}}.",
+      },
+    });
+
+    assert.deepEqual(descriptor.agents.router?.instructions, [
+      {
+        text: "Shared phase {{context.state.phase}}.",
+        where: {
+          context: "state.includeShared",
+        },
+      },
+      {
+        text: "Inline phase {{context.state.phase}}.",
+      },
+      {
+        text: "File phase {{context.state.phase}}.",
+      },
+    ]);
+    assert.equal(
+      "instructions_sequence" in
+        (descriptor.agents.router as Record<string, unknown>),
+      false,
+    );
+
+    const harness = buildAgentHarness<LoaderHarnessTestContext>(descriptor);
+    const excludedInstructions = await harness.entryAgent.resolveInstructions(
+      new RunContext({
+        state: {
+          phase: "combat",
+          includeShared: false,
+        },
+      }),
+    );
+    assert.equal(
+      excludedInstructions,
+      ["Inline phase combat.", "File phase combat."].join("\n\n"),
+    );
+
+    const includedInstructions = await harness.entryAgent.resolveInstructions(
+      new RunContext({
+        state: {
+          phase: "assessment",
+          includeShared: true,
+        },
+      }),
+    );
+    assert.equal(
+      includedInstructions,
+      [
+        "Shared phase assessment.",
+        "Inline phase assessment.",
+        "File phase assessment.",
+      ].join("\n\n"),
+    );
+  }
+
+  {
+    const descriptor = loadAgentHarnessDescriptor(`
+runtime:
+  entry_agent: router
+instruction_parts:
+  shared: Shared prompt.
+agents:
+  router:
+    instructions_sequence:
+      - ref: shared
+      - text: Inline prompt.
+`);
+
+    assert.deepEqual(descriptor.agents.router?.instructions, [
+      {
+        text: "Shared prompt.",
+      },
+      {
+        text: "Inline prompt.",
+      },
+    ]);
   }
 
   {
@@ -360,6 +467,96 @@ agents:
   }
 
   {
+    assert.throws(
+      () =>
+        loadAgentHarnessDescriptor(
+          `
+runtime:
+  entry_agent: router
+agents:
+  router:
+    instructions_sequence:
+      - file: ./prompts/router.md
+`,
+          {
+            descriptorPath: "/workspace/harness.yaml",
+            rootDir: "/workspace",
+          },
+        ),
+      /requires promptMap/,
+    );
+  }
+
+  {
+    assert.throws(
+      () =>
+        loadAgentHarnessDescriptor(
+          `
+runtime:
+  entry_agent: router
+agents:
+  router:
+    instructions: Inline prompt.
+    instructions_sequence:
+      - text: Sequence prompt.
+`,
+          {
+            descriptorPath: "/workspace/harness.yaml",
+            rootDir: "/workspace",
+          },
+        ),
+      /mutually exclusive/,
+    );
+  }
+
+  {
+    assert.throws(
+      () =>
+        loadAgentHarnessDescriptor(
+          `
+runtime:
+  entry_agent: router
+instruction_parts:
+  shared: Shared prompt.
+agents:
+  router:
+    instructions_sequence:
+      - ref: missing
+`,
+          {
+            descriptorPath: "/workspace/harness.yaml",
+            rootDir: "/workspace",
+          },
+        ),
+      /unknown instruction part "missing"/,
+    );
+  }
+
+  {
+    assert.throws(
+      () =>
+        loadAgentHarnessDescriptor(
+          `
+runtime:
+  entry_agent: router
+instruction_parts:
+  shared: Shared prompt.
+agents:
+  router:
+    instructions_sequence:
+      - ref: shared
+        text: Inline prompt.
+`,
+          {
+            descriptorPath: "/workspace/harness.yaml",
+            rootDir: "/workspace",
+          },
+        ),
+      /exactly one of file, ref, or text/,
+    );
+  }
+
+  {
     const tempDir = await mkdtemp(join(tmpdir(), "aioc-loader-"));
     try {
       await mkdir(join(tempDir, "prompts"));
@@ -390,6 +587,27 @@ agents:
           "Inline phase {{context.state.phase}}.",
         ].join("\n\n"),
       );
+
+      await writeFile(join(tempDir, "harness.yaml"), DESCRIPTOR_SEQUENCE_YAML);
+
+      const descriptorWithSequence = await loadAgentHarnessDescriptorFromFile(
+        join(tempDir, "harness.yaml"),
+      );
+
+      assert.deepEqual(descriptorWithSequence.agents.router?.instructions, [
+        {
+          text: "Shared phase {{context.state.phase}}.",
+          where: {
+            context: "state.includeShared",
+          },
+        },
+        {
+          text: "Inline phase {{context.state.phase}}.",
+        },
+        {
+          text: "Loaded from file.",
+        },
+      ]);
     } finally {
       await rm(tempDir, {
         recursive: true,

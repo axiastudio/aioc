@@ -37,13 +37,21 @@ interface AgentHarnessDescriptor {
     fields?: Record<string, HarnessContextFieldDescriptor>;
     references?: Record<string, HarnessContextReferenceEntry>;
   };
+  instruction_parts?: Record<string, string>;
   tools?: Record<string, { target: string }>;
   agent_defaults?: {
     model?: string;
     modelSettings?: Record<string, unknown>;
-    instructions?: string;
+    instructions?: string | HarnessInstructionPartDescriptor[];
   };
   agents: Record<string, HarnessAgentDescriptor>;
+}
+
+interface HarnessInstructionPartDescriptor {
+  text: string;
+  where?: {
+    context: string;
+  };
 }
 ```
 
@@ -92,6 +100,45 @@ const harness = buildAgentHarness(descriptor, registry);
 descriptor file and replaced by `instructions` before the descriptor reaches
 `buildAgentHarness(...)`. Lists are joined in order with blank lines; inline
 `instructions` after `instructions_files` are appended last.
+
+For richer composition, use a top-level `instruction_parts` catalog and an
+agent-level `instructions_sequence`:
+
+```yaml
+instruction_parts:
+  company_context: |-
+    COMPANY CONTEXT:
+    {{context.prompt.companyInstructionsText}}
+    ---
+
+context:
+  references:
+    "prompt.companyInstructionsText":
+      type: string
+      optional: true
+    "prompt.includeCompanyContext":
+      type: boolean
+
+agents:
+  qna:
+    instructions_sequence:
+      - ref: company_context
+        where:
+          context: prompt.includeCompanyContext
+      - text: |-
+          You must ALWAYS invoke find_chunks before answering.
+      - file: ./prompts/qna-extra.md
+```
+
+Each `instructions_sequence` item must define exactly one of:
+
+- `ref`: reusable text from top-level `instruction_parts`
+- `text`: agent-local inline instructions
+- `file`: local prompt file resolved by the loader
+
+The optional `where.context` path must be declared under `context.references`
+with `type: boolean`. It is evaluated when agent instructions are resolved for a
+run. Parts whose `where` value is not exactly `true` are skipped.
 
 The returned harness contains:
 
@@ -190,8 +237,9 @@ descriptor content passed to `buildAgentHarness(...)`.
 
 When using `loadAgentHarnessDescriptorFromFile(...)` or
 `loadAgentHarnessDescriptor(...)` with a `promptMap`, prompt file content from
-`instructions_file` or `instructions_files` is materialized into `instructions`
-before hashing, so prompt text changes alter the descriptor hash.
+`instructions_file`, `instructions_files`, or `instructions_sequence` file
+items is materialized into `instructions` before hashing, so prompt text changes
+alter the descriptor hash.
 
 The hash does not include executable runtime behavior such as:
 
@@ -214,8 +262,8 @@ Keep these outside the descriptor:
 - approval lifecycle logic
 - database or persistence configuration
 - arbitrary JavaScript expressions
-- unresolved `instructions_file` or `instructions_files` entries passed directly to
-  `buildAgentHarness(...)`
+- unresolved `instructions_file`, `instructions_files`, or
+  `instructions_sequence` entries passed directly to `buildAgentHarness(...)`
 
 The descriptor should make the agent graph inspectable, not replace the
 application runtime.

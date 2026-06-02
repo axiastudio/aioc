@@ -22,6 +22,9 @@ interface HarnessTestContext {
   language?: "en" | "it";
   state?: {
     phase?: string;
+    includeSecret?: boolean;
+    includeStatic?: boolean;
+    secret?: string;
     hero?: {
       name?: string;
     };
@@ -178,6 +181,190 @@ export async function runHarnessDescriptorUnitTests(): Promise<void> {
           agents: {},
         } as AgentHarnessDescriptor),
       /agents must not be empty/,
+    );
+  }
+
+  {
+    const descriptor: AgentHarnessDescriptor = {
+      descriptor_version: "aioc.agent_graph.v0",
+      runtime: {
+        entry_agent: "candidate",
+      },
+      context: {
+        references: {
+          "state.phase": {
+            type: "string",
+          },
+          "state.includeSecret": {
+            type: "boolean",
+          },
+          "state.includeStatic": {
+            type: "boolean",
+          },
+          "state.secret": {
+            type: "string",
+          },
+        },
+      },
+      agents: {
+        candidate: {
+          instructions: [
+            {
+              text: "Phase {{context.state.phase}}.",
+            },
+            {
+              text: "Secret {{context.state.secret}}.",
+              where: {
+                context: "state.includeSecret",
+              },
+            },
+            {
+              text: "Static selected.",
+              where: {
+                context: "state.includeStatic",
+              },
+            },
+          ],
+        },
+      },
+    };
+
+    const harness = buildAgentHarness<HarnessTestContext>(descriptor);
+    const excludedInstructions = await harness.entryAgent.resolveInstructions(
+      new RunContext({
+        actorId: "actor-1",
+        turn: {
+          userMessage: "hello",
+          startedAt: "2026-05-19T12:00:00.000Z",
+        },
+        state: {
+          phase: "exploration",
+          includeSecret: false,
+          includeStatic: true,
+        },
+      }),
+    );
+
+    assert.equal(
+      excludedInstructions,
+      ["Phase exploration.", "Static selected."].join("\n\n"),
+    );
+
+    await assert.rejects(
+      () =>
+        harness.entryAgent.resolveInstructions(
+          new RunContext({
+            actorId: "actor-1",
+            turn: {
+              userMessage: "hello",
+              startedAt: "2026-05-19T12:00:00.000Z",
+            },
+            state: {
+              phase: "exploration",
+              includeSecret: true,
+              includeStatic: false,
+            },
+          }),
+        ),
+      /could not resolve required context path "state.secret"/,
+    );
+
+    const includedInstructions = await harness.entryAgent.resolveInstructions(
+      new RunContext({
+        actorId: "actor-1",
+        turn: {
+          userMessage: "hello",
+          startedAt: "2026-05-19T12:00:00.000Z",
+        },
+        state: {
+          phase: "exploration",
+          includeSecret: true,
+          includeStatic: false,
+          secret: "visible",
+        },
+      }),
+    );
+
+    assert.equal(
+      includedInstructions,
+      ["Phase exploration.", "Secret visible."].join("\n\n"),
+    );
+  }
+
+  {
+    assert.throws(
+      () =>
+        buildAgentHarness<HarnessTestContext>({
+          descriptor_version: "aioc.agent_graph.v0",
+          runtime: {
+            entry_agent: "candidate",
+          },
+          context: {
+            references: {
+              "state.phase": {
+                type: "string",
+              },
+            },
+          },
+          agents: {
+            candidate: {
+              instructions: [
+                {
+                  text: "Conditional.",
+                  where: {
+                    context: "state.phase",
+                  },
+                },
+              ],
+            },
+          },
+        }),
+      /must be declared with type "boolean"/,
+    );
+  }
+
+  {
+    const harness = buildAgentHarness<HarnessTestContext>({
+      descriptor_version: "aioc.agent_graph.v0",
+      runtime: {
+        entry_agent: "candidate",
+      },
+      context: {
+        references: {
+          "state.includeSecret": {
+            type: "boolean",
+          },
+        },
+      },
+      agents: {
+        candidate: {
+          instructions: [
+            {
+              text: "Conditional.",
+              where: {
+                context: "state.includeSecret",
+              },
+            },
+          ],
+        },
+      },
+    });
+
+    await assert.rejects(
+      () =>
+        harness.entryAgent.resolveInstructions(
+          new RunContext({
+            actorId: "actor-1",
+            turn: {
+              userMessage: "hello",
+              startedAt: "2026-05-19T12:00:00.000Z",
+            },
+            state: {
+              includeSecret: "not-boolean" as never,
+            },
+          }),
+        ),
+      /must resolve to a boolean/,
     );
   }
 
