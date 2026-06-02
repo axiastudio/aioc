@@ -369,15 +369,18 @@ Optional references render as an empty string when missing.
 
 This rule exists to make prompt/context coupling explicit and reviewable.
 
-## Proposed Extension: Conditional Instruction Parts
+## Proposed Extension: Instruction Parts And `where`
 
 Status: proposed after `0.2.1` descriptor validation.
 
-The Cosmo descriptor spike showed a recurring prompt-composition problem:
-applications sometimes need to include a complete instruction block only when a
-runtime condition is true.
+The Cosmo descriptor spike showed two recurring prompt-composition problems:
 
-Without a descriptor-level condition, applications must either:
+- applications sometimes need to reuse the same instruction block across
+  agents without moving every small fragment to a separate file;
+- applications sometimes need to include a complete instruction block only when
+  a runtime condition is true.
+
+Without descriptor-level support, applications must either:
 
 - keep small prompt fragments in TypeScript, or
 - expose empty string placeholders such as
@@ -387,43 +390,74 @@ Without a descriptor-level condition, applications must either:
 Both approaches work, but they weaken the descriptor as the reviewable source of
 prompt composition.
 
-The proposed extension is a narrow `where:` clause on instruction parts loaded
-from local files.
+The proposed extension has two parts:
+
+- a top-level `instruction_parts` catalog for reusable inline instruction
+  blocks;
+- an agent-level `instructions_sequence` for explicit ordered composition from
+  local files and catalog references, with an optional boolean `where:` gate on
+  each item.
+
+The existing `instructions`, `instructions_file`, and `instructions_files`
+fields remain valid shortcuts for simple cases.
 
 Example:
 
 ```yaml
+instruction_parts:
+  company_context: |-
+    COMPANY CONTEXT:
+    {{context.prompt.companyInstructionsText}}
+    ---
+
 context:
   references:
     "prompt.companyInstructionsText":
       type: string
-    "prompt.includeQnaCompanyInstructionsPrepend":
+    "prompt.includeQnaCompanyContext":
       type: boolean
-    "prompt.includeQnaCompanyInstructionsAppend":
+    "prompt.includeTutorCompanyContext":
       type: boolean
 
 agents:
   qna:
-    instructions_files:
-      - path: ./prompts/company-context.md
+    instructions_sequence:
+      - ref: company_context
         where:
-          context: prompt.includeQnaCompanyInstructionsPrepend
-      - ./prompts/qna.md
-      - path: ./prompts/company-context.md
+          context: prompt.includeQnaCompanyContext
+      - file: ./prompts/qna.md
+
+  tutor:
+    instructions_sequence:
+      - ref: company_context
         where:
-          context: prompt.includeQnaCompanyInstructionsAppend
+          context: prompt.includeTutorCompanyContext
+      - file: ./prompts/tutor.md
 ```
 
-`./prompts/company-context.md` can still use ordinary path-only placeholders:
+Local files can still be used when the block deserves to live outside YAML:
 
-```md
-COMPANY CONTEXT:
-{{context.prompt.companyInstructionsText}}
----
+```yaml
+agents:
+  qna:
+    instructions_sequence:
+      - file: ./prompts/company-context.md
+        where:
+          context: prompt.includeQnaCompanyContext
+      - file: ./prompts/qna.md
 ```
 
 ### Semantics
 
+- `instruction_parts` is a descriptor-local catalog. It does not execute code and
+  does not read files.
+- `instructions_sequence` is an ordered list of instruction items.
+- Each source item must contain exactly one of `file` or `ref`.
+- `file` paths follow the same local loading rules as `instructions_file` and
+  `instructions_files`.
+- `ref` values must point to entries declared in top-level `instruction_parts`.
+- `instructions_sequence` is mutually exclusive with `instructions`,
+  `instructions_file`, and `instructions_files`.
 - `where` is evaluated at instruction-resolution time, not when the descriptor
   is loaded.
 - `where.context` is a dot path under the run context.
@@ -433,6 +467,8 @@ COMPANY CONTEXT:
 - Missing or non-boolean values fail instruction resolution.
 - Included parts are joined in descriptor order.
 - Placeholder rendering runs only on included parts.
+- Undeclared placeholders fail descriptor compilation even when they appear in a
+  conditional part.
 
 This keeps conditional prompt composition deterministic, explicit, and
 reviewable without adding JavaScript expressions to templates.
@@ -446,13 +482,26 @@ instructions_files:
   - ./prompts/base.md
 ```
 
-Conditional entries use object form:
+Reusable instruction parts are declared in a top-level catalog:
 
 ```yaml
-instructions_files:
-  - path: ./prompts/company-context.md
-    where:
-      context: prompt.includeCompanyContext
+instruction_parts:
+  company_context: |-
+    COMPANY CONTEXT:
+    {{context.prompt.companyInstructionsText}}
+    ---
+```
+
+Composition uses `instructions_sequence`:
+
+```yaml
+agents:
+  qna:
+    instructions_sequence:
+      - ref: company_context
+        where:
+          context: prompt.includeCompanyContext
+      - file: ./prompts/qna.md
 ```
 
 The materialized descriptor shape can represent instructions as a list of
@@ -473,12 +522,30 @@ export type HarnessInstructionsDescriptor =
   | HarnessInstructionPartDescriptor[];
 ```
 
-The loader resolves `instructions_file` / `instructions_files` entries to
-`text` before the builder runs. The builder remains filesystem-free.
+The YAML/source descriptor can represent sequence items before materialization:
+
+```ts
+export interface HarnessInstructionFileSourceDescriptor {
+  file: string;
+  where?: HarnessInstructionWhereDescriptor;
+}
+
+export interface HarnessInstructionRefSourceDescriptor {
+  ref: string;
+  where?: HarnessInstructionWhereDescriptor;
+}
+
+export type HarnessInstructionSourceDescriptor =
+  | HarnessInstructionFileSourceDescriptor
+  | HarnessInstructionRefSourceDescriptor;
+```
+
+The loader resolves `file` entries and catalog `ref` entries to `text` before
+the builder runs. The builder remains filesystem-free.
 
 ### Non-Goals
 
-The `where` proposal does not add:
+This proposal does not add:
 
 - JavaScript expressions;
 - equality checks;
@@ -491,12 +558,12 @@ The `where` proposal does not add:
 
 More expressive conditions can be considered later only if a concrete
 application need appears. The first version should support only boolean context
-paths.
+paths and descriptor-local instruction references.
 
 ### Run Records And Hashing
 
-`descriptorHash` hashes the materialized descriptor, including all conditional
-instruction parts and their `where` clauses.
+`descriptorHash` hashes the materialized descriptor, including reusable
+instruction part content, ordered instruction sequences, and `where` clauses.
 
 The exact prompt seen by the model still depends on runtime context. Therefore
 the existing prompt snapshot remains the authoritative record of the resolved
@@ -672,9 +739,9 @@ experimentation:
    helper.
 4. Whether policy composition helpers should ever be referenced from
    descriptors.
-5. Whether to promote the Conditional Instruction Parts proposal to an
+5. Whether to promote the Instruction Parts And `where` proposal to an
    implemented descriptor revision, and whether richer prompt composition is
-   needed beyond boolean `where` gates.
+   needed beyond boolean `where` gates and descriptor-local references.
 
 ## Implementation Notes
 
