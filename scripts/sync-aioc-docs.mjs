@@ -80,7 +80,7 @@ const documents = [
     sourceFile: "RFC-0011-agent-harness-descriptor.md",
     targetDir: "current",
     slug: "rfc-0011-agent-harness-descriptor",
-    status: "Experimental",
+    status: "Accepted",
   },
   {
     sourceFile: "PRIVACY-BASELINE.md",

@@ -1,10 +1,10 @@
 ---
 title: Harness Descriptor
-description: Experimental descriptor API for building an agent harness from data plus application-owned tools.
+description: Descriptor API for building an agent harness from data plus application-owned tools.
 ---
 
-The harness descriptor is an experimental `0.2.x` API for describing an agent
-graph as data.
+The harness descriptor is a supported `0.2.x` API for describing an agent graph
+as data.
 
 It does not make an application declarative. The application still owns tool
 implementations, policies, provider setup, persistence, approvals, and context

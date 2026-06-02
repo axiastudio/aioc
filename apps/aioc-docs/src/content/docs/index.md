@@ -31,7 +31,7 @@ The current documentation covers:
 
 - stable `0.1.x` runtime behavior you can use today
 - accepted RFC material implemented in the current stable release
-- implemented `0.2.x` additions, including the experimental descriptor surface
+- implemented `0.2.x` additions, including the Agent Harness Descriptor API
 - draft RFC material for future stabilization work that is still evolving
 
 ## Stable Scope
@@ -42,7 +42,7 @@ The current documentation covers:
 
 `aioc` `0.1.2` adds approval evidence helpers for application-owned approval workflows.
 
-`aioc` `0.2.x` adds runtime utilities and an experimental Agent Harness Descriptor surface. The descriptor API is available for controlled configuration and evaluation workflows, but its shape may still evolve across `0.x` minor releases with migration guidance.
+`aioc` `0.2.x` adds runtime utilities and the Agent Harness Descriptor API. The descriptor contract is part of the supported `0.2.x` surface for controlled configuration and evaluation workflows; future `0.x` changes should include migration guidance.
 
 ## Install
 

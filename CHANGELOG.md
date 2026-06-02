@@ -1,5 +1,14 @@
 # Changelog
 
+## Unreleased
+
+### Changed
+
+- Promoted RFC-0011 Agent Harness Descriptor out of experimental status into
+  the supported `0.2.x` API surface.
+- Added descriptor instruction composition with `instruction_parts`,
+  `instructions_sequence`, and boolean `where` gates.
+
 ## 0.2.1 - 2026-05-28
 
 Patch release that realigns the `0.2.x` line with the current `main` history
@@ -8,14 +17,14 @@ after `0.2.0` was published from the descriptor release branch.
 ### Fixed
 
 - Restored the `0.1.2` approval evidence helpers in the `0.2.x` release line.
-- Preserved the experimental Agent Harness Descriptor APIs and loader helpers
-  introduced by `0.2.0`.
+- Preserved the Agent Harness Descriptor APIs and loader helpers introduced by
+  `0.2.0`.
 
 ## 0.2.0 - 2026-05-28
 
 ### Added
 
-- Experimental agent harness descriptor APIs: `buildAgentHarness(...)`,
+- Initial agent harness descriptor APIs: `buildAgentHarness(...)`,
   `hashAgentHarnessDescriptor(...)`, descriptor metadata, registry-backed tool
   binding, context defaults, and instruction context references.
 - Agent harness descriptor loaders:

@@ -1,6 +1,6 @@
 # RFC-0011: Agent Harness Descriptor
 
-- Status: Experimental
+- Status: Accepted
 - Date: 2026-05-22
 - Owners: aioc maintainers
 - Depends on: RFC-0001, RFC-0003, RFC-0005
@@ -35,7 +35,7 @@ and is harder to compare, review, diff, or attach to non-regression records.
 
 ## Decision
 
-`aioc` introduces an experimental Agent Harness Descriptor.
+`aioc` introduces an Agent Harness Descriptor.
 
 The descriptor is a data-first representation of an agent graph and its minimal
 runtime harness metadata. It can be authored as YAML or JSON, parsed by the
@@ -53,8 +53,8 @@ The host application still owns:
 - context lifecycle,
 - security and deployment configuration.
 
-The first implementation is intentionally narrow and ships in the core package
-as the `0.2.0` `aioc.agent_graph.v0` descriptor contract.
+The descriptor contract is intentionally narrow and ships in the core package as
+the supported `0.2.x` `aioc.agent_graph.v0` descriptor surface.
 
 ## Goals
 
@@ -80,12 +80,12 @@ as the `0.2.0` `aioc.agent_graph.v0` descriptor contract.
 - No provider credential storage.
 - No approval workflow DSL.
 - No replacement for `Agent`, `Tool`, `ToolPolicy`, or `HandoffPolicy`.
-- No stable production configuration contract until the experimental period is
-  complete.
+- No guarantee that descriptors can replace application-owned deployment
+  configuration.
 
 ## Descriptor Shape
 
-The initial descriptor shape is:
+The descriptor shape is:
 
 ```ts
 export interface AgentHarnessDescriptor {
@@ -103,14 +103,28 @@ export interface AgentHarnessDescriptor {
     fields?: Record<string, HarnessContextFieldDescriptor>;
     references?: Record<string, HarnessContextReferenceEntry>;
   };
+  instruction_parts?: Record<string, string>;
   tools?: Record<string, { target: string }>;
   agent_defaults?: {
     model?: string;
     modelSettings?: Record<string, unknown>;
-    instructions?: string;
+    instructions?: HarnessInstructionsDescriptor;
   };
   agents: Record<string, HarnessAgentDescriptor>;
 }
+
+export interface HarnessInstructionWhereDescriptor {
+  context: string;
+}
+
+export interface HarnessInstructionPartDescriptor {
+  text: string;
+  where?: HarnessInstructionWhereDescriptor;
+}
+
+export type HarnessInstructionsDescriptor =
+  | string
+  | HarnessInstructionPartDescriptor[];
 ```
 
 Agents may define:
@@ -119,7 +133,7 @@ Agents may define:
 export interface HarnessAgentDescriptor {
   name?: string;
   handoffDescription?: string;
-  instructions?: string;
+  instructions?: HarnessInstructionsDescriptor;
   model?: string;
   modelSettings?: Record<string, unknown>;
   tools?: string[];
@@ -701,7 +715,7 @@ Application code still loads YAML, binds tools, configures policy, and calls
 
 ## Compatibility
 
-This RFC is additive and experimental.
+This RFC is additive and accepted.
 
 Existing code-first applications do not need descriptors.
 
@@ -709,17 +723,17 @@ The descriptor builder produces normal `Agent` objects and normal `run(...)`
 options, so it composes with existing provider, policy, logging, run-record,
 thread-history, and stream-output APIs.
 
-## Decisions For 0.2.0
+## Decisions For 0.2.x
 
-The `0.2.0` descriptor scope is intentionally narrow:
+The `0.2.x` descriptor scope is intentionally narrow:
 
-- The descriptor remains in `@axiastudio/aioc` during the `0.2.x`
-  experimental period.
+- The descriptor remains in `@axiastudio/aioc` as part of the supported
+  `0.2.x` API surface.
 - Descriptor validation is lightweight and implemented in the builder. A
   schema-backed validator is deferred.
-- `buildAgentHarness(...)` remains pure. YAML, `instructions_file`, and
-  `instructions_files`
-  materialization are handled by `loadAgentHarnessDescriptor(...)` and
+- `buildAgentHarness(...)` remains pure. YAML, `instructions_file`,
+  `instructions_files`, and `instructions_sequence` materialization are handled
+  by `loadAgentHarnessDescriptor(...)` and
   `loadAgentHarnessDescriptorFromFile(...)`.
 - `context.fields[*].redact` remains metadata only. Applications still provide
   explicit `record.contextRedactor` implementations.
@@ -734,15 +748,15 @@ The `0.2.0` descriptor scope is intentionally narrow:
 - Instruction placeholders remain path-only references. JavaScript expressions,
   filters, nullish coalescing, ternaries, and function calls are not supported.
 - Prompt file loading and prompt materialization are supported only through the
-  explicit local loader helpers. There are no remote URLs, glob imports,
-  conditional imports, or expression evaluation.
+  explicit local loader helpers. There are no remote URLs, glob imports, or
+  expression evaluation.
 - Descriptor examples are positioned as harness/evaluation or controlled
   application configuration artifacts, not as no-code production builders.
 
 ## Deferred Questions
 
-The following topics are intentionally left for later RFCs or `0.2.x`
-experimentation:
+The following topics are intentionally left for later RFCs or future `0.x`
+iterations:
 
 1. Whether descriptor helpers should eventually move to a separate package.
 2. Whether to add schema-backed validation for descriptor files.
@@ -755,7 +769,7 @@ experimentation:
 
 ## Implementation Notes
 
-The current experimental implementation is:
+The current implementation is:
 
 - `src/harness-descriptor.ts`
 - `src/harness-descriptor-loader.ts`
@@ -769,8 +783,9 @@ The current experimental implementation is:
 - validated by a Cosmo-shaped unit fixture covering router/specialist graphs,
   registry-backed tools, handoffs, and prompt-readable context references
 
-The implementation remains explicitly experimental in `0.2.0`, but the
-descriptor shape ships as the `aioc.agent_graph.v0` descriptor contract.
+The descriptor shape ships as the supported `aioc.agent_graph.v0` descriptor
+contract. Future changes to this contract should include explicit migration
+guidance.
 
 ## Minimal Test Matrix
 
@@ -795,7 +810,7 @@ descriptor shape ships as the `aioc.agent_graph.v0` descriptor contract.
 
 ## Status
 
-Experimental. Implemented in `src/harness-descriptor.ts`,
+Accepted. Implemented in `src/harness-descriptor.ts`,
 `src/harness-descriptor-loader.ts`, and
-`src/harness-descriptor-loader-paths.ts`, and published in `0.2.0` for
-validation.
+`src/harness-descriptor-loader-paths.ts`, and promoted into the supported
+`0.2.x` API surface.

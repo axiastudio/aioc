@@ -32,6 +32,6 @@ It is not a generated API reference for every exported symbol. It focuses on the
 
 This section documents the compatibility-managed runtime surface plus implemented `0.2.x` additions.
 
-Harness descriptors are included in the `0.2.x` line as an experimental sub-surface. The core runtime remains compatibility-managed; descriptor shape and loader helpers may still evolve across `0.x` minor releases with migration guidance.
+Harness descriptors are included in the supported `0.2.x` API surface. The core runtime remains compatibility-managed; descriptor shape and loader helpers may still evolve across `0.x` minor releases with migration guidance.
 
 Draft RFCs may still describe lifecycle refinements, stabilization work, or application-side approval patterns beyond the implemented runtime surface.

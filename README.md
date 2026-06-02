@@ -18,7 +18,7 @@ AIOC `0.1.0` stabilized the core runtime surface, public documentation aligned t
 AIOC `0.1.1` adds thread-history utilities, the run-output stream adapter, and provider-specific instruction-role documentation without changing the stable governance model.
 AIOC `0.1.2` adds approval evidence helpers for application-owned approval workflows.
 
-AIOC `0.2.0` adds implemented runtime utilities and an experimental Agent Harness Descriptor surface. The core runtime remains compatibility-managed; descriptor shape and loader helpers may still evolve across `0.x` minor releases with explicit migration guidance.
+AIOC `0.2.0` adds implemented runtime utilities and the Agent Harness Descriptor API. The core runtime remains compatibility-managed; descriptor shape and loader helpers are now part of the supported `0.2.x` surface and may evolve across `0.x` minor releases only with explicit migration guidance.
 AIOC `0.2.1` realigns the `0.2.x` package line with the current `main` history after `0.2.0` was published from the descriptor release branch.
 
 - Release notes: `CHANGELOG.md`
@@ -109,7 +109,7 @@ console.log(result.finalOutput);
 - thread history utilities `toThreadHistory(...)`, `appendUserMessage(...)`, `replaceThreadHistory(...)`, `applyRunResultHistory(...)`
 - JSON helper `toJsonValue(...)`
 
-## Experimental 0.2.x Surface
+## Agent Harness Descriptor
 
 - `buildAgentHarness(...)`
 - `hashAgentHarnessDescriptor(...)`
@@ -117,7 +117,7 @@ console.log(result.finalOutput);
 - `loadAgentHarnessDescriptorFromFile(...)`
 - `AgentHarnessDescriptor` and related descriptor types
 
-The Agent Harness Descriptor is included in the `0.2.x` line as an experimental `aioc.agent_graph.v0` descriptor surface. Use it for controlled configuration, examples, and evaluation harnesses; keep executable tools, policies, providers, persistence, approvals, and deployment configuration in application code.
+The Agent Harness Descriptor is included in the supported `0.2.x` API surface as the `aioc.agent_graph.v0` descriptor contract. Use it for controlled configuration, examples, and evaluation harnesses; keep executable tools, policies, providers, persistence, approvals, and deployment configuration in application code.
 
 ## Policy Gate (Minimal)
 
@@ -284,7 +284,7 @@ AIOC adopts the following non-negotiable principles:
 - `docs/RFC-0008-run-stream-consumer-utilities.md` (`Accepted`)
 - `docs/RFC-0009-governance-events-and-exporters.md` (`Experimental`)
 - `docs/RFC-0010-policy-composition-helpers.md` (`Draft`)
-- `docs/RFC-0011-agent-harness-descriptor.md` (`Experimental`)
+- `docs/RFC-0011-agent-harness-descriptor.md` (`Accepted`)
 - `docs/PRIVACY-BASELINE.md`
 
 ## Historical Snapshots
