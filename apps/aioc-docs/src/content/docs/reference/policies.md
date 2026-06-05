@@ -148,6 +148,9 @@ This means the current stable behavior is default deny.
 
 ## Policy Composition
 
+Status: implemented on `main` and listed in `CHANGELOG.md` under `Unreleased`.
+It is not part of the npm stable release `0.2.2`.
+
 Use `composeToolPolicies(...)` and `composeHandoffPolicies(...)` when different
 tools or handoff targets need different policy logic.
 

@@ -22,6 +22,9 @@ AIOC `0.2.0` adds implemented runtime utilities and the Agent Harness Descriptor
 AIOC `0.2.1` realigns the `0.2.x` package line with the current `main` history after `0.2.0` was published from the descriptor release branch.
 AIOC `0.2.2` completes the descriptor instruction-composition surface with reusable `instruction_parts`, ordered `instructions_sequence`, and boolean `where` gates.
 
+Unreleased on `main`: RFC-0010 policy composition helpers add exact-name tool
+and handoff policy dispatch without changing runtime enforcement semantics.
+
 - Release notes: `CHANGELOG.md`
 - Historical beta contract snapshot: `docs/BETA-CONTRACT.md`
 - Historical alpha contract snapshot: `docs/ALPHA-CONTRACT.md`

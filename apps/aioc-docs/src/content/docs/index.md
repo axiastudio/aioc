@@ -30,9 +30,12 @@ The stable line started with `0.1.0`.
 The current documentation covers:
 
 - stable `0.1.x` runtime behavior you can use today
-- accepted RFC material implemented in the current stable release
+- accepted RFC material implemented in the current stable release or current
+  `main` branch
 - implemented `0.2.x` additions, including the Agent Harness Descriptor API
-- draft RFC material for future stabilization work that is still evolving
+- unreleased changes tracked in `CHANGELOG.md`
+- draft or experimental RFC material for future stabilization work that is still
+  evolving
 
 ## Stable Scope
 
@@ -45,6 +48,9 @@ The current documentation covers:
 `aioc` `0.2.x` adds runtime utilities and the Agent Harness Descriptor API. The descriptor contract is part of the supported `0.2.x` surface for controlled configuration and evaluation workflows; future `0.x` changes should include migration guidance.
 
 `aioc` `0.2.2` completes the descriptor instruction-composition surface with reusable `instruction_parts`, ordered `instructions_sequence`, and boolean `where` gates.
+
+Unreleased on `main`: RFC-0010 policy composition helpers add exact-name tool
+and handoff policy dispatch without changing runtime enforcement semantics.
 
 ## Install
 
