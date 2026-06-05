@@ -94,7 +94,25 @@ What it demonstrates:
 - tool execution after policy approval
 - a straight, single-scenario basic example
 
-## 5) Approval Evidence Replay
+## 5) Policy Composition
+
+Command:
+
+```bash
+npm run example:policy-composition
+```
+
+File:
+
+- `src/examples/basic/policy-composition.ts`
+
+What it demonstrates:
+
+- exact-name policy dispatch with `composeToolPolicies(...)`
+- fallback deny policy through `"*"`
+- preserving normal `ToolPolicy` runtime semantics
+
+## 6) Approval Evidence Replay
 
 Command:
 
@@ -113,7 +131,7 @@ What it demonstrates:
 - policy reevaluation using `proposalHash`
 - executing the same requested tool after approval is available
 
-## 6) RunRecord Sink
+## 7) RunRecord Sink
 
 Command:
 
@@ -132,7 +150,7 @@ What it demonstrates:
 - prompt snapshots and request fingerprints
 - policy decision audit trail and persisted envelope output
 
-## 7) RunRecord Utilities (Minimal)
+## 8) RunRecord Utilities (Minimal)
 
 Commands:
 
@@ -157,7 +175,7 @@ What it demonstrates:
 - replaying in strict mode (recorded outputs only)
 - replaying in hybrid mode (recorded outputs + live fallback)
 
-## 8) Agent Harness Descriptor
+## 9) Agent Harness Descriptor
 
 Command:
 

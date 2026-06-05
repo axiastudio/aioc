@@ -12,6 +12,7 @@ All example commands are run from the repository root.
 - `npm run example:approval-required`
 - `npm run example:approval-evidence`
 - `npm run example:tool-policy`
+- `npm run example:policy-composition`
 - `npm run example:harness`
 - `npm run example:run-record`
 - `npm run example:non-regression`

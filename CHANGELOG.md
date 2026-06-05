@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+### Documentation
+
+- Added a compact `composeToolPolicies(...)` basic example.
+
 ## 0.2.3 - 2026-06-05
 
 Release that adds policy composition helpers for exact-name tool and handoff
