@@ -2,6 +2,11 @@
 
 ## Unreleased
 
+## 0.2.3 - 2026-06-05
+
+Release that adds policy composition helpers for exact-name tool and handoff
+policy dispatch.
+
 ### Added
 
 - Added `composeToolPolicies(...)` and `composeHandoffPolicies(...)` helpers

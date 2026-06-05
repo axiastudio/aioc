@@ -34,8 +34,4 @@ This section documents the compatibility-managed runtime surface plus implemente
 
 Harness descriptors are included in the supported `0.2.x` API surface. The core runtime remains compatibility-managed; descriptor shape and loader helpers may still evolve across `0.x` minor releases with migration guidance.
 
-Features listed in `CHANGELOG.md` under `Unreleased` are implemented on the
-current `main` branch but are not part of the current npm stable release until a
-new package version is published.
-
 Draft RFCs may still describe lifecycle refinements, stabilization work, or application-side approval patterns beyond the implemented runtime surface.
