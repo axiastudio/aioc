@@ -1,6 +1,6 @@
 # RFC-0010: Policy Composition Helpers
 
-- Status: Draft
+- Status: Accepted
 - Date: 2026-05-22
 - Owners: aioc maintainers
 - Depends on: RFC-0002, RFC-0004, RFC-0006
@@ -232,8 +232,7 @@ enough for the current need.
 
 ## Implementation Notes
 
-This RFC should be implemented as optional pure helpers in a dedicated module,
-or alongside policy helpers if that keeps the public surface simpler.
+This RFC is implemented as optional pure helpers in a dedicated module.
 
 A likely initial surface is:
 
@@ -258,4 +257,4 @@ not require changes to `run.ts`.
 
 ## Status
 
-Draft. Not implemented.
+Accepted. Implemented in `src/policy-composition.ts`.

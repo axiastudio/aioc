@@ -146,6 +146,39 @@ If no relevant policy is configured, the runtime denies the proposal.
 
 This means the current stable behavior is default deny.
 
+## Policy Composition
+
+Use `composeToolPolicies(...)` and `composeHandoffPolicies(...)` when different
+tools or handoff targets need different policy logic.
+
+The helpers return normal `ToolPolicy` and `HandoffPolicy` functions. They do
+not change `run(...)` or runtime enforcement semantics.
+
+```ts
+const toolPolicy = composeToolPolicies<Context>({
+  search_docs: () => allow("allow_search_docs"),
+  export_report: ({ proposalHash, runContext }) => {
+    if (runContext.context.approvedProposalHashes.includes(proposalHash)) {
+      return allow("approval_granted");
+    }
+
+    return requireApproval("approval_export_report", {
+      resultMode: "tool_result",
+      publicReason: "Sensitive report exports require explicit approval.",
+      policyVersion: "finance-export-policy.v1",
+    });
+  },
+  "*": ({ toolName }) => deny(`deny_tool_${toolName}`),
+});
+```
+
+Dispatch rules are intentionally small:
+
+- exact tool name or target-agent name wins
+- `"*"` is used as fallback when present
+- missing exact match and missing fallback returns deterministic deny
+- original policy input is passed through unchanged
+
 ## `resultMode`
 
 `resultMode` controls how non-allow outcomes are surfaced:

@@ -5,6 +5,7 @@ import { runHarnessDescriptorLoaderUnitTests } from "./harness-descriptor-loader
 import { runHarnessDescriptorUnitTests } from "./harness-descriptor.unit";
 import { runJsonUnitTests } from "./json.unit";
 import { runLoggerUnitTests } from "./logger.unit";
+import { runPolicyCompositionUnitTests } from "./policy-composition.unit";
 import { runPolicyUnitTests } from "./policy.unit";
 import { runProviderSetupUnitTests } from "./provider-setup.unit";
 import { runRunOutputEventsUnitTests } from "./run-output-events.unit";
@@ -24,6 +25,7 @@ async function main(): Promise<void> {
   await runJsonUnitTests();
   await runProviderSetupUnitTests();
   await runPolicyUnitTests();
+  await runPolicyCompositionUnitTests();
   await runHandoffUnitTests();
   await runGuardrailUnitTests();
   await runHarnessDescriptorLoaderUnitTests();

@@ -9,6 +9,7 @@ export * from "./json";
 export * from "./logger";
 export * from "./messages";
 export * from "./policy";
+export * from "./policy-composition";
 export * from "./proposal-hashing";
 export * from "./provider-setup";
 export * from "./providers/base";

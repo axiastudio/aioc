@@ -284,7 +284,7 @@ AIOC adopts the following non-negotiable principles:
 - `docs/RFC-0007-thread-state-utilities.md` (`Accepted`)
 - `docs/RFC-0008-run-stream-consumer-utilities.md` (`Accepted`)
 - `docs/RFC-0009-governance-events-and-exporters.md` (`Experimental`)
-- `docs/RFC-0010-policy-composition-helpers.md` (`Draft`)
+- `docs/RFC-0010-policy-composition-helpers.md` (`Accepted`)
 - `docs/RFC-0011-agent-harness-descriptor.md` (`Accepted`)
 - `docs/PRIVACY-BASELINE.md`
 

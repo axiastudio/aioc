@@ -74,7 +74,7 @@ const documents = [
     sourceFile: "RFC-0010-policy-composition-helpers.md",
     targetDir: "current",
     slug: "rfc-0010-policy-composition-helpers",
-    status: "Draft",
+    status: "Accepted",
   },
   {
     sourceFile: "RFC-0011-agent-harness-descriptor.md",
