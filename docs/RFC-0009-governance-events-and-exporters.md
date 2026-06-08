@@ -301,7 +301,7 @@ Recommended package sequence:
   Adapter from GovernanceEvent to CloudEvents.
 
 @axiastudio/aioc-export-otel
-  Adapter from GovernanceEvent to OpenTelemetry logs/span events.
+  Adapter from GovernanceEvent to OpenTelemetry Logs.
 
 @axiastudio/aioc-export-ocsf
   Security/SIEM-oriented adapter, OCSF-first.
@@ -425,8 +425,8 @@ Minimum tests for `@axiastudio/aioc-governance-events`:
    prompt snapshots, and request fingerprints?
 4. Should there be a first-party durable queue helper, or should durable
    delivery stay fully application-owned?
-5. Should `aioc-export-otel` map governance events to logs only, span events
-   only, or both?
+5. Should a future `aioc-export-otel` extension also support span events, or
+   should governance events remain logs-only?
 
 ## Implementation Status
 
@@ -434,9 +434,14 @@ Minimum tests for `@axiastudio/aioc-governance-events`:
 `toGovernanceEvents(record, options)`, the batch exporter contract, and
 `createGovernanceEventSink(...)`.
 
-The package intentionally does not include CloudEvents, OpenTelemetry, OCSF, or
-vendor-specific adapters yet. Those adapters should validate the canonical event
-shape before RFC-0009 is promoted out of experimental status.
+The `@axiastudio/aioc-governance-events` package intentionally does not include
+CloudEvents, OpenTelemetry, OCSF, or vendor-specific adapters. Those adapters
+should validate the canonical event shape before RFC-0009 is promoted out of
+experimental status.
+
+`@axiastudio/aioc-export-otel` now implements the first adapter. It maps
+governance events to OpenTelemetry Logs and intentionally does not configure an
+OpenTelemetry SDK, processor, collector, OTLP endpoint, or delivery guarantee.
 
 ## Adoption Plan
 
@@ -445,6 +450,7 @@ shape before RFC-0009 is promoted out of experimental status.
    schema, exporter contract, and sink helper. Completed by the initial
    experimental package.
 3. Validate the schema with one real exporter, preferably CloudEvents or OTel.
+   Initial OTel Logs adapter implemented.
 4. Add a canonical example that stores the full `RunRecord` and exports reduced
    governance events.
 5. Revisit event schema stability after practical usage.

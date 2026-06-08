@@ -1,0 +1,55 @@
+{
+  "name": "@axiastudio/aioc-export-otel",
+  "version": "0.1.0",
+  "description": "Experimental OpenTelemetry Logs exporter for AIOC governance events.",
+  "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    }
+  },
+  "files": [
+    "dist",
+    "README.md"
+  ],
+  "scripts": {
+    "clean": "node -e \"require('fs').rmSync('dist',{recursive:true,force:true})\"",
+    "build": "npm run clean && tsc -p tsconfig.build.json",
+    "test": "node -e \"require('fs').rmSync('dist-tests',{recursive:true,force:true})\" && tsc -p tsconfig.test.json && node dist-tests/tests/index.js",
+    "prepack": "npm run build"
+  },
+  "keywords": [
+    "aioc",
+    "governance",
+    "opentelemetry",
+    "otel",
+    "logs",
+    "observability"
+  ],
+  "author": "Tiziano Lattisi - AXIA Studio S.r.l.",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/axiastudio/aioc.git",
+    "directory": "packages/aioc-export-otel"
+  },
+  "bugs": {
+    "url": "https://github.com/axiastudio/aioc/issues"
+  },
+  "homepage": "https://axiastudio.github.io/aioc",
+  "publishConfig": {
+    "access": "public"
+  },
+  "peerDependencies": {
+    "@axiastudio/aioc-governance-events": "^0.1.0",
+    "@opentelemetry/api-logs": "^0.218.0"
+  },
+  "devDependencies": {
+    "@axiastudio/aioc-governance-events": "^0.1.0",
+    "@opentelemetry/api-logs": "^0.218.0",
+    "typescript": "^5.9.2"
+  }
+}

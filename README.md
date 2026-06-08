@@ -27,8 +27,11 @@ AIOC `0.2.3` adds RFC-0010 policy composition helpers for exact-name tool and ha
 
 `@axiastudio/aioc-governance-events` implements the RFC-0009 governance-event
 mapper outside the core runtime package. It derives reduced, redacted,
-event-shaped records from `RunRecord` values and remains experimental while the
-exporter shape is validated with real CloudEvents/OpenTelemetry-style adapters.
+event-shaped records from `RunRecord` values.
+
+`@axiastudio/aioc-export-otel` maps those governance events to OpenTelemetry
+Logs. Both packages remain experimental while real exporter usage validates the
+schema and operational shape.
 
 - Release notes: `CHANGELOG.md`
 - Historical beta contract snapshot: `docs/BETA-CONTRACT.md`
