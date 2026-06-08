@@ -19,6 +19,7 @@
     "clean": "node -e \"require('fs').rmSync('dist',{recursive:true,force:true})\"",
     "build": "npm run clean && tsc -p tsconfig.build.json",
     "test": "node -e \"require('fs').rmSync('dist-tests',{recursive:true,force:true})\" && tsc -p tsconfig.test.json && node dist-tests/tests/index.js",
+    "console": "node -e \"require('fs').rmSync('dist-console',{recursive:true,force:true})\" && tsc -p tsconfig.console.json && node dist-console/examples/console-smoke.js",
     "prepack": "npm run build"
   },
   "keywords": [
@@ -50,6 +51,7 @@
   "devDependencies": {
     "@axiastudio/aioc-governance-events": "^0.1.0",
     "@opentelemetry/api-logs": "^0.218.0",
+    "@opentelemetry/sdk-logs": "^0.218.0",
     "typescript": "^5.9.2"
   }
 }

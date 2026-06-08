@@ -1,5 +1,6 @@
 dist/
 dist-tests/
+dist-console/
 node_modules/
 .astro/
 *.tsbuildinfo

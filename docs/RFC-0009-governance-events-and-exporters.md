@@ -442,6 +442,8 @@ experimental status.
 `@axiastudio/aioc-export-otel` now implements the first adapter. It maps
 governance events to OpenTelemetry Logs and intentionally does not configure an
 OpenTelemetry SDK, processor, collector, OTLP endpoint, or delivery guarantee.
+A local `ConsoleLogRecordExporter` smoke example validates the mapping without
+requiring a collector.
 
 ## Adoption Plan
 

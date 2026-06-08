@@ -33,6 +33,18 @@ await run(agent, userMessage, {
 });
 ```
 
+## Console Smoke
+
+For local diagnostics, configure the OpenTelemetry SDK with
+`ConsoleLogRecordExporter` and run:
+
+```bash
+npm run export-otel:console
+```
+
+This prints the mapped OpenTelemetry `LogRecord` to stdout. It is useful for
+checking the adapter shape before connecting a collector or backend.
+
 ## Status
 
 Experimental. The adapter currently maps governance events to OpenTelemetry Logs

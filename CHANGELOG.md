@@ -8,7 +8,8 @@
   RFC-0009 canonical event schema, `toGovernanceEvents(...)` mapper, exporter
   contract, and `RunRecord` sink helper.
 - Added experimental `@axiastudio/aioc-export-otel` package that maps
-  governance events to OpenTelemetry Logs.
+  governance events to OpenTelemetry Logs, with a console smoke exporter
+  example.
 
 ### Changed
 
