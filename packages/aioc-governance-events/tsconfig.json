@@ -13,8 +13,8 @@
     "baseUrl": ".",
     "paths": {
       "@axiastudio/aioc": [
-        "node_modules/@axiastudio/aioc/dist/index.d.ts",
-        "../../dist/index.d.ts"
+        "../../dist/index.d.ts",
+        "node_modules/@axiastudio/aioc/dist/index.d.ts"
       ]
     },
     "declaration": true,

@@ -8,6 +8,11 @@
   RFC-0009 canonical event schema, `toGovernanceEvents(...)` mapper, exporter
   contract, and `RunRecord` sink helper.
 
+### Changed
+
+- Registered companion packages under npm workspaces for package-level build,
+  test, and release workflows.
+
 ### Documentation
 
 - Added a compact `composeToolPolicies(...)` basic example.

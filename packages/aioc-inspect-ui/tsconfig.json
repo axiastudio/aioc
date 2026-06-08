@@ -11,6 +11,13 @@
     "forceConsistentCasingInFileNames": true,
     "module": "ESNext",
     "moduleResolution": "Bundler",
+    "baseUrl": ".",
+    "paths": {
+      "@axiastudio/aioc": [
+        "../../dist/index.d.ts",
+        "node_modules/@axiastudio/aioc/dist/index.d.ts"
+      ]
+    },
     "resolveJsonModule": true,
     "isolatedModules": true,
     "declaration": true,
