@@ -2,6 +2,12 @@
 
 ## Unreleased
 
+### Added
+
+- Added experimental `@axiastudio/aioc-governance-events` package with the
+  RFC-0009 canonical event schema, `toGovernanceEvents(...)` mapper, exporter
+  contract, and `RunRecord` sink helper.
+
 ### Documentation
 
 - Added a compact `composeToolPolicies(...)` basic example.

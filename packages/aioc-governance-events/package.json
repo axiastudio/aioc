@@ -1,0 +1,54 @@
+{
+  "name": "@axiastudio/aioc-governance-events",
+  "version": "0.1.0",
+  "description": "Experimental governance event mapper and exporter helpers for AIOC RunRecord artifacts.",
+  "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    }
+  },
+  "files": [
+    "dist",
+    "README.md"
+  ],
+  "scripts": {
+    "clean": "node -e \"require('fs').rmSync('dist',{recursive:true,force:true})\"",
+    "build": "npm run clean && tsc -p tsconfig.build.json",
+    "test": "node -e \"require('fs').rmSync('dist-tests',{recursive:true,force:true})\" && tsc -p tsconfig.test.json && node dist-tests/tests/index.js",
+    "prepack": "npm run build"
+  },
+  "keywords": [
+    "aioc",
+    "governance",
+    "events",
+    "run-records",
+    "audit",
+    "observability"
+  ],
+  "author": "Tiziano Lattisi - AXIA Studio S.r.l.",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/axiastudio/aioc.git",
+    "directory": "packages/aioc-governance-events"
+  },
+  "bugs": {
+    "url": "https://github.com/axiastudio/aioc/issues"
+  },
+  "homepage": "https://axiastudio.github.io/aioc",
+  "publishConfig": {
+    "access": "public"
+  },
+  "peerDependencies": {
+    "@axiastudio/aioc": "^0.2.3"
+  },
+  "devDependencies": {
+    "@axiastudio/aioc": "^0.2.3",
+    "@types/node": "^22.15.3",
+    "typescript": "^5.9.2"
+  }
+}

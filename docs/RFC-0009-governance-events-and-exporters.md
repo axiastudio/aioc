@@ -265,8 +265,9 @@ export interface GovernanceEventExporter {
 A helper can adapt an exporter into a `RunRecordSink`:
 
 ```ts
-export interface GovernanceEventSinkOptions<TContext = unknown>
-  extends ToGovernanceEventsOptions<TContext> {
+export interface GovernanceEventSinkOptions<
+  TContext = unknown,
+> extends ToGovernanceEventsOptions<TContext> {
   onExportError?: (error: unknown, record: RunRecord<TContext>) => void;
 }
 
@@ -427,11 +428,22 @@ Minimum tests for `@axiastudio/aioc-governance-events`:
 5. Should `aioc-export-otel` map governance events to logs only, span events
    only, or both?
 
+## Implementation Status
+
+`@axiastudio/aioc-governance-events` now implements the experimental v0 schema,
+`toGovernanceEvents(record, options)`, the batch exporter contract, and
+`createGovernanceEventSink(...)`.
+
+The package intentionally does not include CloudEvents, OpenTelemetry, OCSF, or
+vendor-specific adapters yet. Those adapters should validate the canonical event
+shape before RFC-0009 is promoted out of experimental status.
+
 ## Adoption Plan
 
 1. Keep this RFC `Experimental`.
 2. Implement `@axiastudio/aioc-governance-events` with only the mapper,
-   schema, exporter contract, and sink helper.
+   schema, exporter contract, and sink helper. Completed by the initial
+   experimental package.
 3. Validate the schema with one real exporter, preferably CloudEvents or OTel.
 4. Add a canonical example that stores the full `RunRecord` and exports reduced
    governance events.

@@ -35,6 +35,8 @@
     "docs:dev": "npm run docs:sync && cd apps/aioc-docs && zsh -lc 'npm run dev'",
     "docs:build": "npm run docs:sync && cd apps/aioc-docs && zsh -lc 'npm run build'",
     "docs:preview": "cd apps/aioc-docs && zsh -lc 'npm run preview'",
+    "governance-events:build": "npm run build && cd packages/aioc-governance-events && npm run build",
+    "governance-events:test": "npm run build && cd packages/aioc-governance-events && npm test",
     "test:mistral": "tsx src/examples/mistral-smoke.ts",
     "prepack": "npm run build:package"
   },

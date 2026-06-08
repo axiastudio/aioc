@@ -23,6 +23,13 @@ AIOC `0.2.1` realigns the `0.2.x` package line with the current `main` history a
 AIOC `0.2.2` completes the descriptor instruction-composition surface with reusable `instruction_parts`, ordered `instructions_sequence`, and boolean `where` gates.
 AIOC `0.2.3` adds RFC-0010 policy composition helpers for exact-name tool and handoff policy dispatch without changing runtime enforcement semantics.
 
+### Experimental Packages
+
+`@axiastudio/aioc-governance-events` implements the RFC-0009 governance-event
+mapper outside the core runtime package. It derives reduced, redacted,
+event-shaped records from `RunRecord` values and remains experimental while the
+exporter shape is validated with real CloudEvents/OpenTelemetry-style adapters.
+
 - Release notes: `CHANGELOG.md`
 - Historical beta contract snapshot: `docs/BETA-CONTRACT.md`
 - Historical alpha contract snapshot: `docs/ALPHA-CONTRACT.md`
