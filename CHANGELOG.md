@@ -1,6 +1,9 @@
 # Changelog
 
-## Unreleased
+## 0.2.4 - 2026-06-09
+
+Release that introduces experimental governance-event packages and the first
+OpenTelemetry Logs adapter without changing the core runtime surface.
 
 ### Added
 
