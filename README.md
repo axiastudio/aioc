@@ -1,10 +1,25 @@
 # @axiastudio/aioc
 
-AIOC is a governance-first SDK for LLM agents: models can propose actions, while deterministic policies and runtime controls enforce decisions.
-It provides default-deny gates for tools and handoffs, end-to-end auditability (run records, prompt snapshots, request fingerprints), and a foundation for verifiable iteration on prompts and policies.
-AIOC is designed for enterprise and public-sector contexts with privacy-by-design and high-accountability (AI Act-style) governance requirements.
+AIOC is a deterministic governance kernel for LLM agents: models can propose actions, while application-owned policies and runtime controls decide what is actually allowed to happen.
+It is built around default-deny gates for tools and handoffs, portable audit artifacts (`RunRecord`, prompt snapshots, request fingerprints), and replay/compare workflows for verifiable iteration on prompts and policies.
+AIOC is designed for enterprise and public-sector contexts where governance cannot be outsourced to an observability dashboard, hosted trace store, or framework-owned approval workflow.
 
 Project home and documentation: [https://axiastudio.github.io/aioc](https://axiastudio.github.io/aioc)
+
+## Positioning
+
+AIOC does not try to be a full agent platform, hosted tracing product, evaluation suite, or human-review workflow engine.
+Those systems are useful, but they make governance-sensitive decisions about storage, retention, access, escalation, and audit semantics.
+
+AIOC keeps the enforcement boundary inside the application instead:
+
+- the model proposes; deterministic policy code authorizes or denies
+- execution-impacting capabilities are deny-by-default
+- audit evidence is emitted as portable records rather than owned by a required control plane
+- persistence, approvals, retention, access control, monitoring, and deployment remain host-application responsibilities
+
+In short: AIOC treats observability as evidence, not as governance itself.
+Its core job is to make agent execution boundaries explicit, testable, auditable, and hard to bypass.
 
 ## Release Status
 
