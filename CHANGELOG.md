@@ -9,7 +9,7 @@
   contract, and `RunRecord` sink helper.
 - Added experimental `@axiastudio/aioc-export-otel` package that maps
   governance events to OpenTelemetry Logs, with a console smoke exporter
-  example.
+  example and a SigNoz/OTLP HTTP smoke example.
 
 ### Changed
 

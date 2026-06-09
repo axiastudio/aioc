@@ -45,6 +45,7 @@
     "export-otel:build": "npm run governance-events:build && npm run build -w @axiastudio/aioc-export-otel",
     "export-otel:test": "npm run governance-events:build && npm test -w @axiastudio/aioc-export-otel",
     "export-otel:console": "npm run governance-events:build && npm run console -w @axiastudio/aioc-export-otel",
+    "export-otel:signoz": "npm run governance-events:build && npm run signoz -w @axiastudio/aioc-export-otel",
     "test:mistral": "tsx src/examples/mistral-smoke.ts",
     "prepack": "npm run build:package"
   },

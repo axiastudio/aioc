@@ -443,7 +443,8 @@ experimental status.
 governance events to OpenTelemetry Logs and intentionally does not configure an
 OpenTelemetry SDK, processor, collector, OTLP endpoint, or delivery guarantee.
 A local `ConsoleLogRecordExporter` smoke example validates the mapping without
-requiring a collector.
+requiring a collector. A SigNoz/OTLP HTTP smoke example validates delivery to a
+local OTLP logs endpoint when a collector is available.
 
 ## Adoption Plan
 

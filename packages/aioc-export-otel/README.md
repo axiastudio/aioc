@@ -45,6 +45,24 @@ npm run export-otel:console
 This prints the mapped OpenTelemetry `LogRecord` to stdout. It is useful for
 checking the adapter shape before connecting a collector or backend.
 
+## SigNoz Smoke
+
+Start a local SigNoz stack or OpenTelemetry Collector that accepts OTLP/HTTP
+logs on `http://localhost:4318/v1/logs`, then run:
+
+```bash
+npm run export-otel:signoz
+```
+
+Use `AIOC_OTEL_LOGS_URL` to target a different collector endpoint:
+
+```bash
+AIOC_OTEL_LOGS_URL=http://localhost:4318/v1/logs npm run export-otel:signoz
+```
+
+In SigNoz, search logs for
+`aioc.governance.event_id = signoz-smoke-event-1`.
+
 ## Status
 
 Experimental. The adapter currently maps governance events to OpenTelemetry Logs
