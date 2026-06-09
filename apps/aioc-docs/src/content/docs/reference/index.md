@@ -10,6 +10,7 @@ It is not a generated API reference for every exported symbol. It focuses on the
 ## Current Scope
 
 - `Agent`
+- companion packages
 - harness descriptors
 - `tool(...)`
 - `run(...)`
@@ -24,6 +25,8 @@ It is not a generated API reference for every exported symbol. It focuses on the
 ## Related Pages
 
 - For the run-level audit artifact itself, see [`Run Records`](../run-records/).
+- For optional packages around the core runtime, see
+  [`Companion Packages`](./packages/).
 - For descriptor-based agent graph construction, see [`Harness Descriptor`](./harness-descriptor/).
 - For runnable repository examples, see [`Examples`](../example-guides/).
 - For the visual example app built on top of `RunRecord`, see [`Reference UI`](../reference-ui/).

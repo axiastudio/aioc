@@ -38,6 +38,7 @@ export default defineConfig({
           label: "Reference",
           items: [
             "reference",
+            "reference/packages",
             "reference/agent",
             "reference/harness-descriptor",
             "reference/tools",
