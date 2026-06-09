@@ -2,10 +2,10 @@
 title: AIOC
 template: splash
 editUrl: false
-description: Governance-first Agent SDK for LLM agents with deterministic policy gates, auditable run records, and high-accountability runtime patterns.
+description: Deterministic governance kernel for LLM agents with default-deny policy gates, portable run records, and application-owned oversight boundaries.
 hero:
   title: AIOC
-  tagline: Governance-first Agent SDK
+  tagline: Deterministic governance kernel for agent execution
   actions:
     - text: Quickstart
       link: ./quickstart/
@@ -20,7 +20,23 @@ hero:
 
 `aioc` is a TypeScript SDK for agent systems where models can propose actions, but deterministic runtime components decide what is actually allowed to happen.
 
-It is designed for applications that must retain full governance control over persistence, tracing, approval, and oversight concerns, instead of inheriting those decisions from the SDK.
+It is designed for applications that must retain full governance control over persistence, tracing, approval, retention, access, deployment, and oversight concerns instead of inheriting those decisions from an SDK, hosted trace store, or framework-owned review workflow.
+
+## Positioning
+
+`aioc` is intentionally not a full agent platform, observability dashboard, hosted evaluation suite, or human-review product.
+Those tools can be valuable, but tracing and review workflows are not governance by themselves.
+They also make assumptions about what is stored, where it is stored, who can inspect it, how long it is retained, and how escalations are handled.
+
+`aioc` focuses on the lower-level enforcement boundary:
+
+- model outputs are proposals, not permissions
+- tools and handoffs are deny-by-default unless deterministic policy code allows them
+- audit evidence is emitted as portable `RunRecord` artifacts
+- prompt snapshots and request fingerprints support review, replay, and non-regression workflows
+- storage, retention, access control, approval semantics, monitoring, and deployment remain application-owned
+
+This makes `aioc` a governance kernel that can feed enterprise control planes without requiring the control plane to own the runtime semantics.
 
 ## Status
 
