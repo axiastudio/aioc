@@ -5,7 +5,7 @@ editUrl: false
 description: Governance-first TypeScript SDK for agent systems with default-deny tools, handoffs, and application-owned policy enforcement.
 hero:
   title: AIOC
-  tagline: "<strong>Governance-first agent execution.</strong> Model outputs are proposals, approvals are evidence rather than overrides, and application-owned policy code decides what may actually execute."
+  tagline: "<strong>Governance-first agent execution.</strong> Models propose actions. Application-owned policies decide what may execute, and approvals are evidence rather than overrides. Every run can produce a portable <code>RunRecord</code> for audit, replay, and non-regression."
   image:
     html: |
       <div class="aioc-hero-visual" aria-hidden="true">
@@ -24,7 +24,13 @@ hero:
           <span>approval required</span>
           <span>deny</span>
         </div>
-        <div class="aioc-record">Approval evidence is re-evaluated by policy; it never unlocks execution by itself.</div>
+        <div class="aioc-record">
+          <strong>RunRecord</strong>
+          <span>audit</span>
+          <span>replay</span>
+          <span>compare</span>
+        </div>
+        <div class="aioc-footnote">Approval evidence is re-evaluated by policy; it never unlocks execution by itself.</div>
       </div>
   actions:
     - text: Quickstart
@@ -66,6 +72,12 @@ The difference is not just that policies exist. `aioc` never asks the runtime to
 approve its own execution. A human or external workflow can produce approval
 evidence, but the request proceeds only after application-owned policy evaluates
 again and no blocking condition still applies.
+
+`RunRecord` is not a framework-owned trace. It is a portable execution artifact
+that your application can store, redact, inspect, replay, and compare outside
+the runtime that produced it. That distinction matters when auditability must
+survive UI choices, vendor choices, retention policies, and future prompt or
+policy changes.
 
 ## Example Use Case
 
