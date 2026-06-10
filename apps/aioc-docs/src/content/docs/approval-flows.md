@@ -5,6 +5,15 @@ description: How approval-required actions move from blocked proposal to policy 
 
 `require_approval` blocks execution, but it does not define an approval product.
 
+The central rule is:
+
+> Approval is evidence, not an override.
+
+An approved request does not unlock a pending tool call or handoff by itself.
+It only changes the evidence available to a later policy evaluation. Execution
+proceeds only when application-owned policy evaluates the proposal again and
+returns `allow`.
+
 `aioc` gives you the runtime contract:
 
 - a typed approval-required outcome
@@ -123,6 +132,11 @@ The policy should not need to reimplement fingerprint logic.
 ## Why Policy Remains The Enforcement Point
 
 Approval does not execute anything by itself.
+
+It also does not resume a suspended proposal by bypassing the condition that
+blocked it. A resume attempt is simply a later evaluation with more evidence.
+If the evidence no longer satisfies policy, or if any other deny condition still
+applies, the request remains blocked.
 
 The sequence is:
 

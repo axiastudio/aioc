@@ -5,7 +5,7 @@ editUrl: false
 description: Governance-first TypeScript SDK for agent systems with default-deny tools, handoffs, and application-owned policy enforcement.
 hero:
   title: AIOC
-  tagline: "<strong>Governance-first agent execution.</strong> Model outputs are proposals, tools and handoffs are denied by default, and application-owned policy code decides what may actually execute."
+  tagline: "<strong>Governance-first agent execution.</strong> Model outputs are proposals, approvals are evidence rather than overrides, and application-owned policy code decides what may actually execute."
   image:
     html: |
       <div class="aioc-hero-visual" aria-hidden="true">
@@ -17,14 +17,14 @@ hero:
         </div>
         <div class="aioc-gate">
           <span>Policy gate</span>
-          <strong>Deny by default</strong>
+          <strong>No policy, no execution</strong>
         </div>
         <div class="aioc-decisions">
           <span>allow</span>
-          <span>approval</span>
+          <span>approval required</span>
           <span>deny</span>
         </div>
-        <div class="aioc-record">RunRecord: policy decision, prompt snapshot, tool activity</div>
+        <div class="aioc-record">Approval evidence is re-evaluated by policy; it never unlocks execution by itself.</div>
       </div>
   actions:
     - text: Quickstart
@@ -54,12 +54,18 @@ semantics.
 
 - model outputs are proposals, not permissions
 - tools and handoffs are deny-by-default unless deterministic policy code allows them
+- approval evidence is re-evaluated by policy rather than consumed as an automatic unlock
 - audit evidence is emitted as portable `RunRecord` artifacts
 - prompt snapshots and request fingerprints support review, replay, and non-regression workflows
 - storage, retention, access control, approval semantics, monitoring, and deployment remain application-owned
 
 This makes `aioc` useful when governance is part of your product or operating
 environment, not an implementation detail delegated to a generic framework.
+
+The difference is not just that policies exist. `aioc` never asks the runtime to
+approve its own execution. A human or external workflow can produce approval
+evidence, but the request proceeds only after application-owned policy evaluates
+again and no blocking condition still applies.
 
 ## Example Use Case
 
@@ -68,10 +74,16 @@ create refunds, and escalate cases. The model can propose a refund or handoff,
 but `aioc` routes that proposal through deterministic policy first.
 
 Low-risk actions can be allowed automatically, sensitive actions can require
-approval, and denied actions never execute. Each run can produce a `RunRecord`
-with prompt snapshots, policy decisions, request fingerprints, and tool
-activity. When prompts or policies change, the team can replay or compare prior
-runs to check whether behavior changed in an expected way.
+approval, and denied actions never execute. If a reviewer approves the refund,
+that approval does not unlock the suspended call by itself; the application
+passes approval evidence into a later run, policy evaluates again, and execution
+only proceeds if the proposal hash, grant status, expiry, and current context
+still satisfy the policy.
+
+Each run can produce a `RunRecord` with prompt snapshots, policy decisions,
+request fingerprints, and tool activity. When prompts or policies change, the
+team can replay or compare prior runs to check whether behavior changed in an
+expected way.
 
 ## What AIOC Is Not
 
