@@ -44,6 +44,11 @@ hero:
       variant: minimal
 ---
 
+<div class="aioc-payoff">
+  <strong>Don’t ask the harness to police itself.</strong>
+  <span>Make it produce evidence, then let application-owned policy decide.</span>
+</div>
+
 It is designed for applications that must retain full governance control over persistence, tracing, approval, retention, access, deployment, and oversight concerns instead of inheriting those decisions from an SDK, hosted trace store, or framework-owned review workflow.
 
 ## Why AIOC

@@ -310,6 +310,27 @@ function normalizeActionHref(href) {
       line-height: 1.35;
     }
 
+    :global(.sl-markdown-content .aioc-payoff) {
+      display: grid;
+      gap: 0.45rem;
+      margin-block: clamp(1rem, 3vw, 1.75rem) clamp(1.75rem, 4vw, 2.5rem);
+      padding-block: 1rem;
+      border-block: 1px solid color-mix(in srgb, var(--sl-color-accent-high), transparent 55%);
+      color: var(--sl-color-gray-1);
+      font-size: clamp(var(--sl-text-lg), 2.5vw, var(--sl-text-2xl));
+      line-height: 1.25;
+    }
+
+    :global(.sl-markdown-content .aioc-payoff strong) {
+      color: var(--sl-color-white);
+      font-size: clamp(var(--sl-text-xl), 3vw, var(--sl-text-3xl));
+      line-height: 1.1;
+    }
+
+    :global(.sl-markdown-content .aioc-payoff span) {
+      color: var(--sl-color-gray-2);
+    }
+
     @media (max-width: 38rem) {
       .hero {
         grid-template-columns: minmax(0, 1fr);
