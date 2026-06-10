@@ -2,10 +2,30 @@
 title: AIOC
 template: splash
 editUrl: false
-description: Deterministic governance kernel for LLM agents with default-deny policy gates, portable run records, and application-owned oversight boundaries.
+description: Governance-first TypeScript SDK for agent systems with default-deny tools, handoffs, and application-owned policy enforcement.
 hero:
   title: AIOC
-  tagline: Deterministic governance kernel for agent execution
+  tagline: "<strong>Governance-first agent execution.</strong> Model outputs are proposals, tools and handoffs are denied by default, and application-owned policy code decides what may actually execute."
+  image:
+    html: |
+      <div class="aioc-hero-visual" aria-hidden="true">
+        <div class="aioc-visual-label">Runtime boundary</div>
+        <div class="aioc-flow">
+          <span class="aioc-node aioc-node-model">Model</span>
+          <span class="aioc-arrow">-&gt;</span>
+          <span class="aioc-node aioc-node-proposal">Tool proposal</span>
+        </div>
+        <div class="aioc-gate">
+          <span>Policy gate</span>
+          <strong>Deny by default</strong>
+        </div>
+        <div class="aioc-decisions">
+          <span>allow</span>
+          <span>approval</span>
+          <span>deny</span>
+        </div>
+        <div class="aioc-record">RunRecord: policy decision, prompt snapshot, tool activity</div>
+      </div>
   actions:
     - text: Quickstart
       link: ./quickstart/
@@ -18,17 +38,19 @@ hero:
       variant: minimal
 ---
 
-`aioc` is a TypeScript SDK for agent systems where models can propose actions, but deterministic runtime components decide what is actually allowed to happen.
-
 It is designed for applications that must retain full governance control over persistence, tracing, approval, retention, access, deployment, and oversight concerns instead of inheriting those decisions from an SDK, hosted trace store, or framework-owned review workflow.
 
-## Positioning
+## Why AIOC
 
-`aioc` is intentionally not a full agent platform, observability dashboard, hosted evaluation suite, or human-review product.
-Those tools can be valuable, but tracing and review workflows are not governance by themselves.
-They also make assumptions about what is stored, where it is stored, who can inspect it, how long it is retained, and how escalations are handled.
+Use `aioc` when an agent can suggest useful actions, but your application must
+remain responsible for deciding whether those actions are allowed.
 
-`aioc` focuses on the lower-level enforcement boundary:
+Many agent tools optimize for orchestration, tracing, evaluation, or
+human-review workflows. Those capabilities can be valuable, but they often bring
+their own assumptions about storage, retention, access, escalation, and audit
+semantics.
+
+`aioc` focuses on the lower-level enforcement boundary instead:
 
 - model outputs are proposals, not permissions
 - tools and handoffs are deny-by-default unless deterministic policy code allows them
@@ -36,7 +58,25 @@ They also make assumptions about what is stored, where it is stored, who can ins
 - prompt snapshots and request fingerprints support review, replay, and non-regression workflows
 - storage, retention, access control, approval semantics, monitoring, and deployment remain application-owned
 
-This makes `aioc` a governance kernel that can feed enterprise control planes without requiring the control plane to own the runtime semantics.
+This makes `aioc` useful when governance is part of your product or operating
+environment, not an implementation detail delegated to a generic framework.
+
+## Example Use Case
+
+Imagine an internal support agent that can read account data, draft replies,
+create refunds, and escalate cases. The model can propose a refund or handoff,
+but `aioc` routes that proposal through deterministic policy first.
+
+Low-risk actions can be allowed automatically, sensitive actions can require
+approval, and denied actions never execute. Each run can produce a `RunRecord`
+with prompt snapshots, policy decisions, request fingerprints, and tool
+activity. When prompts or policies change, the team can replay or compare prior
+runs to check whether behavior changed in an expected way.
+
+## What AIOC Is Not
+
+`aioc` is intentionally not a full agent platform, observability dashboard, hosted evaluation suite, or human-review product.
+Those tools can be valuable, but tracing and review workflows are not governance by themselves. `aioc` is a governance kernel that can feed enterprise control planes without requiring the control plane to own the runtime semantics.
 
 ## Status
 
