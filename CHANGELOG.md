@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased
+## 0.2.5 - 2026-06-11
 
 ### Added
 
@@ -17,6 +17,13 @@
 
 - Prevented strict/hybrid replay from nesting recorded allow tool result
   envelopes when reusing persisted tool outputs.
+
+## @axiastudio/aioc-inspect-ui 0.1.2 - 2026-06-11
+
+### Changed
+
+- Updated RunRecord scope reconstruction to prefer `inputItemCount` before the
+  legacy first request fingerprint `messageCount` fallback.
 
 ## 0.2.4 - 2026-06-09
 

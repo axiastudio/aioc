@@ -23,7 +23,7 @@ Its core job is to make agent execution boundaries explicit, testable, auditable
 
 ## Release Status
 
-Current stable release: `0.2.4`.
+Current stable release: `0.2.5`.
 The stable line started with `0.1.0`.
 The core runtime surface is compatibility-managed. Breaking changes to the stable surface should ship only with explicit migration guidance and release notes.
 
@@ -38,6 +38,7 @@ AIOC `0.2.1` realigns the `0.2.x` package line with the current `main` history a
 AIOC `0.2.2` completes the descriptor instruction-composition surface with reusable `instruction_parts`, ordered `instructions_sequence`, and boolean `where` gates.
 AIOC `0.2.3` adds RFC-0010 policy composition helpers for exact-name tool and handoff policy dispatch without changing runtime enforcement semantics.
 AIOC `0.2.4` adds experimental governance-event packages and an OpenTelemetry Logs exporter for reduced, operational observability events derived from `RunRecord` values.
+AIOC `0.2.5` makes replay history-faithful by recording the initial input scope in `RunRecord` and replaying from it by default.
 
 ### Experimental Packages
 

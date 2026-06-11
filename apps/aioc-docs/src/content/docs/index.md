@@ -109,7 +109,7 @@ Those tools can be valuable, but tracing and review workflows are not governance
 
 ## Status
 
-The current stable release is `0.2.4`.
+The current stable release is `0.2.5`.
 The stable line started with `0.1.0`.
 
 The current documentation covers:
@@ -135,6 +135,8 @@ The current documentation covers:
 `aioc` `0.2.3` adds RFC-0010 policy composition helpers for exact-name tool and handoff policy dispatch without changing runtime enforcement semantics.
 
 `aioc` `0.2.4` adds experimental governance-event packages and an OpenTelemetry Logs exporter for reduced, operational observability events derived from `RunRecord` values.
+
+`aioc` `0.2.5` makes replay history-faithful by recording the initial input scope in `RunRecord` and replaying from it by default.
 
 ## Install
 
