@@ -11,6 +11,7 @@ import {
   setDefaultProvider,
   tool,
   type RunRecord,
+  type AgentInputItem,
 } from "../../index";
 import { toHandoffToolName } from "../support/handoff-name";
 import { ScriptedProvider } from "../support/scripted-provider";
@@ -62,6 +63,7 @@ export async function runRunRecordUnitTests(): Promise<void> {
     assert.equal(records[0]?.status, "completed");
     assert.equal(records[0]?.question, "hello");
     assert.equal(records[0]?.response, "Hi there.");
+    assert.equal(records[0]?.inputItemCount, 1);
     assert.equal(records[0]?.contextRedacted, true);
     assert.equal(records[0]?.contextSnapshot.secret, "[REDACTED]");
     assert.equal(records[0]?.promptSnapshots.length, 1);
@@ -118,6 +120,53 @@ export async function runRunRecordUnitTests(): Promise<void> {
       records[0]?.requestFingerprints[0]?.modelSettingsHash ?? "",
       /^[a-f0-9]{64}$/,
     );
+  }
+
+  {
+    const records: RunRecord[] = [];
+    const inputItems: AgentInputItem[] = [
+      {
+        type: "message",
+        role: "user",
+        content: "Previous question",
+      },
+      {
+        type: "message",
+        role: "assistant",
+        content: "Previous answer",
+      },
+      {
+        type: "message",
+        role: "user",
+        content: "Current question",
+      },
+    ];
+
+    setDefaultProvider(
+      new ScriptedProvider([
+        [{ type: "completed", message: "Current answer" }],
+      ]),
+    );
+
+    const agent = new Agent({
+      name: "Run record input scope",
+      model: "fake-model",
+    });
+
+    const result = await run(agent, inputItems, {
+      record: {
+        sink: (record) => {
+          records.push(record);
+        },
+      },
+    });
+
+    assert.equal(result.finalOutput, "Current answer");
+    assert.equal(records.length, 1);
+    assert.equal(records[0]?.inputItemCount, inputItems.length);
+    assert.equal(records[0]?.requestFingerprints[0]?.messageCount, 3);
+    assert.equal(records[0]?.items.length, 4);
+    assert.deepEqual(records[0]?.items.slice(0, 3), inputItems);
   }
 
   {

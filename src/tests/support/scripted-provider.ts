@@ -6,6 +6,7 @@ import type {
 
 export class ScriptedProvider implements ModelProvider {
   private readonly turns: ProviderEvent[][];
+  readonly requests: ProviderRequest[] = [];
   private index = 0;
 
   constructor(turns: ProviderEvent[][]) {
@@ -13,9 +14,13 @@ export class ScriptedProvider implements ModelProvider {
   }
 
   async *stream<TContext = unknown>(
-    _request: ProviderRequest<TContext>,
+    request: ProviderRequest<TContext>,
   ): AsyncIterable<ProviderEvent> {
-    void _request;
+    this.requests.push({
+      ...request,
+      messages: [...request.messages],
+      tools: [...request.tools] as ProviderRequest["tools"],
+    });
     const events = this.turns[this.index] ?? [];
     this.index += 1;
 

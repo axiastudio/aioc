@@ -143,15 +143,28 @@ function findLastUserMessageIndex(items: AgentInputItem[]): number {
   return -1;
 }
 
+function isValidInputItemCount(
+  value: unknown,
+  items: AgentInputItem[],
+): value is number {
+  return (
+    typeof value === "number" &&
+    Number.isInteger(value) &&
+    value >= 0 &&
+    value <= items.length
+  );
+}
+
 export function deriveRunRecordScope(
   record: RunRecord<unknown>,
 ): RunRecordScope {
-  const inputItemCount = record.requestFingerprints[0]?.messageCount;
-  const hasScopedInput =
-    Number.isInteger(inputItemCount) &&
-    typeof inputItemCount === "number" &&
-    inputItemCount >= 0 &&
-    inputItemCount <= record.items.length;
+  const inputItemCount = isValidInputItemCount(
+    record.inputItemCount,
+    record.items,
+  )
+    ? record.inputItemCount
+    : record.requestFingerprints[0]?.messageCount;
+  const hasScopedInput = isValidInputItemCount(inputItemCount, record.items);
   const inputItems = hasScopedInput
     ? record.items.slice(0, inputItemCount)
     : [];

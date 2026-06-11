@@ -167,13 +167,13 @@ export function InspectPage({
                   ) : null}
                   {scope.fallbackUsed ? (
                     <span className="inline-flex rounded-full border border-amber-200 bg-amber-50 px-3 py-1 font-medium text-amber-800">
-                      Scope fallback: full trajectory
+                      Scope fallback
                     </span>
                   ) : null}
                 </div>
                 <p className="mt-3 text-sm leading-7 text-slate-600">
                   {scope.fallbackUsed
-                    ? "The first request fingerprint did not expose a usable messageCount, so the page is showing the full trajectory as the current run."
+                    ? "The record does not expose a usable input scope, so the page is showing the full trajectory as the current run."
                     : "The page is scoped to the current run by splitting the recorded trajectory into input history and emitted items."}
                 </p>
               </div>

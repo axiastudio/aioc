@@ -1,5 +1,23 @@
 # Changelog
 
+## Unreleased
+
+### Added
+
+- Added `RunRecord.inputItemCount` to record the initial normalized input scope
+  used by history-faithful replay and inspection tools.
+
+### Changed
+
+- Updated `replayFromRunRecord(...)` to replay from the recorded initial input
+  by default, with legacy fallback to the first request fingerprint
+  `messageCount` and explicit `inputMode: "question"` support.
+
+### Fixed
+
+- Prevented strict/hybrid replay from nesting recorded allow tool result
+  envelopes when reusing persisted tool outputs.
+
 ## 0.2.4 - 2026-06-09
 
 Release that introduces experimental governance-event packages and the first

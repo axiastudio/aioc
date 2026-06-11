@@ -56,6 +56,7 @@ await replayFromRunRecord({
   sourceRunRecord,
   agent,
   mode: "live" | "strict" | "hybrid",
+  inputMode: "recorded" | "question",
   runOptions,
   metadataOverrides,
   onMissingToolCall,
@@ -68,11 +69,42 @@ await replayFromRunRecord({
 - `strict`: use recorded tool outputs only
 - `hybrid`: use recorded outputs when available, otherwise fall back to live execution
 
+### Input Mode
+
+By default, replay uses `inputMode: "recorded"`.
+
+That means the new run starts from the same initial normalized input as the
+recorded run:
+
+```ts
+sourceRunRecord.items.slice(0, sourceRunRecord.inputItemCount)
+```
+
+For legacy records without `inputItemCount`, replay falls back to
+`sourceRunRecord.requestFingerprints[0].messageCount` when it is valid. If no
+input scope can be reconstructed, replay falls back to `sourceRunRecord.question`.
+
+Use `inputMode: "question"` only when you intentionally want prompt-only replay
+instead of history-faithful replay.
+
+`replayStats.inputSource` reports which source was used:
+
+- `inputItemCount`
+- `requestFingerprint`
+- `questionFallback`
+- `question`
+
 ### Important Rule
 
 Replay does not bypass policy enforcement.
 
 If replayed tools or handoffs still need authorization in your runtime, provide the relevant policies in `runOptions`.
+
+Recorded tool outputs are stored as normalized envelopes in `RunRecord.items`.
+When strict or hybrid replay reuses a recorded allow output, `aioc` unwraps the
+envelope and returns its `data` to the tool wrapper so the runtime can produce a
+fresh single envelope. Recorded `denied` and `approval_required` envelopes do not
+bypass replay policies.
 
 ## Example
 

@@ -17,11 +17,28 @@ It supports:
 ## Main Captured Signals
 
 - `items`
+- `inputItemCount`
 - `promptSnapshots`
 - `requestFingerprints`
 - `policyDecisions`
 - `guardrailDecisions`
 - `metadata`
+
+## Input Scope
+
+`items` contains the complete normalized run trajectory: the input that was
+passed to `run(...)` plus items produced while the run executes.
+
+`inputItemCount` marks where the original normalized input ends inside `items`.
+This lets replay and inspection tools distinguish:
+
+- prior conversation history and the current user message that started the run
+- tool calls, tool outputs, and assistant messages emitted by the recorded run
+
+For older records that do not include `inputItemCount`, replay and inspection
+utilities may infer the boundary from the first request fingerprint
+`messageCount`. If neither value is available, they must fall back to the
+recorded `question` and the replay is not history-faithful.
 
 ## Utilities
 

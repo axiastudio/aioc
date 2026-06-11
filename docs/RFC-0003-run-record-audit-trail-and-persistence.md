@@ -63,6 +63,7 @@ export interface RunRecord<TContext = unknown> {
   contextSnapshot: TContext;
   contextRedacted?: boolean;
   items: AgentInputItem[];
+  inputItemCount?: number;
   promptSnapshots: PromptSnapshotRecord[];
   requestFingerprints: RequestFingerprintRecord[];
   policyDecisions: PolicyDecisionRecord[];
@@ -178,3 +179,38 @@ export interface RunRecordOptions<TContext = unknown> {
 - Prompt snapshot and request fingerprint capture are wired into runtime.
 - Context redaction and sink adapter interfaces are implemented.
 - Unit coverage exists for run record behavior and failure handling.
+
+## Post-Acceptance Refinement: Recorded Input Scope
+
+Accepted on 2026-06-11.
+
+`items` contains the full normalized run history: the initial input plus items
+produced while the run executes. This is useful for audit, but replay needs to
+know where the original input ends. Otherwise a replay started from `question`
+loses preceding history when the original run was started with
+`AgentInputItem[]`, while a replay started from all `items` would incorrectly
+include tool outputs and assistant messages produced by the recorded run.
+
+`RunRecord.inputItemCount` records the number of `items` that belong to the
+normalized input passed to the original `run(...)` call. Runtime sets this value
+before the run loop mutates history.
+
+Replay semantics:
+
+- Default replay input is the recorded initial input:
+  `sourceRunRecord.items.slice(0, sourceRunRecord.inputItemCount)`.
+- Legacy records without `inputItemCount` may infer the input scope from
+  `sourceRunRecord.requestFingerprints[0].messageCount`, because that field was
+  captured before the first provider request.
+- If neither value is available or valid, replay may fall back to
+  `sourceRunRecord.question`; that fallback is not history-faithful and should
+  be surfaced in replay stats.
+- `inputMode: "question"` remains available for compatibility and didactic
+  prompt-only replay.
+
+Strict replay must also account for normalized tool result envelopes persisted
+in `items`. When a recorded tool output is an allow envelope
+`{ status: "ok", code, publicReason, data }`, the replay tool wrapper returns
+`data`, letting the runtime produce a fresh single envelope. Recorded
+`denied` and `approval_required` envelopes do not bypass replay policies; the
+replay run must reproduce those outcomes through its configured policies.

@@ -106,6 +106,7 @@ export interface RunRecord<TContext = unknown> {
   contextSnapshot: TContext;
   contextRedacted?: boolean;
   items: AgentInputItem[];
+  inputItemCount?: number;
   promptSnapshots: PromptSnapshotRecord[];
   requestFingerprints: RequestFingerprintRecord[];
   policyDecisions: PolicyDecisionRecord[];

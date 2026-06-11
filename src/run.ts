@@ -898,6 +898,7 @@ export async function run<TContext = unknown>(
   const maxTurns = options.maxTurns ?? 10;
   const runRecorder = await RunRecorder.create({
     input,
+    inputItemCount: state.history.length,
     context: runContext.context,
     providerName: provider.constructor.name,
     recordOptions: options.record,

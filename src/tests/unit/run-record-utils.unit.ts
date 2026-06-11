@@ -9,6 +9,7 @@ import {
   replayFromRunRecord,
   setDefaultProvider,
   tool,
+  type AgentInputItem,
   type RunRecord,
 } from "../../index";
 import { ScriptedProvider } from "../support/scripted-provider";
@@ -41,6 +42,27 @@ function createRunRecord(
     guardrailDecisions: [],
     metadata: {},
     ...overrides,
+  };
+}
+
+function createRequestFingerprint(
+  messageCount: number,
+): RunRecord<TestContext>["requestFingerprints"][number] {
+  return {
+    timestamp: "2026-03-10T10:00:00.000Z",
+    turn: 1,
+    agentName: "Agent A",
+    providerName: "ScriptedProvider",
+    model: "fake-model",
+    runtimeVersion: "test-runtime",
+    fingerprintSchemaVersion: "request-fingerprint.v1",
+    requestHash: "request-hash",
+    systemPromptHash: "system-prompt-hash",
+    messagesHash: "messages-hash",
+    toolsHash: "tools-hash",
+    modelSettingsHash: "model-settings-hash",
+    messageCount,
+    toolCount: 0,
   };
 }
 
@@ -194,6 +216,213 @@ export async function runRunRecordUtilsUnitTests(): Promise<void> {
   }
 
   {
+    const inputItems: AgentInputItem[] = [
+      {
+        type: "message",
+        role: "user",
+        content: "Previous question",
+      },
+      {
+        type: "message",
+        role: "assistant",
+        content: "Previous answer",
+      },
+      {
+        type: "message",
+        role: "user",
+        content: "Current question",
+      },
+    ];
+    const sourceRunRecord = createRunRecord({
+      question: "Current question",
+      inputItemCount: inputItems.length,
+      items: [
+        ...inputItems,
+        {
+          type: "tool_call_item",
+          callId: "recorded-call-1",
+          name: "lookup",
+          arguments: { id: "1" },
+        },
+        {
+          type: "tool_call_output_item",
+          callId: "recorded-call-1",
+          output: {
+            status: "ok",
+            code: null,
+            publicReason: null,
+            data: { id: "1" },
+          },
+        },
+        {
+          type: "message",
+          role: "assistant",
+          content: "Recorded answer",
+        },
+      ],
+    });
+
+    const provider = new ScriptedProvider([
+      [{ type: "completed", message: "Replayed answer" }],
+    ]);
+    setDefaultProvider(provider);
+
+    const agent = new Agent<TestContext>({
+      name: "Replay Input Scope Agent",
+      model: "fake-model",
+    });
+
+    const replay = await replayFromRunRecord({
+      sourceRunRecord,
+      agent,
+      mode: "live",
+    });
+
+    assert.equal(replay.result.finalOutput, "Replayed answer");
+    assert.equal(replay.replayStats.inputSource, "inputItemCount");
+    assert.deepEqual(provider.requests[0]?.messages, inputItems);
+    assert.deepEqual(replay.result.history.slice(0, 3), inputItems);
+    assert.equal(replay.result.history.length, 4);
+  }
+
+  {
+    const inputItems: AgentInputItem[] = [
+      {
+        type: "message",
+        role: "user",
+        content: "Legacy previous question",
+      },
+      {
+        type: "message",
+        role: "user",
+        content: "Legacy current question",
+      },
+    ];
+    const sourceRunRecord = createRunRecord({
+      question: "Legacy current question",
+      items: [
+        ...inputItems,
+        {
+          type: "message",
+          role: "assistant",
+          content: "Legacy recorded answer",
+        },
+      ],
+      requestFingerprints: [createRequestFingerprint(inputItems.length)],
+    });
+
+    const provider = new ScriptedProvider([
+      [{ type: "completed", message: "Legacy replayed answer" }],
+    ]);
+    setDefaultProvider(provider);
+
+    const agent = new Agent<TestContext>({
+      name: "Replay Legacy Input Scope Agent",
+      model: "fake-model",
+    });
+
+    const replay = await replayFromRunRecord({
+      sourceRunRecord,
+      agent,
+      mode: "live",
+    });
+
+    assert.equal(replay.result.finalOutput, "Legacy replayed answer");
+    assert.equal(replay.replayStats.inputSource, "requestFingerprint");
+    assert.deepEqual(provider.requests[0]?.messages, inputItems);
+  }
+
+  {
+    const sourceRunRecord = createRunRecord({
+      question: "Question fallback",
+      items: [
+        {
+          type: "message",
+          role: "user",
+          content: "Previous question that cannot be scoped",
+        },
+        {
+          type: "message",
+          role: "assistant",
+          content: "Previous answer that cannot be scoped",
+        },
+      ],
+    });
+
+    const provider = new ScriptedProvider([
+      [{ type: "completed", message: "Question fallback answer" }],
+    ]);
+    setDefaultProvider(provider);
+
+    const agent = new Agent<TestContext>({
+      name: "Replay Question Fallback Agent",
+      model: "fake-model",
+    });
+
+    const replay = await replayFromRunRecord({
+      sourceRunRecord,
+      agent,
+      mode: "live",
+    });
+
+    assert.equal(replay.result.finalOutput, "Question fallback answer");
+    assert.equal(replay.replayStats.inputSource, "questionFallback");
+    assert.deepEqual(provider.requests[0]?.messages, [
+      {
+        type: "message",
+        role: "user",
+        content: "Question fallback",
+      },
+    ]);
+  }
+
+  {
+    const sourceRunRecord = createRunRecord({
+      question: "Question mode",
+      inputItemCount: 2,
+      items: [
+        {
+          type: "message",
+          role: "user",
+          content: "Ignored previous question",
+        },
+        {
+          type: "message",
+          role: "user",
+          content: "Ignored current question",
+        },
+      ],
+    });
+
+    const provider = new ScriptedProvider([
+      [{ type: "completed", message: "Question mode answer" }],
+    ]);
+    setDefaultProvider(provider);
+
+    const agent = new Agent<TestContext>({
+      name: "Replay Question Mode Agent",
+      model: "fake-model",
+    });
+
+    const replay = await replayFromRunRecord({
+      sourceRunRecord,
+      agent,
+      mode: "live",
+      inputMode: "question",
+    });
+
+    assert.equal(replay.result.finalOutput, "Question mode answer");
+    assert.equal(replay.replayStats.inputSource, "question");
+    assert.deepEqual(provider.requests[0]?.messages, [
+      {
+        type: "message",
+        role: "user",
+        content: "Question mode",
+      },
+    ]);
+  }
+
+  {
     const sourceRunRecord = createRunRecord({
       question: "strict replay",
       items: [
@@ -206,7 +435,12 @@ export async function runRunRecordUtilsUnitTests(): Promise<void> {
         {
           type: "tool_call_output_item",
           callId: "src-call-1",
-          output: { source: "recorded" },
+          output: {
+            status: "ok",
+            code: null,
+            publicReason: null,
+            data: { source: "recorded" },
+          },
         },
       ],
     });
@@ -270,6 +504,20 @@ export async function runRunRecordUtilsUnitTests(): Promise<void> {
     assert.equal(replay.replayStats.liveFallbackCalls, 0);
     assert.equal(replayRecordSink.length, 1);
     assert.equal(replay.replayRunRecord?.metadata?.scenario, "strict-replay");
+    const outputItem = replay.result.history.find(
+      (
+        item,
+      ): item is Extract<
+        (typeof replay.result.history)[number],
+        { type: "tool_call_output_item" }
+      > => item.type === "tool_call_output_item",
+    );
+    assert.deepEqual(outputItem?.output, {
+      status: "ok",
+      code: null,
+      publicReason: null,
+      data: { source: "recorded" },
+    });
   }
 
   {

@@ -83,6 +83,7 @@ const RUNTIME_VERSION = resolveRuntimeVersion();
 
 interface RunRecorderCreateOptions<TContext> {
   input: string | AgentInputItem[];
+  inputItemCount: number;
   context: TContext;
   providerName: string;
   recordOptions?: RunRecordOptions<TContext>;
@@ -186,6 +187,7 @@ export class RunRecorder<TContext = unknown> {
   private readonly runRecordId: string;
   private readonly startedAt: string;
   private readonly question: string;
+  private readonly inputItemCount: number;
   private readonly providerName: string;
   private readonly metadata?: Record<string, unknown>;
   private readonly contextSnapshot: RunRecordContextRedactionResult<TContext>;
@@ -204,6 +206,7 @@ export class RunRecorder<TContext = unknown> {
     runRecordId: string,
     startedAt: string,
     question: string,
+    inputItemCount: number,
     providerName: string,
     metadata: Record<string, unknown> | undefined,
     contextSnapshot: RunRecordContextRedactionResult<TContext>,
@@ -213,6 +216,7 @@ export class RunRecorder<TContext = unknown> {
     this.runRecordId = runRecordId;
     this.startedAt = startedAt;
     this.question = question;
+    this.inputItemCount = inputItemCount;
     this.providerName = providerName;
     this.metadata = metadata;
     this.contextSnapshot = contextSnapshot;
@@ -236,6 +240,7 @@ export class RunRecorder<TContext = unknown> {
       runRecordId,
       startedAt,
       question,
+      options.inputItemCount,
       options.providerName,
       options.recordOptions?.metadata,
       contextSnapshot,
@@ -353,6 +358,7 @@ export class RunRecorder<TContext = unknown> {
       contextSnapshot: this.contextSnapshot.contextSnapshot,
       contextRedacted: this.contextSnapshot.contextRedacted,
       items: [...options.items],
+      inputItemCount: this.inputItemCount,
       promptSnapshots: [...this.promptSnapshots],
       requestFingerprints: [...this.requestFingerprints],
       policyDecisions: [...this.policyDecisions],

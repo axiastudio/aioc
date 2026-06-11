@@ -396,6 +396,12 @@ export function compareRunRecords<TContextA, TContextB>(
 }
 
 export type ReplayMode = "live" | "strict" | "hybrid";
+export type ReplayInputMode = "recorded" | "question";
+export type ReplayInputSource =
+  | "inputItemCount"
+  | "requestFingerprint"
+  | "questionFallback"
+  | "question";
 
 export interface MissingToolCallResolution {
   action: "throw" | "use_live" | "use_output";
@@ -419,6 +425,7 @@ export interface ReplayStats {
   replayedFromRecord: number;
   missingToolCalls: number;
   liveFallbackCalls: number;
+  inputSource: ReplayInputSource;
 }
 
 export interface ReplayFromRunRecordInput<TContext = unknown> {
@@ -427,6 +434,7 @@ export interface ReplayFromRunRecordInput<TContext = unknown> {
   agentFactory?: () => Agent<TContext> | Promise<Agent<TContext>>;
   mode: ReplayMode;
   runOptions?: Omit<NonStreamRunOptions<TContext>, "stream">;
+  inputMode?: ReplayInputMode;
   metadataOverrides?: Record<string, unknown>;
   onMissingToolCall?: ReplayMissingToolCallHandler;
 }
@@ -465,15 +473,84 @@ function buildRecordedToolQueues(
   );
   const queues = new Map<string, ExtractedToolCall[]>();
   for (const call of calls) {
-    const key = toToolCallKey(call);
-    const queue = queues.get(key);
-    if (queue) {
-      queue.push(call);
+    const output = toReplayableRecordedToolOutput(call.output);
+    if (output.status === "not_replayable") {
       continue;
     }
-    queues.set(key, [call]);
+
+    const key = toToolCallKey(call);
+    const queue = queues.get(key);
+    const replayableCall = {
+      ...call,
+      output: output.value,
+    };
+    if (queue) {
+      queue.push(replayableCall);
+      continue;
+    }
+    queues.set(key, [replayableCall]);
   }
   return queues;
+}
+
+type ReplayableRecordedToolOutput =
+  | {
+      status: "replayable";
+      value: unknown;
+    }
+  | {
+      status: "not_replayable";
+    };
+
+function isRecordObject(value: unknown): value is Record<string, unknown> {
+  return typeof value === "object" && value !== null && !Array.isArray(value);
+}
+
+function isToolResultEnvelopeLike(value: unknown): value is {
+  status: "ok" | "denied" | "approval_required";
+  data: unknown;
+} {
+  if (!isRecordObject(value)) {
+    return false;
+  }
+
+  return (
+    (value.status === "ok" ||
+      value.status === "denied" ||
+      value.status === "approval_required") &&
+    "code" in value &&
+    "publicReason" in value &&
+    "data" in value
+  );
+}
+
+function toReplayableRecordedToolOutput(
+  value: unknown,
+): ReplayableRecordedToolOutput {
+  if (!isToolResultEnvelopeLike(value)) {
+    return {
+      status: "replayable",
+      value,
+    };
+  }
+
+  if (value.status === "ok") {
+    return {
+      status: "replayable",
+      value: value.data,
+    };
+  }
+
+  if (value.status === "denied" || value.status === "approval_required") {
+    return {
+      status: "not_replayable",
+    };
+  }
+
+  return {
+    status: "replayable",
+    value,
+  };
 }
 
 function findRecordedToolOutput(
@@ -644,17 +721,72 @@ async function resolveReplayAgent<TContext>(
   throw new Error("Replay configuration is missing an agent or agentFactory.");
 }
 
+function isValidInputItemCount(
+  value: unknown,
+  items: AgentInputItem[],
+): value is number {
+  return (
+    typeof value === "number" &&
+    Number.isInteger(value) &&
+    value >= 0 &&
+    value <= items.length
+  );
+}
+
+function resolveReplayInput<TContext>(
+  sourceRunRecord: RunRecord<TContext>,
+  inputMode: ReplayInputMode,
+): {
+  input: string | AgentInputItem[];
+  inputSource: ReplayInputSource;
+} {
+  if (inputMode === "question") {
+    return {
+      input: sourceRunRecord.question,
+      inputSource: "question",
+    };
+  }
+
+  if (
+    isValidInputItemCount(sourceRunRecord.inputItemCount, sourceRunRecord.items)
+  ) {
+    return {
+      input: sourceRunRecord.items.slice(0, sourceRunRecord.inputItemCount),
+      inputSource: "inputItemCount",
+    };
+  }
+
+  const firstRequestMessageCount =
+    sourceRunRecord.requestFingerprints[0]?.messageCount;
+  if (isValidInputItemCount(firstRequestMessageCount, sourceRunRecord.items)) {
+    return {
+      input: sourceRunRecord.items.slice(0, firstRequestMessageCount),
+      inputSource: "requestFingerprint",
+    };
+  }
+
+  return {
+    input: sourceRunRecord.question,
+    inputSource: "questionFallback",
+  };
+}
+
 export async function replayFromRunRecord<TContext = unknown>(
   input: ReplayFromRunRecordInput<TContext>,
 ): Promise<ReplayFromRunRecordResult<TContext>> {
   const baseAgent = await resolveReplayAgent(input);
   const extractedSourceCalls = extractToolCalls(input.sourceRunRecord);
+  const replayInput = resolveReplayInput(
+    input.sourceRunRecord,
+    input.inputMode ?? "recorded",
+  );
   const replayStats: ReplayStats = {
     recordedToolCalls: extractedSourceCalls.filter((call) => call.hasOutput)
       .length,
     replayedFromRecord: 0,
     missingToolCalls: 0,
     liveFallbackCalls: 0,
+    inputSource: replayInput.inputSource,
   };
 
   const mode = input.mode;
@@ -695,7 +827,7 @@ export async function replayFromRunRecord<TContext = unknown>(
     };
   }
 
-  const result = await run(replayAgent, input.sourceRunRecord.question, {
+  const result = await run(replayAgent, replayInput.input, {
     ...runOptions,
     context: replayContext,
     policies: replayPolicies,
