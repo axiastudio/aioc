@@ -14,14 +14,21 @@ All example commands are run from the repository root.
 - `npm run example:tool-policy`
 - `npm run example:policy-composition`
 - `npm run example:harness`
+- `npm run example:harness-rerun`
 - `npm run example:run-record`
 - `npm run example:non-regression`
 
 Set `AIOC_EXAMPLE_PROVIDER` to `openai` or `mistral` and provide the matching API key. Optionally set `AIOC_EXAMPLE_MODEL` to override the default live model.
 
+`example:harness-rerun` is intentionally more direct: it configures OpenAI from
+`OPENAI_API_KEY` and declares the model in the YAML descriptor.
+
 `example:harness` demonstrates the Agent Harness Descriptor with reusable
 `instruction_parts`, ordered `instructions_sequence`, and a boolean `where`
 gate for optional instruction blocks.
+
+`example:harness-rerun` demonstrates replaying a recorded source run against a
+modified harness while mocking the output of a newly introduced tool.
 
 ## Deterministic run-record utility examples
 

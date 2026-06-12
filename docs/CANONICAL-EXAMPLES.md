@@ -181,12 +181,14 @@ Command:
 
 ```bash
 npm run example:harness
+npm run example:harness-rerun
 ```
 
 Files:
 
 - `src/examples/harness-descriptor/customer-support.ts`
 - `src/examples/harness-descriptor/customer-support.yaml`
+- `src/examples/harness-descriptor/rerun-modified-harness.ts`
 
 What it demonstrates:
 
@@ -195,6 +197,7 @@ What it demonstrates:
 - composing reusable instruction parts with `instructions_sequence`
 - conditionally including instruction blocks through boolean `where` gates
 - computing a stable descriptor hash for audit and deployment checks
+- replaying a source run against a modified harness while mocking a new tool output
 
 ## Advanced (Non-Regression Diff)
 

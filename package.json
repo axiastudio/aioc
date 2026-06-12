@@ -27,6 +27,7 @@
     "example:tool-policy": "tsx src/examples/basic/tools.ts",
     "example:policy-composition": "tsx src/examples/basic/policy-composition.ts",
     "example:harness": "tsx src/examples/harness-descriptor/customer-support.ts",
+    "example:harness-rerun": "tsx src/examples/harness-descriptor/rerun-modified-harness.ts",
     "example:run-record": "tsx src/examples/basic/run-record-sink.ts",
     "example:rru:01-extract": "tsx src/examples/run-record-utils-minimal/01-extract-tool-calls.ts",
     "example:rru:02-compare": "tsx src/examples/run-record-utils-minimal/02-compare-run-records.ts",

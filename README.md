@@ -271,6 +271,7 @@ This repository also contains `aioc-inspect`, a private reference example UI for
 | `npm run example:approval-evidence` | Approval evidence passed through context and reevaluated by policy | Yes (`AIOC_EXAMPLE_PROVIDER` + matching provider API key) |
 | `npm run example:tool-policy` | Straight tool + policy flow with allowed execution | Yes (`AIOC_EXAMPLE_PROVIDER` + matching provider API key) |
 | `npm run example:policy-composition` | Exact-name tool policy dispatch with fallback deny | Yes (`AIOC_EXAMPLE_PROVIDER` + matching provider API key) |
+| `npm run example:harness-rerun` | Replay against a modified harness with a mocked new tool output | Yes (`OPENAI_API_KEY`) |
 | `npm run example:run-record` | Run-record persistence with redaction + audit | Yes (`AIOC_EXAMPLE_PROVIDER` + matching provider API key) |
 | `npm run example:rru:01-extract` | Minimal `extractToolCalls(...)` | No |
 | `npm run example:rru:02-compare` | Minimal `compareRunRecords(...)` | No |
@@ -281,6 +282,7 @@ This repository also contains `aioc-inspect`, a private reference example UI for
 Notes:
 
 - for live-provider examples, set `AIOC_EXAMPLE_PROVIDER` to `openai` or `mistral`; the matching API key must also be available
+- `example:harness-rerun` configures OpenAI directly from `OPENAI_API_KEY`; the model is declared in the YAML descriptor
 - `example:non-regression` is educational and can be non-deterministic because it uses a live provider.
 - canonical examples guide: `docs/CANONICAL-EXAMPLES.md`.
 
