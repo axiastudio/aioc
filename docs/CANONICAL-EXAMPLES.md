@@ -1,17 +1,23 @@
 # Canonical Examples
 
-These examples are the reference learning path for `aioc`.
+These examples are the reference learning path for `aioc`. They are organized
+by reading level: start with the compact basic examples, then move to audit,
+replay, harness descriptors, and advanced comparison workflows.
 
 All commands are run from the repository root.
 
 ## Prerequisite
 
-Set:
+Most live examples use the shared provider helper. Set:
 
 - `AIOC_EXAMPLE_PROVIDER=openai` with `OPENAI_API_KEY`, or
 - `AIOC_EXAMPLE_PROVIDER=mistral` with `MISTRAL_API_KEY`
 
 Optionally set `AIOC_EXAMPLE_MODEL` to override the default model for live examples.
+
+The run-record utility examples are deterministic and do not need a provider.
+`example:harness-rerun` is intentionally different: it configures OpenAI from
+`OPENAI_API_KEY` and declares the model inside the inline YAML descriptor.
 
 Then run:
 
@@ -19,7 +25,9 @@ Then run:
 npm install
 ```
 
-## 1) Hello Run
+## Start Here
+
+### 1) Hello Run
 
 Command:
 
@@ -37,7 +45,7 @@ What it demonstrates:
 - single-agent execution with default non-stream mode
 - reading `result.finalOutput`
 
-## 2) Minimal Policy Gate
+### 2) Minimal Policy Gate
 
 Command:
 
@@ -56,7 +64,7 @@ What it demonstrates:
 - a deterministic soft deny path (`resultMode: "tool_result"`)
 - how the model receives a denied tool result instead of live tool execution
 
-## 3) Approval Required
+### 3) Approval Required
 
 Command:
 
@@ -75,7 +83,7 @@ What it demonstrates:
 - a deterministic soft approval-required path (`resultMode: "tool_result"`)
 - the normalized tool-result envelope with `status = "approval_required"`
 
-## 4) Tool + Policy
+### 4) Tool + Policy
 
 Command:
 
@@ -94,7 +102,7 @@ What it demonstrates:
 - tool execution after policy approval
 - a straight, single-scenario basic example
 
-## 5) Policy Composition
+### 5) Policy Composition
 
 Command:
 
@@ -112,7 +120,9 @@ What it demonstrates:
 - fallback deny policy through `"*"`
 - preserving normal `ToolPolicy` runtime semantics
 
-## 6) Approval Evidence Replay
+## Approval Flow
+
+### 6) Approval Evidence Replay
 
 Command:
 
@@ -131,7 +141,9 @@ What it demonstrates:
 - policy reevaluation using `proposalHash`
 - executing the same requested tool after approval is available
 
-## 7) RunRecord Sink
+## Audit Trail
+
+### 7) RunRecord Sink
 
 Command:
 
@@ -147,10 +159,12 @@ What it demonstrates:
 
 - run-record sink integration (`run(..., { record })`)
 - context redaction before persistence (`contextRedactor`)
-- prompt snapshots and request fingerprints
-- policy decision audit trail and persisted envelope output
+- metadata attached to persisted records
+- policy decision audit trail
 
-## 8) RunRecord Utilities (Minimal)
+## RunRecord Utilities
+
+### 8) Minimal Utility Snippets
 
 Commands:
 
@@ -175,20 +189,39 @@ What it demonstrates:
 - replaying in strict mode (recorded outputs only)
 - replaying in hybrid mode (recorded outputs + live fallback)
 
-## 9) Agent Harness Descriptor
+## Harness Descriptor
+
+### 9) Modified Harness Replay
+
+Command:
+
+```bash
+npm run example:harness-rerun
+```
+
+File:
+
+- `src/examples/harness-descriptor/rerun-modified-harness.ts`
+
+What it demonstrates:
+
+- defining a minimal harness inline with YAML
+- recording a source run with one harness version
+- replaying the source run against a modified harness
+- mocking a newly introduced tool output during replay
+
+### 10) Full Descriptor Example
 
 Command:
 
 ```bash
 npm run example:harness
-npm run example:harness-rerun
 ```
 
 Files:
 
 - `src/examples/harness-descriptor/customer-support.ts`
 - `src/examples/harness-descriptor/customer-support.yaml`
-- `src/examples/harness-descriptor/rerun-modified-harness.ts`
 
 What it demonstrates:
 
@@ -197,9 +230,10 @@ What it demonstrates:
 - composing reusable instruction parts with `instructions_sequence`
 - conditionally including instruction blocks through boolean `where` gates
 - computing a stable descriptor hash for audit and deployment checks
-- replaying a source run against a modified harness while mocking a new tool output
 
-## Advanced (Non-Regression Diff)
+## Advanced Workflows
+
+### 11) Non-Regression Diff
 
 Command:
 

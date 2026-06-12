@@ -263,6 +263,10 @@ This repository also contains `aioc-inspect`, a private reference example UI for
 
 ## Examples
 
+Suggested reading path: start with `example:hello`, then policy, approval,
+tool-policy, and policy-composition. Use run-record and harness examples after
+the basics; `example:non-regression` is an advanced workflow.
+
 | Command | Purpose | Needs API key |
 |---|---|---|
 | `npm run example:hello` | Minimal single-agent run | Yes (`AIOC_EXAMPLE_PROVIDER` + matching provider API key) |
@@ -283,6 +287,7 @@ Notes:
 
 - for live-provider examples, set `AIOC_EXAMPLE_PROVIDER` to `openai` or `mistral`; the matching API key must also be available
 - `example:harness-rerun` configures OpenAI directly from `OPENAI_API_KEY`; the model is declared in the YAML descriptor
+- run-record utility examples are deterministic and do not need a provider
 - `example:non-regression` is educational and can be non-deterministic because it uses a live provider.
 - canonical examples guide: `docs/CANONICAL-EXAMPLES.md`.
 

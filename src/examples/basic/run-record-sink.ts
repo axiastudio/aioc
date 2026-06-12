@@ -3,7 +3,6 @@ import { z } from "zod";
 import {
   Agent,
   allow,
-  deny,
   run,
   tool,
   type RunRecord,
@@ -20,55 +19,7 @@ interface FinanceContext {
   };
 }
 
-function findLastToolResultEnvelope(
-  record: RunRecord<FinanceContext>,
-): unknown | undefined {
-  const reversedItems = [...record.items].reverse();
-  const outputItem = reversedItems.find(
-    (item) => item.type === "tool_call_output_item",
-  );
-  if (!outputItem || outputItem.type !== "tool_call_output_item") {
-    return undefined;
-  }
-  return outputItem?.output;
-}
-
-async function runScenario(
-  label: string,
-  agent: Agent<FinanceContext>,
-  actor: FinanceContext["actor"],
-  toolPolicy: ToolPolicy<FinanceContext>,
-  sink: RunRecordSink<FinanceContext>,
-): Promise<void> {
-  process.stdout.write(
-    `\n=== Scenario: ${label} (groups: ${actor.groups.join(", ")}) ===\n`,
-  );
-
-  const result = await run(agent, "Summarize report Q1-2026.", {
-    context: { actor },
-    policies: { toolPolicy },
-    maxTurns: 6,
-    record: {
-      metadata: { scenario: label },
-      includePromptText: true,
-      contextRedactor: (context) => ({
-        contextSnapshot: {
-          actor: {
-            ...context.actor,
-            email: "[redacted-email]",
-          },
-        },
-        contextRedacted: true,
-      }),
-      sink,
-    },
-  });
-
-  process.stdout.write(`assistant: ${result.finalOutput}\n`);
-}
-
 async function main(): Promise<void> {
-  // Choose provider via AIOC_EXAMPLE_PROVIDER and call setup().
   const { setup, model } = getExampleProviderConfig();
   setup();
 
@@ -96,69 +47,64 @@ async function main(): Promise<void> {
     tools: [getFinanceReport],
   });
 
-  const toolPolicy: ToolPolicy<FinanceContext> = ({ runContext }) => {
-    if (!runContext.context.actor.groups.includes("finance")) {
-      return deny("deny_missing_finance_group", {
-        resultMode: "tool_result",
-        publicReason: "You are not authorized to access finance reports.",
-        policyVersion: "finance-policy.v1",
-      });
-    }
-    return allow("allow_finance_group_access", {
+  const toolPolicy: ToolPolicy<FinanceContext> = () => {
+    return allow("allow_example_finance_report", {
       policyVersion: "finance-policy.v1",
     });
   };
 
   const records: RunRecord<FinanceContext>[] = [];
+
+  // A sink lets the application decide where finalized RunRecords are stored.
   const sink: RunRecordSink<FinanceContext> = {
     write: (record) => {
       records.push(record);
-      process.stdout.write(
-        `[sink] runId=${record.runId} status=${record.status} decisions=${record.policyDecisions.length}\n`,
-      );
     },
   };
 
-  await runScenario(
-    "actor in finance",
-    agent,
-    {
-      userId: "u-finance",
-      groups: ["finance"],
-      email: "alice.finance@example.com",
+  const result = await run(agent, "Summarize report Q1-2026.", {
+    context: {
+      actor: {
+        userId: "u-finance",
+        groups: ["finance"],
+        email: "alice.finance@example.com",
+      },
     },
-    toolPolicy,
-    sink,
-  );
-
-  await runScenario(
-    "actor in sales",
-    agent,
-    {
-      userId: "u-sales",
-      groups: ["sales"],
-      email: "bob.sales@example.com",
+    policies: { toolPolicy },
+    record: {
+      metadata: { example: "run-record-sink" },
+      // Redact application context before it becomes part of the persisted record.
+      contextRedactor: (context) => ({
+        contextSnapshot: {
+          actor: {
+            ...context.actor,
+            email: "[redacted-email]",
+          },
+        },
+        contextRedacted: true,
+      }),
+      sink,
     },
-    toolPolicy,
-    sink,
-  );
+  });
 
-  process.stdout.write(`\n=== Persisted records (${records.length}) ===\n`);
-  for (const record of records) {
-    const lastDecision =
-      record.policyDecisions[record.policyDecisions.length - 1];
-    process.stdout.write(
-      [
-        `runId: ${record.runId}`,
-        `scenario: ${String(record.metadata?.scenario ?? "")}`,
-        `contextRedacted: ${String(record.contextRedacted ?? false)}`,
-        `policyDecision: ${lastDecision?.decision ?? "n/a"} (${lastDecision?.reason ?? "n/a"})`,
-        `promptSnapshots: ${JSON.stringify(record.promptSnapshots)}`,
-        `requestFingerprints: ${JSON.stringify(record.requestFingerprints)}`,
-        `toolResultEnvelope: ${JSON.stringify(findLastToolResultEnvelope(record))}`,
-      ].join("\n") + "\n\n",
-    );
+  const record = records[0];
+  if (!record) {
+    throw new Error("Expected the run-record sink to receive one record.");
   }
+
+  const lastDecision =
+    record.policyDecisions[record.policyDecisions.length - 1];
+
+  process.stdout.write(
+    [
+      `assistant: ${result.finalOutput}`,
+      `recordStatus: ${record.status}`,
+      `recordedItems: ${record.items.length}`,
+      `contextRedacted: ${String(record.contextRedacted)}`,
+      `policyDecision: ${lastDecision?.decision ?? "n/a"} (${lastDecision?.reason ?? "n/a"})`,
+      `metadata: ${JSON.stringify(record.metadata)}`,
+    ].join("\n") + "\n",
+  );
 }
 
 main().catch((error) => {
