@@ -35,6 +35,14 @@ descriptors.
 
 `aioc` should introduce lightweight run-regression utilities.
 
+The target public surface is a suite runner: applications should be able to pass
+a list of baseline `RunRecord` values, a candidate harness, and optional
+expectations, then receive per-case regression results.
+
+The first implementation may be built incrementally from smaller helpers, but
+the RFC direction is a runner-oriented API rather than only disconnected
+building blocks.
+
 The suite input should be a list of existing `RunRecord` values. Each record is
 both:
 
@@ -65,6 +73,15 @@ evaluate semantic intent that deterministic diffs cannot decide, for example:
 The judge must not replace deterministic diffing and must not become a runtime
 policy decision point.
 
+The core package should define the judge-facing types and integration points,
+but should not own model invocation or bundled judge prompts.
+
+A companion package may provide a ready-to-use judge implementation. Its default
+instructions can encode `aioc` domain knowledge such as how to read a
+`RunRecord`, how to interpret `RunRecordComparison`, and how to reason over
+YAML harness descriptors. Application-specific expectations remain explicit
+inputs, not hidden prompt behavior.
+
 ## Goals
 
 - Let applications treat stored `RunRecord` values as regression cases.
@@ -74,6 +91,8 @@ policy decision point.
 - Allow optional LLM-as-judge evaluation over baseline, candidate, diff, and
   expectations.
 - Keep judge results explicitly probabilistic and advisory.
+- Define judge contracts in core without requiring a judge implementation.
+- Leave ready-to-use judge orchestration to a companion package.
 - Keep the first implementation small and composable.
 
 ## Non-Goals
@@ -82,7 +101,9 @@ policy decision point.
 - No automatic quality scoring as a core runtime decision.
 - No replacement for `compareRunRecords(...)`.
 - No model-owned security, policy, or approval decision.
+- No judge model invocation in core.
 - No built-in hosted judge service.
+- No bundled core dependency on a judge provider.
 - No requirement that every suite uses an LLM judge.
 - No descriptor-owned policy or executable test DSL.
 
@@ -147,9 +168,53 @@ export interface RunRegressionResult<TContext = unknown> {
 }
 ```
 
-The exact helper names are intentionally deferred. The first implementation
-should prefer small functions that compose existing primitives over a large test
-runner abstraction.
+The exact helper names are intentionally deferred. The implementation may start
+with smaller helpers that compose existing primitives, but the intended public
+direction is a suite runner that coordinates replay, comparison, expectations,
+and optional judging.
+
+## API And Package Direction
+
+The core package should eventually expose the suite-oriented contract:
+
+```ts
+export interface RunRegressionSuite<TContext = unknown> {
+  name?: string;
+  cases: Array<RunRecord<TContext>>;
+  expectations?: Record<string, RunRegressionExpectation>;
+}
+```
+
+The concrete runner signature is deferred, but conceptually it should:
+
+- iterate baseline records,
+- replay each record against the candidate harness,
+- create a candidate `RunRecord`,
+- compare baseline and candidate records,
+- optionally call a judge adapter,
+- return structured per-case results.
+
+The core package should define types for judge integration:
+
+```ts
+export type RunJudge<TContext = unknown> = (
+  input: RunJudgeInput<TContext>,
+) => Promise<RunJudgeResult> | RunJudgeResult;
+```
+
+The core package should not provide a default judge model implementation.
+
+A companion package can provide a ready-to-use judge. That package may include:
+
+- default judge instructions about `RunRecord`,
+- default judge instructions about `RunRecordComparison`,
+- default judge instructions about agent harness descriptors,
+- provider-specific model invocation,
+- response parsing and validation,
+- examples for application-specific expectations.
+
+This keeps the governance kernel small while still giving users a practical
+path to semantic evaluation.
 
 ## Optional Judge
 
@@ -236,14 +301,8 @@ The judge can assess:
 
 ## Open Questions
 
-1. Should the first public API expose a suite runner, or only smaller helpers
-   for building regression case results?
-2. Should judge integration live in core, or should core only define types and
-   allow applications to plug in their own judge?
-3. Should judge prompts be provided by `aioc`, by examples, or by a companion
-   package?
-4. What should be the default redaction strategy for judge input?
-5. Should suite outputs include a machine-readable CI summary?
+1. What should be the default redaction strategy for judge input?
+2. Should suite outputs include a machine-readable CI summary?
 
 ## Minimal Test Matrix
 
