@@ -173,6 +173,99 @@ with smaller helpers that compose existing primitives, but the intended public
 direction is a suite runner that coordinates replay, comparison, expectations,
 and optional judging.
 
+## CI Summary
+
+The rich suite output should remain the collection of `RunRegressionResult`
+values. A runner should also be able to produce a small machine-readable summary
+for CI, dashboards, and release checks.
+
+Recommended shape:
+
+```ts
+export interface RunRegressionSummary {
+  suite?: string;
+  status: "pass" | "warn" | "fail";
+  totals: {
+    cases: number;
+    passed: number;
+    warned: number;
+    failed: number;
+  };
+  cases: RunRegressionCaseSummary[];
+}
+
+export interface RunRegressionCaseSummary {
+  name: string;
+  status: "pass" | "warn" | "fail";
+  baselineRunId: string;
+  candidateRunId: string;
+  signals: {
+    statusChanged: boolean;
+    toolsChanged: boolean;
+    policyChanged: boolean;
+    finalOutputChanged: boolean;
+  };
+  judge?: {
+    verdict: "pass" | "warn" | "fail";
+    summary: string;
+  };
+}
+```
+
+Example JSON:
+
+```json
+{
+  "suite": "learning-harness-regression",
+  "status": "warn",
+  "totals": {
+    "cases": 2,
+    "passed": 1,
+    "warned": 1,
+    "failed": 0
+  },
+  "cases": [
+    {
+      "name": "explain-photosynthesis-age-10",
+      "status": "pass",
+      "baselineRunId": "run_001",
+      "candidateRunId": "run_101",
+      "signals": {
+        "statusChanged": false,
+        "toolsChanged": true,
+        "policyChanged": false,
+        "finalOutputChanged": true
+      },
+      "judge": {
+        "verdict": "pass",
+        "summary": "The candidate uses age-appropriate language and preserves factual correctness."
+      }
+    },
+    {
+      "name": "explain-gravity-age-8",
+      "status": "warn",
+      "baselineRunId": "run_002",
+      "candidateRunId": "run_102",
+      "signals": {
+        "statusChanged": false,
+        "toolsChanged": true,
+        "policyChanged": false,
+        "finalOutputChanged": true
+      },
+      "judge": {
+        "verdict": "warn",
+        "summary": "The answer is simpler than baseline, but still includes a few terms likely too advanced for age 8."
+      }
+    }
+  ]
+}
+```
+
+The summary is not a replacement for `RunRecord`, `RunRecordComparison`, or
+`RunRegressionResult`. It is a stable compact artifact that lets CI decide
+whether a candidate harness should pass, warn, or fail according to
+application-owned release policy.
+
 ## API And Package Direction
 
 The core package should eventually expose the suite-oriented contract:
@@ -192,7 +285,8 @@ The concrete runner signature is deferred, but conceptually it should:
 - create a candidate `RunRecord`,
 - compare baseline and candidate records,
 - optionally call a judge adapter,
-- return structured per-case results.
+- return structured per-case results,
+- optionally return a machine-readable CI summary.
 
 The core package should define types for judge integration:
 
@@ -333,10 +427,6 @@ The judge can assess:
 - whether the new tool output was reflected in the answer,
 - whether the candidate moved in the intended direction.
 
-## Open Questions
-
-1. Should suite outputs include a machine-readable CI summary?
-
 ## Minimal Test Matrix
 
 1. A baseline `RunRecord` can be replayed against a candidate harness.
@@ -350,6 +440,7 @@ The judge can assess:
 8. Companion judge packages default to bounded input projection.
 9. Judge input can be projected or redacted before model invocation.
 10. Judge output is structured and marked advisory.
+11. A CI-friendly summary can be produced from suite results.
 
 ## Status
 
