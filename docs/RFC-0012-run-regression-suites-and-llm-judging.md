@@ -39,9 +39,8 @@ The target public surface is a suite runner: applications should be able to pass
 a list of baseline `RunRecord` values, a candidate harness, and optional
 expectations, then receive per-case regression results.
 
-The first implementation may be built incrementally from smaller helpers, but
-the RFC direction is a runner-oriented API rather than only disconnected
-building blocks.
+Implementation may start from smaller helpers, but the RFC direction is a
+runner-oriented API rather than disconnected building blocks.
 
 The suite input should be a list of existing `RunRecord` values. Each record is
 both:
@@ -76,11 +75,8 @@ policy decision point.
 The core package should define the judge-facing types and integration points,
 but should not own model invocation or bundled judge prompts.
 
-A companion package may provide a ready-to-use judge implementation. Its default
-instructions can encode `aioc` domain knowledge such as how to read a
-`RunRecord`, how to interpret `RunRecordComparison`, and how to reason over
-YAML harness descriptors. Application-specific expectations remain explicit
-inputs, not hidden prompt behavior.
+Companion packages may provide the ready-to-use judge and CLI described later
+in this RFC.
 
 ## Goals
 
@@ -114,7 +110,7 @@ inputs, not hidden prompt behavior.
 3. Each baseline record is replayed against the candidate harness.
 4. The replay produces a candidate `RunRecord`.
 5. The baseline and candidate records are compared deterministically.
-6. Optionally, an LLM judge receives a redacted evaluation bundle and returns a
+6. Optionally, an LLM judge receives an evaluation bundle and returns a
    structured advisory verdict.
 
 The output of the suite is a collection of per-case results. A case can pass
@@ -297,17 +293,6 @@ export type RunJudge<TContext = unknown> = (
 ```
 
 The core package should not provide a default judge model implementation.
-
-A companion package can provide a ready-to-use judge. That package may include:
-
-- default judge instructions about `RunRecord`,
-- default judge instructions about `RunRecordComparison`,
-- default judge instructions about agent harness descriptors,
-- a bounded judge-input projection as the safe default,
-- explicit opt-in for full-record judging,
-- provider-specific model invocation,
-- response parsing and validation,
-- examples for application-specific expectations.
 
 This keeps the governance kernel small while still giving users a practical
 path to semantic evaluation.
