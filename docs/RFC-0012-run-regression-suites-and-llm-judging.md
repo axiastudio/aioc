@@ -312,6 +312,113 @@ A companion package can provide a ready-to-use judge. That package may include:
 This keeps the governance kernel small while still giving users a practical
 path to semantic evaluation.
 
+## Companion Packages
+
+The regression workflow can be implemented incrementally across companion
+packages rather than forcing every concern into the core package.
+
+### `@axiastudio/aioc-regression-judge`
+
+This package should provide a ready-to-use judge implementation.
+
+Responsibilities:
+
+- provide default judge instructions for understanding `RunRecord`;
+- provide default judge instructions for understanding `RunRecordComparison`;
+- provide default judge instructions for understanding agent harness
+  descriptors;
+- apply bounded judge-input projection by default;
+- require explicit opt-in for full-record judging;
+- invoke the configured judge model;
+- parse and validate structured `RunJudgeResult` output.
+
+Application-specific expectations, such as "adapt the explanation to the
+user's age range", remain explicit inputs. They should not be hidden inside the
+default judge prompt.
+
+### `@axiastudio/aioc-regression-cli`
+
+This package should provide a thin CLI wrapper around the regression runner.
+
+The CLI should operate on filesystem artifacts:
+
+- baseline `RunRecord` files;
+- baseline descriptor YAML when available;
+- candidate descriptor YAML;
+- expectation files;
+- output directories for candidate records, comparisons, judge results, and CI
+  summaries.
+
+Executable behavior must still be supplied by the application through an
+adapter module. A descriptor can describe the harness, but it does not own:
+
+- executable tools;
+- policies;
+- provider setup;
+- approval workflows;
+- secrets;
+- application-specific redaction;
+- judge configuration.
+
+Example command shape:
+
+```bash
+aioc-regression run \
+  --records ./baseline/runrecords \
+  --baseline ./baseline/harness.yaml \
+  --candidate ./candidate/harness.yaml \
+  --expectations ./expectations.yaml \
+  --adapter ./adapter.ts \
+  --out ./out
+```
+
+The adapter contract is intentionally deferred. Conceptually, it may provide:
+
+```ts
+export default {
+  setupProvider,
+  createToolRegistry,
+  createPolicies,
+  createJudge,
+  onMissingToolCall,
+};
+```
+
+Detailed CLI concerns such as exact command names, exit codes, TypeScript
+adapter loading, output layout, and expectation-file schema can be promoted into
+a later RFC if the CLI contract needs to become stable.
+
+### Target Example
+
+The first complete example should demonstrate age-adapted explanations:
+
+```text
+examples/regression-age-adapted-explanation/
+  baseline/
+    harness.yaml
+    runrecords/
+      photosynthesis-age-10.json
+      gravity-age-8.json
+  candidate/
+    harness.yaml
+  expectations.yaml
+  adapter.ts
+  README.md
+```
+
+The baseline harness explains topics generically. The candidate harness
+introduces a `get_age_range` tool and should adapt explanations to the user's
+age range.
+
+This example should show the complete operational flow:
+
+- baseline records as regression cases;
+- candidate descriptor as the changed harness;
+- application adapter for tools, policies, provider setup, and optional judge;
+- deterministic comparison;
+- optional semantic judge result;
+- CI summary output.
+
 ## Optional Judge
 
 The core judge contract is intentionally data-shaped. It describes the logical
