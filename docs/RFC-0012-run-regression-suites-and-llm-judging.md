@@ -1,6 +1,6 @@
 # RFC-0012: Run Regression Suites and Optional LLM Judging
 
-- Status: Draft
+- Status: Accepted
 - Date: 2026-06-12
 - Owners: aioc maintainers
 - Depends on: RFC-0003, RFC-0007, RFC-0011

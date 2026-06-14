@@ -86,7 +86,7 @@ const documents = [
     sourceFile: "RFC-0012-run-regression-suites-and-llm-judging.md",
     targetDir: "current",
     slug: "rfc-0012-run-regression-suites-and-llm-judging",
-    status: "Draft",
+    status: "Accepted",
   },
   {
     sourceFile: "PRIVACY-BASELINE.md",
