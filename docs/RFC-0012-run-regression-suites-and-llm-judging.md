@@ -209,6 +209,8 @@ A companion package can provide a ready-to-use judge. That package may include:
 - default judge instructions about `RunRecord`,
 - default judge instructions about `RunRecordComparison`,
 - default judge instructions about agent harness descriptors,
+- a bounded judge-input projection as the safe default,
+- explicit opt-in for full-record judging,
 - provider-specific model invocation,
 - response parsing and validation,
 - examples for application-specific expectations.
@@ -218,7 +220,8 @@ path to semantic evaluation.
 
 ## Optional Judge
 
-The judge should receive a bounded, redacted bundle:
+The core judge contract is intentionally data-shaped. It describes the logical
+evaluation bundle, not a mandatory redaction policy:
 
 ```ts
 export interface RunJudgeInput<TContext = unknown> {
@@ -230,6 +233,32 @@ export interface RunJudgeInput<TContext = unknown> {
   candidateDescriptor?: unknown;
 }
 ```
+
+Consistently with `RunRecord`, the core package should not redact by default.
+It should provide types and hooks that let applications project or redact judge
+input when needed.
+
+Ready-to-use companion judge packages should be stricter. They should default
+to a bounded projection and require explicit opt-in before sending full
+`RunRecord` artifacts to a judge model.
+
+The default bounded projection should include enough evidence for semantic
+review:
+
+- baseline final output,
+- candidate final output,
+- deterministic comparison summary,
+- application-provided expectation,
+- relevant tool names and call summaries,
+- descriptor metadata or hashes when available.
+
+It should exclude by default:
+
+- full `contextSnapshot`,
+- raw prompt text,
+- full message history,
+- full raw tool outputs,
+- unfiltered metadata.
 
 The judge output should be structured:
 
@@ -264,8 +293,13 @@ The prompt should instruct the judge to separate:
 ## Privacy And Governance
 
 Judge input may contain sensitive context, prompts, tool outputs, or user
-messages. Applications should be able to redact or project the evaluation
-bundle before it is sent to a judge model.
+messages.
+
+Core utilities follow the existing `RunRecord` posture: no implicit redaction
+by default, because the core runtime does not invoke external judge models.
+
+Companion judge packages should follow a safer operational posture: bounded
+projection by default, with explicit opt-in for full-record judging.
 
 The judge result should record:
 
@@ -301,8 +335,7 @@ The judge can assess:
 
 ## Open Questions
 
-1. What should be the default redaction strategy for judge input?
-2. Should suite outputs include a machine-readable CI summary?
+1. Should suite outputs include a machine-readable CI summary?
 
 ## Minimal Test Matrix
 
@@ -313,8 +346,10 @@ The judge can assess:
 5. A regression result preserves baseline, candidate, comparison, and optional
    expectation.
 6. Judge execution is optional.
-7. Judge input can be projected or redacted before model invocation.
-8. Judge output is structured and marked advisory.
+7. Core judge input is not redacted implicitly.
+8. Companion judge packages default to bounded input projection.
+9. Judge input can be projected or redacted before model invocation.
+10. Judge output is structured and marked advisory.
 
 ## Status
 
