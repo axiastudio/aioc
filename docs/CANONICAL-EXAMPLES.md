@@ -16,8 +16,9 @@ Most live examples use the shared provider helper. Set:
 Optionally set `AIOC_EXAMPLE_MODEL` to override the default model for live examples.
 
 The run-record utility examples are deterministic and do not need a provider.
-`example:harness-rerun` is intentionally different: it configures OpenAI from
-`OPENAI_API_KEY` and declares the model inside the inline YAML descriptor.
+`example:harness-rerun` and `example:run-regression` are intentionally
+different: they configure OpenAI from `OPENAI_API_KEY` and declare the model
+inside the inline YAML descriptor.
 
 Then run:
 
@@ -251,3 +252,22 @@ What it demonstrates:
 - detecting prompt-driven behavior changes (for example tool not called)
 - deriving structured diff signals (`removedTools`, fingerprint and prompt changes)
 - live-provider behavior: results may vary between executions (example is educational, not deterministic)
+
+### 12) Run Regression Suite
+
+Command:
+
+```bash
+npm run example:run-regression
+```
+
+File:
+
+- `src/examples/run-regression/age-adapted-suite.ts`
+
+What it demonstrates:
+
+- recording a baseline `RunRecord` from a minimal v1 harness
+- running a v2 harness through `runRegressionSuite(...)`
+- attaching one suite-level expectation to a single baseline case
+- reading deterministic comparison and CI summary output without a judge

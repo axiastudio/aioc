@@ -58,9 +58,14 @@ tool registry binding, and descriptor hashing.
 ## Advanced Workflows
 
 - `npm run example:non-regression`
+- `npm run example:run-regression`
 
-This example compares `RunRecord` outputs across two harness versions. It uses
-a live provider and is educational rather than deterministic.
+`example:non-regression` compares `RunRecord` outputs across two harness
+versions. It uses a live provider and is educational rather than deterministic.
+
+`example:run-regression` records a baseline `RunRecord`, runs a modified
+OpenAI-backed harness through `runRegressionSuite(...)`, and prints the
+deterministic comparison summary without using a judge.
 
 ## Canonical Guide
 

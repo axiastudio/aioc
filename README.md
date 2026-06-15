@@ -265,7 +265,8 @@ This repository also contains `aioc-inspect`, a private reference example UI for
 
 Suggested reading path: start with `example:hello`, then policy, approval,
 tool-policy, and policy-composition. Use run-record and harness examples after
-the basics; `example:non-regression` is an advanced workflow.
+the basics; `example:non-regression` and `example:run-regression` are advanced
+workflows.
 
 | Command | Purpose | Needs API key |
 |---|---|---|
@@ -282,11 +283,12 @@ the basics; `example:non-regression` is an advanced workflow.
 | `npm run example:rru:03-replay-strict` | Minimal strict replay | No |
 | `npm run example:rru:04-replay-hybrid` | Minimal hybrid replay | No |
 | `npm run example:non-regression` | Advanced v1/v2 run-record diff | Yes (`AIOC_EXAMPLE_PROVIDER` + matching provider API key) |
+| `npm run example:run-regression` | Local `runRegressionSuite(...)` over a modified harness | Yes (`OPENAI_API_KEY`) |
 
 Notes:
 
 - for live-provider examples, set `AIOC_EXAMPLE_PROVIDER` to `openai` or `mistral`; the matching API key must also be available
-- `example:harness-rerun` configures OpenAI directly from `OPENAI_API_KEY`; the model is declared in the YAML descriptor
+- `example:harness-rerun` and `example:run-regression` configure OpenAI directly from `OPENAI_API_KEY`; the model is declared in the YAML descriptor
 - run-record utility examples are deterministic and do not need a provider
 - `example:non-regression` is educational and can be non-deterministic because it uses a live provider.
 - canonical examples guide: `docs/CANONICAL-EXAMPLES.md`.

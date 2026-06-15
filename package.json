@@ -34,6 +34,7 @@
     "example:rru:03-replay-strict": "tsx src/examples/run-record-utils-minimal/03-replay-strict.ts",
     "example:rru:04-replay-hybrid": "tsx src/examples/run-record-utils-minimal/04-replay-hybrid.ts",
     "example:non-regression": "tsx src/examples/non-regression/v1-v2-runrecord-diff.ts",
+    "example:run-regression": "tsx src/examples/run-regression/age-adapted-suite.ts",
     "inspect:samples": "tsx scripts/generate-aioc-inspect-samples.ts",
     "docs:sync": "node scripts/sync-aioc-docs.mjs",
     "docs:dev": "npm run docs:sync && cd apps/aioc-docs && zsh -lc 'npm run dev'",
