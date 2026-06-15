@@ -36,8 +36,8 @@ descriptors.
 `aioc` should introduce lightweight run-regression utilities.
 
 The target public surface is a suite runner: applications should be able to pass
-a list of baseline `RunRecord` values, a candidate harness, and optional
-expectations, then receive per-case regression results.
+a list of baseline `RunRecord` values, a candidate harness, and an optional
+suite-level expectation, then receive per-case regression results.
 
 Implementation may start from smaller helpers, but the RFC direction is a
 runner-oriented API rather than disconnected building blocks.
@@ -83,9 +83,9 @@ in this RFC.
 - Let applications treat stored `RunRecord` values as regression cases.
 - Produce candidate `RunRecord` values for each case.
 - Compare baseline and candidate records with deterministic diffs.
-- Allow application-provided expectations for the candidate harness.
+- Allow an application-provided expectation for the candidate harness.
 - Allow optional LLM-as-judge evaluation over baseline, candidate, diff, and
-  expectations.
+  expectation.
 - Keep judge results explicitly probabilistic and advisory.
 - Define judge contracts in core without requiring a judge implementation.
 - Leave ready-to-use judge orchestration to a companion package.
@@ -119,9 +119,9 @@ deterministic check without requiring judge execution.
 
 ## Regression Case Shape
 
-The minimal case can be just a `RunRecord`.
+The minimal standalone case can be just a baseline `RunRecord`.
 
-Applications may attach expectations when the candidate harness is intentionally
+Applications may attach an expectation when the candidate harness is intentionally
 changing behavior:
 
 ```ts
@@ -149,6 +149,11 @@ Example expectation:
 Expectations are not policies. They are evaluation hints used by reporting or
 by an optional judge.
 
+When multiple cases belong to the same suite, the suite carries one shared
+expectation. This keeps the suite aligned with one regression intent, for
+example "age-adapted explanations", while individual cases provide different
+baseline records for that intent.
+
 ## Deterministic Result
 
 A regression result should keep the concrete artifacts:
@@ -164,10 +169,8 @@ export interface RunRegressionResult<TContext = unknown> {
 }
 ```
 
-The exact helper names are intentionally deferred. The implementation may start
-with smaller helpers that compose existing primitives, but the intended public
-direction is a suite runner that coordinates replay, comparison, expectations,
-and optional judging.
+The intended public direction is a suite runner that coordinates replay,
+comparison, one suite-level expectation, and optional judging.
 
 ## CI Summary
 
@@ -264,17 +267,22 @@ application-owned release policy.
 
 ## API And Package Direction
 
-The core package should eventually expose the suite-oriented contract:
+The core package exposes a suite-oriented contract:
 
 ```ts
+export interface RunRegressionSuiteCase<TContext = unknown> {
+  name?: string;
+  baseline: RunRecord<TContext>;
+}
+
 export interface RunRegressionSuite<TContext = unknown> {
   name?: string;
-  cases: Array<RunRecord<TContext>>;
-  expectations?: Record<string, RunRegressionExpectation>;
+  expectation?: RunRegressionExpectation;
+  cases: Array<RunRegressionSuiteCase<TContext>>;
 }
 ```
 
-The concrete runner signature is deferred, but conceptually it should:
+The runner should:
 
 - iterate baseline records,
 - replay each record against the candidate harness,
@@ -317,7 +325,7 @@ Responsibilities:
 - invoke the configured judge model;
 - parse and validate structured `RunJudgeResult` output.
 
-Application-specific expectations, such as "adapt the explanation to the
+Application-specific expectation data, such as "adapt the explanation to the
 user's age range", remain explicit inputs. They should not be hidden inside the
 default judge prompt.
 
@@ -330,7 +338,7 @@ The CLI should operate on filesystem artifacts:
 - baseline `RunRecord` files;
 - baseline descriptor YAML when available;
 - candidate descriptor YAML;
-- expectation files;
+- an expectation file;
 - output directories for candidate records, comparisons, judge results, and CI
   summaries.
 
@@ -352,7 +360,7 @@ aioc-regression run \
   --records ./baseline/runrecords \
   --baseline ./baseline/harness.yaml \
   --candidate ./candidate/harness.yaml \
-  --expectations ./expectations.yaml \
+  --expectation ./expectation.yaml \
   --adapter ./adapter.ts \
   --out ./out
 ```
@@ -386,7 +394,7 @@ examples/regression-age-adapted-explanation/
       gravity-age-8.json
   candidate/
     harness.yaml
-  expectations.yaml
+  expectation.yaml
   adapter.ts
   README.md
 ```
@@ -467,7 +475,7 @@ The judge prompt should explain how to read:
 
 - a `RunRecord`,
 - a `RunRecordComparison`,
-- candidate expectations,
+- the candidate expectation,
 - old and new harness descriptors when available.
 
 The prompt should instruct the judge to separate:
@@ -536,5 +544,6 @@ The judge can assess:
 
 ## Status
 
-Draft. This RFC defines the intended direction before committing to a concrete
-API shape.
+Accepted. The first implementation covers core types, single-case regression,
+suite regression, and CI summaries. Judge and CLI companion packages remain
+future work.

@@ -1,5 +1,10 @@
 import type { RunRecord } from "./run-record";
 import {
+  summarizeRunRegressionResults,
+  type RunRegressionSummary,
+  type SummarizeRunRegressionResultsOptions,
+} from "./run-regression-summary";
+import {
   compareRunRecords,
   replayFromRunRecord,
   type CompareRunRecordsOptions,
@@ -55,10 +60,15 @@ export interface RunRegressionResult<TContext = unknown> {
   judge?: RunJudgeResult;
 }
 
+export interface RunRegressionSuiteCase<TContext = unknown> {
+  name?: string;
+  baseline: RunRecord<TContext>;
+}
+
 export interface RunRegressionSuite<TContext = unknown> {
   name?: string;
-  cases: Array<RunRecord<TContext>>;
-  expectations?: Record<string, RunRegressionExpectation>;
+  expectation?: RunRegressionExpectation;
+  cases: Array<RunRegressionSuiteCase<TContext>>;
 }
 
 export interface RunRegressionCaseInput<
@@ -72,6 +82,26 @@ export interface RunRegressionCaseInput<
   baselineDescriptor?: TDescriptor;
   candidateDescriptor?: TDescriptor;
   comparisonOptions?: CompareRunRecordsOptions;
+}
+
+export interface RunRegressionSuiteInput<
+  TContext = unknown,
+  TDescriptor = unknown,
+> extends Omit<
+  RunRegressionCaseInput<TContext, TDescriptor>,
+  "baseline" | "name" | "expectation"
+> {
+  suite: RunRegressionSuite<TContext>;
+  summaryOptions?: Omit<
+    SummarizeRunRegressionResultsOptions<TContext>,
+    "suite"
+  >;
+}
+
+export interface RunRegressionSuiteResult<TContext = unknown> {
+  name?: string;
+  results: Array<RunRegressionResult<TContext>>;
+  summary: RunRegressionSummary;
 }
 
 function toRegressionCaseName<TContext, TDescriptor>(
@@ -151,5 +181,54 @@ export async function runRegressionCase<
       ? {}
       : { expectation: input.expectation }),
     ...(judge ? { judge } : {}),
+  };
+}
+
+function resolveSuiteCase<TContext>(
+  caseDefinition: RunRegressionSuiteCase<TContext>,
+): {
+  name: string;
+  baseline: RunRecord<TContext>;
+} {
+  const baseline = caseDefinition.baseline;
+  const name = caseDefinition.name ?? baseline.runId;
+
+  return {
+    name,
+    baseline,
+  };
+}
+
+export async function runRegressionSuite<
+  TContext = unknown,
+  TDescriptor = unknown,
+>(
+  input: RunRegressionSuiteInput<TContext, TDescriptor>,
+): Promise<RunRegressionSuiteResult<TContext>> {
+  const results: Array<RunRegressionResult<TContext>> = [];
+  const { suite, summaryOptions, ...caseOptions } = input;
+
+  for (const caseDefinition of suite.cases) {
+    const regressionCase = resolveSuiteCase(caseDefinition);
+    const result = await runRegressionCase<TContext, TDescriptor>({
+      ...caseOptions,
+      name: regressionCase.name,
+      baseline: regressionCase.baseline,
+      ...(typeof suite.expectation === "undefined"
+        ? {}
+        : { expectation: suite.expectation }),
+    });
+    results.push(result);
+  }
+
+  const summary = summarizeRunRegressionResults(results, {
+    suite: suite.name,
+    ...(summaryOptions ?? {}),
+  });
+
+  return {
+    ...(typeof suite.name === "undefined" ? {} : { name: suite.name }),
+    results,
+    summary,
   };
 }

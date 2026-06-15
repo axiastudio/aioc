@@ -7,11 +7,10 @@ Run-regression helpers support the incremental implementation of RFC-0012.
 
 They let applications represent regression results built from baseline
 `RunRecord` values, candidate `RunRecord` values, deterministic comparisons,
-optional expectations, and optional judge results.
+an optional expectation, and optional judge results.
 
-The current implementation is intentionally small: it defines the public types,
-provides a single-case regression runner, and provides a pure CI-summary
-helper. It does not yet include a multi-case suite runner.
+The current implementation defines the public types, provides single-case and
+multi-case regression runners, and provides a pure CI-summary helper.
 
 ## `runRegressionCase(...)`
 
@@ -42,6 +41,32 @@ application-provided judge.
 
 The helper enables candidate `RunRecord` capture automatically. If the
 application provides `runOptions.record.sink`, the sink is preserved.
+
+## `runRegressionSuite(...)`
+
+```ts
+const suite = await runRegressionSuite({
+  suite: {
+    name: "age-adapted-explanation",
+    expectation: {
+      intent: "Adapt explanations to the user's age range.",
+    },
+    cases: [{ baseline: baselineRunRecord }],
+  },
+  agent: candidateAgent,
+  mode: "strict",
+  judge,
+});
+```
+
+The suite runner calls `runRegressionCase(...)` for each baseline case and
+returns:
+
+- `results`: rich per-case `RunRegressionResult[]`
+- `summary`: compact `RunRegressionSummary` for CI and dashboards
+
+A suite has one `expectation`: it represents the shared intent being checked
+across all cases. Cases are objects with `baseline` plus optional `name`.
 
 ## `summarizeRunRegressionResults(...)`
 
@@ -80,8 +105,11 @@ The core exported types include:
 
 - `RunRegressionExpectation`
 - `RunRegressionCaseInput`
+- `RunRegressionSuiteInput`
 - `RunRegressionResult`
 - `RunRegressionSuite`
+- `RunRegressionSuiteCase`
+- `RunRegressionSuiteResult`
 - `RunRegressionSummary`
 - `RunRegressionCaseSummary`
 - `RunJudge`

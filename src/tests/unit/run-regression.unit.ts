@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import {
   Agent,
   runRegressionCase,
+  runRegressionSuite,
   setDefaultProvider,
   summarizeRunRegressionResults,
   type RunRecord,
@@ -224,5 +225,94 @@ export async function runRunRegressionUnitTests(): Promise<void> {
     });
     assert.equal(summary.cases[0]?.status, "pass");
     assert.equal(summary.cases[0]?.signals.finalOutputChanged, true);
+  }
+
+  {
+    const baselineA = createRunRecord({
+      runId: "baseline-a",
+      question: "Explain photosynthesis.",
+      response: "Baseline photosynthesis answer.",
+      inputItemCount: 1,
+      items: [
+        {
+          type: "message",
+          role: "user",
+          content: "Explain photosynthesis.",
+        },
+      ],
+    });
+    const baselineB = createRunRecord({
+      runId: "baseline-b",
+      question: "Explain gravity.",
+      response: "Baseline gravity answer.",
+      inputItemCount: 1,
+      items: [
+        {
+          type: "message",
+          role: "user",
+          content: "Explain gravity.",
+        },
+      ],
+    });
+    const provider = new ScriptedProvider([
+      [{ type: "completed", message: "Candidate photosynthesis answer." }],
+      [{ type: "completed", message: "Candidate gravity answer." }],
+    ]);
+    setDefaultProvider(provider);
+
+    const agent = new Agent<TestContext>({
+      name: "Regression Suite Candidate Agent",
+      model: "fake-model",
+    });
+    const suite = await runRegressionSuite({
+      suite: {
+        name: "age-adapted-explanation",
+        expectation: {
+          intent: "Use simpler wording for the user's age range.",
+        },
+        cases: [
+          {
+            baseline: baselineA,
+          },
+          {
+            name: "gravity-age-8",
+            baseline: baselineB,
+          },
+        ],
+      },
+      agent,
+      mode: "live",
+      judge: (input) => {
+        return {
+          verdict: "pass",
+          summary: `Judged ${input.expectation?.intent ?? "without expectation"}`,
+          findings: [],
+        };
+      },
+    });
+
+    assert.equal(suite.name, "age-adapted-explanation");
+    assert.equal(suite.results.length, 2);
+    assert.equal(suite.results[0]?.name, "baseline-a");
+    assert.equal(
+      suite.results[0]?.expectation?.intent,
+      "Use simpler wording for the user's age range.",
+    );
+    assert.equal(suite.results[1]?.name, "gravity-age-8");
+    assert.equal(
+      suite.results[1]?.expectation?.intent,
+      "Use simpler wording for the user's age range.",
+    );
+    assert.equal(suite.summary.suite, "age-adapted-explanation");
+    assert.equal(suite.summary.status, "warn");
+    assert.deepEqual(suite.summary.totals, {
+      cases: 2,
+      passed: 0,
+      warned: 2,
+      failed: 0,
+    });
+    assert.equal(provider.requests.length, 2);
+    assert.deepEqual(provider.requests[0]?.messages, baselineA.items);
+    assert.deepEqual(provider.requests[1]?.messages, baselineB.items);
   }
 }
