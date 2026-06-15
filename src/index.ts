@@ -19,6 +19,7 @@ export * from "./providers/openai";
 export * from "./run";
 export * from "./run-output-events";
 export * from "./run-regression";
+export * from "./run-regression-summary";
 export * from "./run-record";
 export * from "./run-record-utils";
 export * from "./run-context";
