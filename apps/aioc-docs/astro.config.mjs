@@ -49,6 +49,7 @@ export default defineConfig({
             "reference/providers",
             "reference/run-output-events",
             "reference/run-record-utils",
+            "reference/run-regression",
             "reference/thread-history",
           ],
         },

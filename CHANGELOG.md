@@ -1,5 +1,12 @@
 # Changelog
 
+## Unreleased
+
+### Added
+
+- Added RFC-0012 run-regression core types and
+  `summarizeRunRegressionResults(...)` for CI-friendly regression summaries.
+
 ## 0.2.5 - 2026-06-11
 
 ### Added

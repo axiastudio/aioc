@@ -18,6 +18,7 @@ export * from "./providers/mistral";
 export * from "./providers/openai";
 export * from "./run";
 export * from "./run-output-events";
+export * from "./run-regression";
 export * from "./run-record";
 export * from "./run-record-utils";
 export * from "./run-context";

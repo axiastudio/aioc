@@ -20,6 +20,7 @@ It is not a generated API reference for every exported symbol. It focuses on the
 - provider setup helpers
 - run output events
 - run-record utilities
+- run-regression summaries
 - thread history utilities
 
 ## Related Pages
