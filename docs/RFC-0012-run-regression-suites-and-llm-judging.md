@@ -121,8 +121,8 @@ deterministic check without requiring judge execution.
 
 The minimal standalone case can be just a baseline `RunRecord`.
 
-Applications may attach an expectation when the candidate harness is intentionally
-changing behavior:
+Applications may attach an expectation to a suite when the candidate harness is
+intentionally changing behavior:
 
 ```ts
 export interface RunRegressionExpectation {
@@ -149,10 +149,10 @@ Example expectation:
 Expectations are not policies. They are evaluation hints used by reporting or
 by an optional judge.
 
-When multiple cases belong to the same suite, the suite carries one shared
-expectation. This keeps the suite aligned with one regression intent, for
-example "age-adapted explanations", while individual cases provide different
-baseline records for that intent.
+The suite carries one shared expectation. This keeps the suite aligned with one
+regression intent, for example "age-adapted explanations", while individual
+cases provide different baseline records for that intent. A single-record
+regression is represented as a suite with one case.
 
 ## Deterministic Result
 
@@ -164,7 +164,6 @@ export interface RunRegressionResult<TContext = unknown> {
   baseline: RunRecord<TContext>;
   candidate: RunRecord<TContext>;
   comparison: RunRecordComparison;
-  expectation?: RunRegressionExpectation;
   judge?: RunJudgeResult;
 }
 ```
@@ -288,7 +287,7 @@ The runner should:
 - replay each record against the candidate harness,
 - create a candidate `RunRecord`,
 - compare baseline and candidate records,
-- optionally call a judge adapter,
+- optionally call a suite-level judge adapter for each candidate result,
 - return structured per-case results,
 - optionally return a machine-readable CI summary.
 

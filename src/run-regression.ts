@@ -56,7 +56,6 @@ export interface RunRegressionResult<TContext = unknown> {
   baseline: RunRecord<TContext>;
   candidate: RunRecord<TContext>;
   comparison: RunRecordComparison;
-  expectation?: RunRegressionExpectation;
   judge?: RunJudgeResult;
 }
 
@@ -71,27 +70,23 @@ export interface RunRegressionSuite<TContext = unknown> {
   cases: Array<RunRegressionSuiteCase<TContext>>;
 }
 
-export interface RunRegressionCaseInput<
-  TContext = unknown,
-  TDescriptor = unknown,
-> extends Omit<ReplayFromRunRecordInput<TContext>, "sourceRunRecord"> {
+export interface RunRegressionCaseInput<TContext = unknown> extends Omit<
+  ReplayFromRunRecordInput<TContext>,
+  "sourceRunRecord"
+> {
   name?: string;
   baseline: RunRecord<TContext>;
-  expectation?: RunRegressionExpectation;
-  judge?: RunJudge<TContext, TDescriptor>;
-  baselineDescriptor?: TDescriptor;
-  candidateDescriptor?: TDescriptor;
   comparisonOptions?: CompareRunRecordsOptions;
 }
 
 export interface RunRegressionSuiteInput<
   TContext = unknown,
   TDescriptor = unknown,
-> extends Omit<
-  RunRegressionCaseInput<TContext, TDescriptor>,
-  "baseline" | "name" | "expectation"
-> {
+> extends Omit<RunRegressionCaseInput<TContext>, "baseline" | "name"> {
   suite: RunRegressionSuite<TContext>;
+  judge?: RunJudge<TContext, TDescriptor>;
+  baselineDescriptor?: TDescriptor;
+  candidateDescriptor?: TDescriptor;
   summaryOptions?: Omit<
     SummarizeRunRegressionResultsOptions<TContext>,
     "suite"
@@ -100,18 +95,19 @@ export interface RunRegressionSuiteInput<
 
 export interface RunRegressionSuiteResult<TContext = unknown> {
   name?: string;
+  expectation?: RunRegressionExpectation;
   results: Array<RunRegressionResult<TContext>>;
   summary: RunRegressionSummary;
 }
 
-function toRegressionCaseName<TContext, TDescriptor>(
-  input: RunRegressionCaseInput<TContext, TDescriptor>,
+function toRegressionCaseName<TContext>(
+  input: RunRegressionCaseInput<TContext>,
 ): string {
   return input.name ?? input.baseline.runId;
 }
 
-function toReplayRunOptions<TContext, TDescriptor>(
-  input: RunRegressionCaseInput<TContext, TDescriptor>,
+function toReplayRunOptions<TContext>(
+  input: RunRegressionCaseInput<TContext>,
 ): ReplayFromRunRecordInput<TContext>["runOptions"] {
   return {
     ...(input.runOptions ?? {}),
@@ -119,8 +115,8 @@ function toReplayRunOptions<TContext, TDescriptor>(
   };
 }
 
-function toReplayAgentFields<TContext, TDescriptor>(
-  input: RunRegressionCaseInput<TContext, TDescriptor>,
+function toReplayAgentFields<TContext>(
+  input: RunRegressionCaseInput<TContext>,
 ): Pick<ReplayFromRunRecordInput<TContext>, "agent" | "agentFactory"> {
   return {
     ...(input.agent ? { agent: input.agent } : {}),
@@ -128,11 +124,8 @@ function toReplayAgentFields<TContext, TDescriptor>(
   };
 }
 
-export async function runRegressionCase<
-  TContext = unknown,
-  TDescriptor = unknown,
->(
-  input: RunRegressionCaseInput<TContext, TDescriptor>,
+export async function runRegressionCase<TContext = unknown>(
+  input: RunRegressionCaseInput<TContext>,
 ): Promise<RunRegressionResult<TContext>> {
   const replay = await replayFromRunRecord<TContext>({
     sourceRunRecord: input.baseline,
@@ -155,32 +148,12 @@ export async function runRegressionCase<
     replay.replayRunRecord,
     input.comparisonOptions,
   );
-  const judge = input.judge
-    ? await input.judge({
-        baseline: input.baseline,
-        candidate: replay.replayRunRecord,
-        comparison,
-        ...(typeof input.expectation === "undefined"
-          ? {}
-          : { expectation: input.expectation }),
-        ...(typeof input.baselineDescriptor === "undefined"
-          ? {}
-          : { baselineDescriptor: input.baselineDescriptor }),
-        ...(typeof input.candidateDescriptor === "undefined"
-          ? {}
-          : { candidateDescriptor: input.candidateDescriptor }),
-      })
-    : undefined;
 
   return {
     name: toRegressionCaseName(input),
     baseline: input.baseline,
     candidate: replay.replayRunRecord,
     comparison,
-    ...(typeof input.expectation === "undefined"
-      ? {}
-      : { expectation: input.expectation }),
-    ...(judge ? { judge } : {}),
   };
 }
 
@@ -206,19 +179,40 @@ export async function runRegressionSuite<
   input: RunRegressionSuiteInput<TContext, TDescriptor>,
 ): Promise<RunRegressionSuiteResult<TContext>> {
   const results: Array<RunRegressionResult<TContext>> = [];
-  const { suite, summaryOptions, ...caseOptions } = input;
+  const {
+    suite,
+    judge,
+    baselineDescriptor,
+    candidateDescriptor,
+    summaryOptions,
+    ...caseOptions
+  } = input;
 
   for (const caseDefinition of suite.cases) {
     const regressionCase = resolveSuiteCase(caseDefinition);
-    const result = await runRegressionCase<TContext, TDescriptor>({
+    const result = await runRegressionCase<TContext>({
       ...caseOptions,
       name: regressionCase.name,
       baseline: regressionCase.baseline,
-      ...(typeof suite.expectation === "undefined"
-        ? {}
-        : { expectation: suite.expectation }),
     });
-    results.push(result);
+    const judgeResult = judge
+      ? await judge({
+          baseline: result.baseline,
+          candidate: result.candidate,
+          comparison: result.comparison,
+          ...(typeof suite.expectation === "undefined"
+            ? {}
+            : { expectation: suite.expectation }),
+          ...(typeof baselineDescriptor === "undefined"
+            ? {}
+            : { baselineDescriptor }),
+          ...(typeof candidateDescriptor === "undefined"
+            ? {}
+            : { candidateDescriptor }),
+        })
+      : undefined;
+
+    results.push(judgeResult ? { ...result, judge: judgeResult } : result);
   }
 
   const summary = summarizeRunRegressionResults(results, {
@@ -228,6 +222,9 @@ export async function runRegressionSuite<
 
   return {
     ...(typeof suite.name === "undefined" ? {} : { name: suite.name }),
+    ...(typeof suite.expectation === "undefined"
+      ? {}
+      : { expectation: suite.expectation }),
     results,
     summary,
   };

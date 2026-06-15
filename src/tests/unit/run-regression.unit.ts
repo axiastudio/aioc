@@ -100,32 +100,11 @@ export async function runRunRegressionUnitTests(): Promise<void> {
       name: "Regression Candidate Agent",
       model: "fake-model",
     });
-    const expectation = {
-      intent: "Adapt the explanation to the user's age range.",
-      shouldImprove: ["age-appropriate wording"],
-    };
-    let judgeSawCandidateRunId: string | undefined;
     const result = await runRegressionCase({
       name: "photosynthesis-age-10",
       baseline,
       agent,
       mode: "live",
-      expectation,
-      baselineDescriptor: { version: "v1" },
-      candidateDescriptor: { version: "v2" },
-      judge: (input) => {
-        judgeSawCandidateRunId = input.candidate.runId;
-        assert.equal(input.baseline.runId, "baseline-run");
-        assert.equal(input.comparison.summary.sameFinalResponse, false);
-        assert.equal(input.expectation?.intent, expectation.intent);
-        assert.deepEqual(input.baselineDescriptor, { version: "v1" });
-        assert.deepEqual(input.candidateDescriptor, { version: "v2" });
-        return {
-          verdict: "pass",
-          summary: "Candidate answer follows the expected direction.",
-          findings: [],
-        };
-      },
     });
 
     assert.equal(result.name, "photosynthesis-age-10");
@@ -133,9 +112,6 @@ export async function runRunRegressionUnitTests(): Promise<void> {
     assert.equal(result.candidate.response, "Candidate age-adapted answer.");
     assert.equal(result.comparison.equal, false);
     assert.equal(result.comparison.summary.sameFinalResponse, false);
-    assert.equal(result.expectation, expectation);
-    assert.equal(result.judge?.verdict, "pass");
-    assert.equal(judgeSawCandidateRunId, result.candidate.runId);
     assert.deepEqual(provider.requests[0]?.messages, inputItems);
   }
 
@@ -264,12 +240,14 @@ export async function runRunRegressionUnitTests(): Promise<void> {
       name: "Regression Suite Candidate Agent",
       model: "fake-model",
     });
+    const expectation = {
+      intent: "Use simpler wording for the user's age range.",
+    };
+    const judgedRunIds: string[] = [];
     const suite = await runRegressionSuite({
       suite: {
         name: "age-adapted-explanation",
-        expectation: {
-          intent: "Use simpler wording for the user's age range.",
-        },
+        expectation,
         cases: [
           {
             baseline: baselineA,
@@ -282,7 +260,14 @@ export async function runRunRegressionUnitTests(): Promise<void> {
       },
       agent,
       mode: "live",
+      baselineDescriptor: { version: "v1" },
+      candidateDescriptor: { version: "v2" },
       judge: (input) => {
+        judgedRunIds.push(input.candidate.runId);
+        assert.equal(input.expectation, expectation);
+        assert.deepEqual(input.baselineDescriptor, { version: "v1" });
+        assert.deepEqual(input.candidateDescriptor, { version: "v2" });
+
         return {
           verdict: "pass",
           summary: `Judged ${input.expectation?.intent ?? "without expectation"}`,
@@ -292,17 +277,12 @@ export async function runRunRegressionUnitTests(): Promise<void> {
     });
 
     assert.equal(suite.name, "age-adapted-explanation");
+    assert.equal(suite.expectation, expectation);
     assert.equal(suite.results.length, 2);
     assert.equal(suite.results[0]?.name, "baseline-a");
-    assert.equal(
-      suite.results[0]?.expectation?.intent,
-      "Use simpler wording for the user's age range.",
-    );
     assert.equal(suite.results[1]?.name, "gravity-age-8");
-    assert.equal(
-      suite.results[1]?.expectation?.intent,
-      "Use simpler wording for the user's age range.",
-    );
+    assert.equal(suite.results[0]?.judge?.verdict, "pass");
+    assert.equal(suite.results[1]?.judge?.verdict, "pass");
     assert.equal(suite.summary.suite, "age-adapted-explanation");
     assert.equal(suite.summary.status, "warn");
     assert.deepEqual(suite.summary.totals, {
@@ -311,6 +291,10 @@ export async function runRunRegressionUnitTests(): Promise<void> {
       warned: 2,
       failed: 0,
     });
+    assert.deepEqual(judgedRunIds, [
+      suite.results[0]?.candidate.runId,
+      suite.results[1]?.candidate.runId,
+    ]);
     assert.equal(provider.requests.length, 2);
     assert.deepEqual(provider.requests[0]?.messages, baselineA.items);
     assert.deepEqual(provider.requests[1]?.messages, baselineB.items);

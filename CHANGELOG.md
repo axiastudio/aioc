@@ -6,7 +6,8 @@
 
 - Added RFC-0012 run-regression core types, `runRegressionCase(...)`,
   `runRegressionSuite(...)`, and `summarizeRunRegressionResults(...)` for
-  regression checks and CI-friendly summaries.
+  deterministic case checks, suite-level expectation/judge evaluation, and
+  CI-friendly summaries.
 
 ## 0.2.5 - 2026-06-11
 

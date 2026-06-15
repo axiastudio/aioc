@@ -5,9 +5,9 @@ description: Public helpers for RunRecord-based regression cases and summaries.
 
 Run-regression helpers support the incremental implementation of RFC-0012.
 
-They let applications represent regression results built from baseline
-`RunRecord` values, candidate `RunRecord` values, deterministic comparisons,
-an optional expectation, and optional judge results.
+They let applications replay baseline `RunRecord` values against a candidate
+harness, compare the resulting candidate records, and optionally evaluate a
+suite-level expectation with an application-provided judge.
 
 The current implementation defines the public types, provides single-case and
 multi-case regression runners, and provides a pure CI-summary helper.
@@ -20,18 +20,13 @@ const result = await runRegressionCase({
   baseline,
   agent: candidateAgent,
   mode: "strict",
-  expectation: {
-    intent: "Adapt the explanation to the user's age range.",
-    shouldUseTools: ["get_age_range"],
-  },
-  judge,
 });
 ```
 
 The helper runs one baseline `RunRecord` against a candidate agent by using
 `replayFromRunRecord(...)`, captures the candidate `RunRecord`, compares the
-two records with `compareRunRecords(...)`, and optionally invokes an
-application-provided judge.
+two records with `compareRunRecords(...)`, and returns the deterministic
+regression result.
 
 `mode` follows replay semantics:
 
@@ -41,6 +36,10 @@ application-provided judge.
 
 The helper enables candidate `RunRecord` capture automatically. If the
 application provides `runOptions.record.sink`, the sink is preserved.
+
+`runRegressionCase(...)` is intentionally low level. Expectations and judge
+execution belong to `runRegressionSuite(...)`, even when the suite contains a
+single case.
 
 ## `runRegressionSuite(...)`
 
@@ -66,7 +65,8 @@ returns:
 - `summary`: compact `RunRegressionSummary` for CI and dashboards
 
 A suite has one `expectation`: it represents the shared intent being checked
-across all cases. Cases are objects with `baseline` plus optional `name`.
+across all cases. The optional `judge` evaluates each candidate result against
+that shared expectation. Cases are objects with `baseline` plus optional `name`.
 
 ## `summarizeRunRegressionResults(...)`
 
