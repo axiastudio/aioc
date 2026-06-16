@@ -2,8 +2,12 @@
 
 ## Unreleased
 
+## 0.2.6 - 2026-06-16
+
 ### Added
 
+- Added descriptor-level conditional agent handoffs with boolean `where` gates
+  and runtime filtering before provider tool exposure.
 - Added RFC-0012 run-regression core types, `runRegressionCase(...)`,
   `runRegressionSuite(...)`, and `summarizeRunRegressionResults(...)` for
   deterministic case checks, suite-level expectation/judge evaluation, and
