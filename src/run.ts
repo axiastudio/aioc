@@ -1,4 +1,4 @@
-import { Agent } from "./agent";
+import { Agent, type AgentHandoff } from "./agent";
 import { getDefaultProvider } from "./config";
 import {
   MaxTurnsExceededError,
@@ -126,15 +126,24 @@ function sanitizeToolSegment(input: string): string {
   return sanitized || "agent";
 }
 
-function buildTurnTools<TContext>(agent: Agent<TContext>): {
+function buildTurnTools<TContext>(
+  agent: Agent<TContext>,
+  runContext: RunContext<TContext>,
+): {
   providerTools: Tool<TContext>[];
   handoffRegistry: HandoffRegistry<TContext>;
 } {
   const handoffRegistry: HandoffRegistry<TContext> = new Map();
   const handoffTools: Tool<TContext>[] = [];
   const reservedNames = new Set(agent.tools.map((tool) => tool.name));
+  const handoffRules: AgentHandoff<TContext>[] = agent.handoffRules;
 
-  for (const handoffAgent of agent.handoffs) {
+  for (const handoffRule of handoffRules) {
+    if (handoffRule.enabled && !handoffRule.enabled(runContext)) {
+      continue;
+    }
+
+    const handoffAgent = handoffRule.agent;
     const baseName = `handoff_to_${sanitizeToolSegment(handoffAgent.name)}`;
     let toolName = baseName;
     let suffix = 2;
@@ -564,7 +573,10 @@ async function* runLoop<TContext>(
       activeTurn = turn + 1;
       const currentAgent = state.lastAgent;
       await logEmitter.turnStarted(currentAgent.name, activeTurn);
-      const { providerTools, handoffRegistry } = buildTurnTools(currentAgent);
+      const { providerTools, handoffRegistry } = buildTurnTools(
+        currentAgent,
+        runContext,
+      );
       const model = resolveAgentModel(currentAgent);
       const systemPrompt = await currentAgent.resolveInstructions(runContext);
 

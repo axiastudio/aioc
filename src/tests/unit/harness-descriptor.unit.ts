@@ -5,6 +5,7 @@ import {
   buildAgentHarness,
   hashAgentHarnessDescriptor,
   replayFromRunRecord,
+  run,
   RunContext,
   setDefaultProvider,
   tool,
@@ -451,6 +452,152 @@ export async function runHarnessDescriptorUnitTests(): Promise<void> {
           },
         }),
       /references unknown handoff agent "missing_agent"/,
+    );
+  }
+
+  {
+    assert.throws(
+      () =>
+        buildAgentHarness<HarnessTestContext>({
+          descriptor_version: "aioc.agent_graph.v0",
+          runtime: {
+            entry_agent: "candidate",
+          },
+          agents: {
+            candidate: {
+              handoffs: [
+                {
+                  agent: "target",
+                  where: {
+                    context: "state.includeSecret",
+                  },
+                },
+              ],
+            },
+            target: {},
+          },
+        }),
+      /handoff "target" where references undeclared context path "state.includeSecret"/,
+    );
+  }
+
+  {
+    assert.throws(
+      () =>
+        buildAgentHarness<HarnessTestContext>({
+          descriptor_version: "aioc.agent_graph.v0",
+          runtime: {
+            entry_agent: "candidate",
+          },
+          context: {
+            references: {
+              "state.phase": {
+                type: "string",
+              },
+            },
+          },
+          agents: {
+            candidate: {
+              handoffs: [
+                {
+                  agent: "target",
+                  where: {
+                    context: "state.phase",
+                  },
+                },
+              ],
+            },
+            target: {},
+          },
+        }),
+      /handoff "target" where context path "state.phase" must be declared with type "boolean"/,
+    );
+  }
+
+  {
+    const descriptor: AgentHarnessDescriptor = {
+      descriptor_version: "aioc.agent_graph.v0",
+      runtime: {
+        entry_agent: "router",
+      },
+      context: {
+        references: {
+          "state.includeSecret": {
+            type: "boolean",
+          },
+        },
+      },
+      agent_defaults: {
+        model: "fake-model",
+      },
+      agents: {
+        router: {
+          handoffs: [
+            "qna",
+            {
+              agent: "assessment",
+              where: {
+                context: "state.includeSecret",
+              },
+            },
+          ],
+        },
+        qna: {
+          name: "QnA Agent",
+        },
+        assessment: {
+          name: "Assessment Agent",
+        },
+      },
+    };
+    const harness = buildAgentHarness<HarnessTestContext>(descriptor);
+    assert.deepEqual(
+      harness.entryAgent.handoffs.map((agent) => agent.name),
+      ["QnA Agent", "Assessment Agent"],
+    );
+
+    const disabledProvider = new ScriptedProvider([
+      [{ type: "completed", message: "done" }],
+    ]);
+    setDefaultProvider(disabledProvider);
+    await run(harness.entryAgent, "hello", {
+      context: {
+        actorId: "actor-1",
+        turn: {
+          userMessage: "hello",
+          startedAt: "2026-05-19T12:00:00.000Z",
+        },
+        state: {
+          includeSecret: false,
+        },
+      },
+      maxTurns: 1,
+    });
+    assert.deepEqual(
+      disabledProvider.requests[0]?.tools.map((item) => item.name),
+      ["handoff_to_qna_agent"],
+    );
+
+    const enabledProvider = new ScriptedProvider([
+      [{ type: "completed", message: "done" }],
+    ]);
+    setDefaultProvider(enabledProvider);
+    await run(harness.entryAgent, "hello", {
+      context: {
+        actorId: "actor-1",
+        turn: {
+          userMessage: "hello",
+          startedAt: "2026-05-19T12:00:00.000Z",
+        },
+        state: {
+          includeSecret: true,
+        },
+      },
+      maxTurns: 1,
+    });
+    assert.deepEqual(
+      enabledProvider.requests[0]?.tools.map((item) => item.name),
+      ["handoff_to_qna_agent", "handoff_to_assessment_agent"],
     );
   }
 

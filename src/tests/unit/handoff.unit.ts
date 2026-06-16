@@ -53,6 +53,50 @@ function createHandoffTurns(handoffToolName: string) {
 
 export async function runHandoffUnitTests(): Promise<void> {
   {
+    const targetAgent = new Agent<{ allowHandoff: boolean }>({
+      name: "Target Agent",
+      model: "fake-model",
+    });
+    const sourceAgent = new Agent<{ allowHandoff: boolean }>({
+      name: "Source Agent",
+      model: "fake-model",
+      handoffs: [
+        {
+          agent: targetAgent,
+          enabled: (runContext) => runContext.context.allowHandoff,
+        },
+      ],
+    });
+
+    const disabledProvider = new ScriptedProvider([
+      [{ type: "completed", message: "Handled by source." }],
+    ]);
+    setDefaultProvider(disabledProvider);
+    await run(sourceAgent, "hello", {
+      context: {
+        allowHandoff: false,
+      },
+      maxTurns: 1,
+    });
+    assert.deepEqual(disabledProvider.requests[0]?.tools, []);
+
+    const enabledProvider = new ScriptedProvider([
+      [{ type: "completed", message: "Handled by source." }],
+    ]);
+    setDefaultProvider(enabledProvider);
+    await run(sourceAgent, "hello", {
+      context: {
+        allowHandoff: true,
+      },
+      maxTurns: 1,
+    });
+    assert.deepEqual(
+      enabledProvider.requests[0]?.tools.map((item) => item.name),
+      [toHandoffToolName(targetAgent.name)],
+    );
+  }
+
+  {
     const { sourceAgent, handoffToolName } = createAgents();
     const allowHandoffPolicy: HandoffPolicy = () => ({
       decision: "allow",

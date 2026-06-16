@@ -7,6 +7,19 @@ export type AgentInstructions<TContext = unknown> =
   | string
   | ((runContext: RunContext<TContext>) => string | Promise<string>);
 
+export type AgentHandoffCondition<TContext = unknown> = (
+  runContext: RunContext<TContext>,
+) => boolean;
+
+export interface AgentHandoff<TContext = unknown> {
+  agent: Agent<TContext>;
+  enabled?: AgentHandoffCondition<TContext>;
+}
+
+export type AgentHandoffEntry<TContext = unknown> =
+  | Agent<TContext>
+  | AgentHandoff<TContext>;
+
 export interface AgentConfiguration<TContext = unknown> {
   name: string;
   handoffDescription?: string;
@@ -15,7 +28,7 @@ export interface AgentConfiguration<TContext = unknown> {
   model?: string;
   modelSettings?: ModelSettings;
   tools?: Tool<TContext>[];
-  handoffs?: Agent<TContext>[];
+  handoffs?: AgentHandoffEntry<TContext>[];
   outputGuardrails?: OutputGuardrail<TContext>[];
 }
 
@@ -28,6 +41,7 @@ export class Agent<TContext = unknown> {
   modelSettings?: ModelSettings;
   tools: Tool<TContext>[];
   handoffs: Agent<TContext>[];
+  handoffRules: AgentHandoff<TContext>[];
   outputGuardrails: OutputGuardrail<TContext>[];
 
   constructor(config: AgentConfiguration<TContext>) {
@@ -38,7 +52,10 @@ export class Agent<TContext = unknown> {
     this.model = config.model;
     this.modelSettings = config.modelSettings;
     this.tools = config.tools ?? [];
-    this.handoffs = config.handoffs ?? [];
+    this.handoffRules = (config.handoffs ?? []).map((handoff) =>
+      handoff instanceof Agent ? { agent: handoff } : handoff,
+    );
+    this.handoffs = this.handoffRules.map((rule) => rule.agent);
     this.outputGuardrails = config.outputGuardrails ?? [];
   }
 

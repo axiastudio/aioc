@@ -1,5 +1,6 @@
-import { Agent, type AgentInstructions } from "./agent";
+import { Agent, type AgentHandoff, type AgentInstructions } from "./agent";
 import { hashCanonicalJsonValue } from "./canonical-json";
+import type { RunContext } from "./run-context";
 import type { Tool } from "./tool";
 import type { NonStreamRunOptions } from "./types";
 
@@ -25,12 +26,21 @@ export interface HarnessAgentDescriptor {
   model?: string;
   modelSettings?: Record<string, unknown>;
   tools?: string[];
-  handoffs?: string[];
+  handoffs?: HarnessHandoffEntryDescriptor[];
 }
 
-export interface HarnessInstructionWhereDescriptor {
+export interface HarnessWhereDescriptor {
   context: string;
 }
+
+export type HarnessInstructionWhereDescriptor = HarnessWhereDescriptor;
+
+export interface HarnessHandoffDescriptor {
+  agent: string;
+  where?: HarnessWhereDescriptor;
+}
+
+export type HarnessHandoffEntryDescriptor = string | HarnessHandoffDescriptor;
 
 export interface HarnessInstructionPartDescriptor {
   text: string;
@@ -147,6 +157,37 @@ function assertNonEmptyString(value: unknown, label: string) {
   }
 }
 
+function assertHandoffEntry(value: unknown, label: string) {
+  if (typeof value === "string") {
+    assertNonEmptyString(value, label);
+    return;
+  }
+
+  if (!isPlainObject(value)) {
+    throw new Error(`${label} must be a non-empty string or an object.`);
+  }
+
+  assertNonEmptyString(value.agent, `${label}.agent`);
+
+  if (typeof value.where !== "undefined") {
+    assertInstructionWhere(value.where, label);
+  }
+}
+
+function assertHandoffEntries(value: unknown, label: string) {
+  if (typeof value === "undefined") {
+    return;
+  }
+
+  if (!Array.isArray(value)) {
+    throw new Error(`${label} must be an array.`);
+  }
+
+  value.forEach((entry, index) =>
+    assertHandoffEntry(entry, `${label}[${index}]`),
+  );
+}
+
 function validateDescriptorShape(descriptor: AgentHarnessDescriptor) {
   assertPlainObject(descriptor, "Harness descriptor");
   assertPlainObject(descriptor.runtime, "Harness descriptor runtime");
@@ -190,6 +231,10 @@ function validateDescriptorShape(descriptor: AgentHarnessDescriptor) {
     assertNoUnresolvedInstructionFile(
       agentDescriptor,
       `Harness descriptor agent "${agentId}"`,
+    );
+    assertHandoffEntries(
+      agentDescriptor.handoffs,
+      `Harness descriptor agent "${agentId}".handoffs`,
     );
   }
 
@@ -439,50 +484,70 @@ function assertDeclaredPromptPaths(
   }
 }
 
+function assertDeclaredBooleanContextPath(
+  label: string,
+  path: string,
+  promptAccessRules: Map<string, PromptAccessRule>,
+) {
+  const rule = promptAccessRules.get(path);
+  if (!rule) {
+    throw new Error(`${label} references undeclared context path "${path}".`);
+  }
+  if (rule.type !== "boolean") {
+    throw new Error(
+      `${label} context path "${path}" must be declared with type "boolean".`,
+    );
+  }
+}
+
 function assertDeclaredBooleanWherePaths(
   agentId: string,
   paths: string[],
   promptAccessRules: Map<string, PromptAccessRule>,
 ) {
   for (const path of paths) {
-    const rule = promptAccessRules.get(path);
-    if (!rule) {
-      throw new Error(
-        `Agent "${agentId}" instruction where references undeclared context path "${path}".`,
-      );
-    }
-    if (rule.type !== "boolean") {
-      throw new Error(
-        `Agent "${agentId}" instruction where context path "${path}" must be declared with type "boolean".`,
-      );
-    }
+    assertDeclaredBooleanContextPath(
+      `Agent "${agentId}" instruction where`,
+      path,
+      promptAccessRules,
+    );
   }
+}
+
+function shouldIncludeWhere(
+  where: HarnessWhereDescriptor | undefined,
+  context: unknown,
+  label: string,
+): boolean {
+  if (!where) {
+    return true;
+  }
+
+  const path = normalizePromptPath(
+    where.context,
+    "Instruction where.context path",
+  );
+  const resolved = readWhereContextValue(context, path);
+  if (!resolved.exists || typeof resolved.value === "undefined") {
+    throw new Error(`${label} could not resolve context path "${path}".`);
+  }
+  if (typeof resolved.value !== "boolean") {
+    throw new Error(
+      `${label} context path "${path}" must resolve to a boolean.`,
+    );
+  }
+  return resolved.value === true;
 }
 
 function shouldIncludeInstructionPart(
   part: HarnessInstructionPartDescriptor,
   context: unknown,
 ): boolean {
-  if (!part.where) {
-    return true;
-  }
-
-  const path = normalizePromptPath(
-    part.where.context,
-    "Instruction where.context path",
+  return shouldIncludeWhere(
+    part.where,
+    context,
+    "Harness descriptor instruction where",
   );
-  const resolved = readWhereContextValue(context, path);
-  if (!resolved.exists || typeof resolved.value === "undefined") {
-    throw new Error(
-      `Harness descriptor instruction where could not resolve context path "${path}".`,
-    );
-  }
-  if (typeof resolved.value !== "boolean") {
-    throw new Error(
-      `Harness descriptor instruction where context path "${path}" must resolve to a boolean.`,
-    );
-  }
-  return resolved.value === true;
 }
 
 function renderInstructionParts(
@@ -655,6 +720,46 @@ function resolveTool<TContext>(
   return toolDefinition;
 }
 
+function readHandoffEntry(
+  entry: HarnessHandoffEntryDescriptor,
+): HarnessHandoffDescriptor {
+  if (typeof entry === "string") {
+    return {
+      agent: entry,
+    };
+  }
+
+  return entry;
+}
+
+function compileHandoffCondition<TContext>(
+  fromAgentId: string,
+  toAgentId: string,
+  where: HarnessWhereDescriptor | undefined,
+  promptAccessRules: Map<string, PromptAccessRule>,
+): AgentHandoff<TContext>["enabled"] {
+  if (!where) {
+    return undefined;
+  }
+
+  const path = normalizePromptPath(
+    where.context,
+    `Agent "${fromAgentId}" handoff "${toAgentId}" where.context path`,
+  );
+  assertDeclaredBooleanContextPath(
+    `Agent "${fromAgentId}" handoff "${toAgentId}" where`,
+    path,
+    promptAccessRules,
+  );
+
+  return (runContext: RunContext<TContext>) =>
+    shouldIncludeWhere(
+      where,
+      runContext.context,
+      `Harness descriptor handoff "${fromAgentId}" to "${toAgentId}" where`,
+    );
+}
+
 export function hashAgentHarnessDescriptor(
   descriptor: AgentHarnessDescriptor,
 ): string {
@@ -699,15 +804,27 @@ export function buildAgentHarness<TContext = unknown>(
     if (!agent) {
       continue;
     }
-    agent.handoffs = (agentDescriptor.handoffs ?? []).map((handoffId) => {
+    const handoffRules = (agentDescriptor.handoffs ?? []).map((entry) => {
+      const handoff = readHandoffEntry(entry);
+      const handoffId = handoff.agent;
       const handoffAgent = agents.get(handoffId);
       if (!handoffAgent) {
         throw new Error(
           `Harness descriptor references unknown handoff agent "${handoffId}" from "${agentId}".`,
         );
       }
-      return handoffAgent;
+      return {
+        agent: handoffAgent,
+        enabled: compileHandoffCondition(
+          agentId,
+          handoffId,
+          handoff.where,
+          promptAccessRules,
+        ),
+      };
     });
+    agent.handoffRules = handoffRules;
+    agent.handoffs = handoffRules.map((handoff) => handoff.agent);
   }
 
   const entryAgent = agents.get(descriptor.runtime.entry_agent);
