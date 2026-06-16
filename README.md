@@ -39,6 +39,7 @@ AIOC `0.2.2` completes the descriptor instruction-composition surface with reusa
 AIOC `0.2.3` adds RFC-0010 policy composition helpers for exact-name tool and handoff policy dispatch without changing runtime enforcement semantics.
 AIOC `0.2.4` adds experimental governance-event packages and an OpenTelemetry Logs exporter for reduced, operational observability events derived from `RunRecord` values.
 AIOC `0.2.5` makes replay history-faithful by recording the initial input scope in `RunRecord` and replaying from it by default.
+AIOC `0.2.6` adds descriptor-level conditional agent handoffs with boolean `where` gates that filter handoff tools before provider requests.
 
 ### Experimental Packages
 
@@ -146,7 +147,7 @@ console.log(result.finalOutput);
 - `loadAgentHarnessDescriptorFromFile(...)`
 - `AgentHarnessDescriptor` and related descriptor types
 
-The Agent Harness Descriptor is included in the supported `0.2.x` API surface as the `aioc.agent_graph.v0` descriptor contract. Use it for controlled configuration, examples, and evaluation harnesses; keep executable tools, policies, providers, persistence, approvals, and deployment configuration in application code.
+The Agent Harness Descriptor is included in the supported `0.2.x` API surface as the `aioc.agent_graph.v0` descriptor contract. Use it for controlled configuration, examples, and evaluation harnesses; keep executable tools, policies, providers, persistence, approvals, and deployment configuration in application code. Descriptor handoffs may use boolean `where` gates to hide unavailable handoff tools before the provider call; `HandoffPolicy` still owns allow/deny/approval decisions for exposed handoffs.
 
 ## Policy Gate (Minimal)
 

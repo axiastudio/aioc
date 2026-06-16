@@ -138,6 +138,8 @@ The current documentation covers:
 
 `aioc` `0.2.5` makes replay history-faithful by recording the initial input scope in `RunRecord` and replaying from it by default.
 
+`aioc` `0.2.6` adds descriptor-level conditional agent handoffs with boolean `where` gates that filter unavailable handoff tools before provider requests.
+
 ## Install
 
 ```bash

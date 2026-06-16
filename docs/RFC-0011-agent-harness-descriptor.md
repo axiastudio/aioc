@@ -117,10 +117,21 @@ export interface HarnessInstructionWhereDescriptor {
   context: string;
 }
 
+export type HarnessWhereDescriptor = HarnessInstructionWhereDescriptor;
+
 export interface HarnessInstructionPartDescriptor {
   text: string;
   where?: HarnessInstructionWhereDescriptor;
 }
+
+export interface HarnessHandoffDescriptor {
+  agent: string;
+  where?: HarnessWhereDescriptor;
+}
+
+export type HarnessHandoffEntryDescriptor =
+  | string
+  | HarnessHandoffDescriptor;
 
 export type HarnessInstructionsDescriptor =
   | string
@@ -137,7 +148,7 @@ export interface HarnessAgentDescriptor {
   model?: string;
   modelSettings?: Record<string, unknown>;
   tools?: string[];
-  handoffs?: string[];
+  handoffs?: HarnessHandoffEntryDescriptor[];
 }
 ```
 
@@ -637,6 +648,35 @@ agents:
 
 `buildAgentHarness(...)` resolves those ids into `Agent` handoff objects.
 
+Handoffs can also be gated with the same boolean `where.context` shape used by
+instruction parts:
+
+```yaml
+context:
+  references:
+    "prompt.kolbEnabled":
+      type: boolean
+
+agents:
+  router:
+    handoffs:
+      - qna
+      - agent: assessment
+        where:
+          context: prompt.kolbEnabled
+      - agent: tutor
+        where:
+          context: prompt.kolbEnabled
+```
+
+A string handoff entry is always available. An object handoff entry must include
+`agent` and may include `where.context`.
+
+`where.context` must be declared under `context.references` with
+`type: boolean`. It is evaluated for the current run context before provider
+tool exposure. If the value is `false`, the handoff tool is not included in the
+provider request for that turn.
+
 Unknown handoff targets fail at build time.
 
 ## Relation To Run Records And Replay
@@ -745,6 +785,9 @@ The `0.2.x` descriptor scope is intentionally narrow:
   explicit loader helpers.
 - Policies remain code-owned. The descriptor does not contain policy
   definitions or policy references.
+- Handoff `where` gates only control provider tool exposure. They do not replace
+  `HandoffPolicy`; policies remain responsible for allow/deny/approval
+  decisions for exposed handoffs.
 - Instruction placeholders remain path-only references. JavaScript expressions,
   filters, nullish coalescing, ternaries, and function calls are not supported.
 - Prompt file loading and prompt materialization are supported only through the

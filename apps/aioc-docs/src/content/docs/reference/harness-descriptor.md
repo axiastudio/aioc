@@ -17,8 +17,9 @@ A descriptor defines:
 - runtime defaults such as entry agent and max turns
 - logical tool ids and registry targets
 - agents, model settings, tools, and handoffs
+- optional boolean gates for instruction parts and handoffs
 - optional context defaults
-- context paths that instruction templates may read
+- context paths that instruction templates and handoff gates may read
 
 The application binds executable tools through a registry and then calls
 `buildAgentHarness(...)`.
@@ -53,6 +54,15 @@ interface HarnessInstructionPartDescriptor {
     context: string;
   };
 }
+
+type HarnessHandoffEntryDescriptor =
+  | string
+  | {
+      agent: string;
+      where?: {
+        context: string;
+      };
+    };
 ```
 
 ## Building
@@ -139,6 +149,36 @@ Each `instructions_sequence` item must define exactly one of:
 The optional `where.context` path must be declared under `context.references`
 with `type: boolean`. It is evaluated when agent instructions are resolved for a
 run. Parts whose `where` value is not exactly `true` are skipped.
+
+## Conditional Handoffs
+
+Agents can list handoff targets as plain ids or as gated handoff entries:
+
+```yaml
+context:
+  references:
+    "prompt.kolbEnabled":
+      type: boolean
+
+agents:
+  router:
+    handoffs:
+      - qna
+      - agent: assessment
+        where:
+          context: prompt.kolbEnabled
+      - agent: tutor
+        where:
+          context: prompt.kolbEnabled
+```
+
+A string entry is always available. An object entry must include `agent` and may
+include `where.context`.
+
+The optional `where.context` path follows the same boolean rules as instruction
+parts: it must be declared under `context.references` with `type: boolean`, and
+it is evaluated against the current run context. If it resolves to `false`, the
+handoff tool is not exposed to the provider for that turn.
 
 The returned harness contains:
 
