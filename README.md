@@ -42,6 +42,11 @@ AIOC `0.2.5` makes replay history-faithful by recording the initial input scope 
 
 ### Experimental Packages
 
+`@axiastudio/aioc-regression-judge` implements the RFC-0012 companion judge
+helpers outside the core runtime package. It builds bounded judge inputs for
+run-regression suites and parses structured `RunJudgeResult` outputs while the
+host application owns the model invocation.
+
 `@axiastudio/aioc-governance-events` implements the RFC-0009 governance-event
 mapper outside the core runtime package. It derives reduced, redacted,
 event-shaped records from `RunRecord` values.

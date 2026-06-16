@@ -311,7 +311,10 @@ packages rather than forcing every concern into the core package.
 
 ### `@axiastudio/aioc-regression-judge`
 
-This package should provide a ready-to-use judge implementation.
+This package provides the first ready-to-wire judge implementation. It remains
+provider-agnostic: applications supply the model invocation function, while the
+package owns bounded projection, prompt construction, and structured result
+parsing.
 
 Responsibilities:
 
@@ -321,7 +324,7 @@ Responsibilities:
   descriptors;
 - apply bounded judge-input projection by default;
 - require explicit opt-in for full-record judging;
-- invoke the configured judge model;
+- invoke the configured application-provided model adapter;
 - parse and validate structured `RunJudgeResult` output.
 
 Application-specific expectation data, such as "adapt the explanation to the
@@ -543,6 +546,7 @@ The judge can assess:
 
 ## Status
 
-Accepted. The first implementation covers core types, single-case regression,
-suite regression, and CI summaries. Judge and CLI companion packages remain
-future work.
+Accepted. The current implementation covers core types, single-case regression,
+suite regression, CI summaries, and the first provider-agnostic
+`@axiastudio/aioc-regression-judge` companion package. The CLI companion package
+remains future work.

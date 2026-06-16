@@ -1,0 +1,49 @@
+{
+  "name": "@axiastudio/aioc-regression-judge",
+  "version": "0.1.0",
+  "description": "Experimental LLM judge helpers for AIOC run regression suites.",
+  "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    }
+  },
+  "files": [
+    "dist",
+    "README.md"
+  ],
+  "scripts": {
+    "clean": "node -e \"require('fs').rmSync('dist',{recursive:true,force:true})\"",
+    "build": "npm run clean && tsc -p tsconfig.build.json",
+    "test": "node -e \"require('fs').rmSync('dist-tests',{recursive:true,force:true})\" && tsc -p tsconfig.test.json && node dist-tests/tests/index.js",
+    "prepack": "npm run build"
+  },
+  "keywords": [
+    "aioc",
+    "regression",
+    "judge",
+    "llm",
+    "run-records",
+    "evaluation"
+  ],
+  "author": "Tiziano Lattisi - AXIA Studio S.r.l.",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/axiastudio/aioc.git",
+    "directory": "packages/aioc-regression-judge"
+  },
+  "bugs": {
+    "url": "https://github.com/axiastudio/aioc/issues"
+  },
+  "homepage": "https://axiastudio.github.io/aioc",
+  "publishConfig": {
+    "access": "public"
+  },
+  "peerDependencies": {
+    "@axiastudio/aioc": "^0.2.5"
+  }
+}
