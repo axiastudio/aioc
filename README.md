@@ -294,6 +294,12 @@ Notes:
 - `example:non-regression` is educational and can be non-deterministic because it uses a live provider.
 - canonical examples guide: `docs/CANONICAL-EXAMPLES.md`.
 
+### Optional LangChain Examples
+
+Optional LangChain interoperability examples live in `examples/langchain`.
+They use their own `package.json` so LangChain dependencies do not become
+dependencies of the core `@axiastudio/aioc` runtime package.
+
 ## Test Commands
 
 - `npm run test:unit`
