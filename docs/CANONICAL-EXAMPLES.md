@@ -271,3 +271,20 @@ What it demonstrates:
 - running a v2 harness through `runRegressionSuite(...)`
 - attaching one suite-level expectation to a single baseline case
 - reading deterministic comparison and CI summary output without a judge
+
+## Optional LangChain Interoperability
+
+Optional LangChain examples live in `examples/langchain` with their own
+`package.json`, so LangChain dependencies stay out of the core runtime package.
+
+They demonstrate two composition patterns:
+
+- **aioc-first, LangChain-extended**: aioc owns the governed agent run while
+  LangChain provides OSS components behind aioc tools.
+- **LangGraph-orchestrated, aioc-governed**: LangGraph owns workflow
+  orchestration while selected graph nodes call aioc for policy-gated execution
+  and portable audit evidence.
+
+These examples are intentionally outside the canonical learning path. They are
+for users who want to compose aioc with LangChain OSS components without moving
+governance decisions into a LangChain or LangSmith control plane.

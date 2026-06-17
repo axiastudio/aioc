@@ -4,6 +4,18 @@ This folder contains optional examples showing how `aioc` can compose with
 LangChain OSS components without making LangChain a dependency of the core
 runtime package.
 
+The examples cover two integration patterns:
+
+| Pattern | Harness / orchestrator | aioc role | LangChain role |
+|---|---|---|---|
+| **aioc-first, LangChain-extended** | `aioc` | Owns the agent run, policy gate, and `RunRecord` | Provides OSS components behind governed aioc tools |
+| **LangGraph-orchestrated, aioc-governed** | LangGraph | Owns the sensitive execution boundary inside a graph node | Owns workflow state, routing, and orchestration |
+
+In both patterns, the rule is the same: capabilities with real execution impact
+should cross the aioc governance boundary. LangChain can provide breadth and
+orchestration; aioc keeps authorization, default-deny behavior, and audit
+evidence explicit.
+
 ## aioc-first RAG
 
 The first example is **aioc-first, LangChain-extended**.
@@ -18,6 +30,10 @@ aioc Agent
 `aioc` owns the execution boundary: the model proposes a tool call, deterministic
 policy code authorizes it, and a `RunRecord` captures the decision. LangChain
 provides the retrieval component behind that governed tool.
+
+Use this pattern when aioc should be the primary harness and LangChain should
+extend it with retrievers, vector stores, runnables, parsers, or other OSS
+components.
 
 The domain intentionally mirrors the LangChain RAG tutorial: answering questions
 about Lilian Weng's "LLM Powered Autonomous Agents" blog post. To keep this
@@ -45,6 +61,10 @@ The domain mirrors the LangGraph calculator quickstart: arithmetic tools such as
 `add`, `multiply`, and `divide`. The difference is that the graph node delegates
 the sensitive action to aioc, so tool execution still crosses a deterministic
 policy boundary.
+
+Use this pattern when LangGraph already owns the workflow shape, but selected
+nodes need aioc's application-owned governance, policy decisions, and audit
+artifacts.
 
 Run it with:
 

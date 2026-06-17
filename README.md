@@ -300,6 +300,14 @@ Optional LangChain interoperability examples live in `examples/langchain`.
 They use their own `package.json` so LangChain dependencies do not become
 dependencies of the core `@axiastudio/aioc` runtime package.
 
+They demonstrate two composition patterns:
+
+- **aioc-first, LangChain-extended**: aioc owns the governed agent run while
+  LangChain provides OSS components behind aioc tools, such as retrieval.
+- **LangGraph-orchestrated, aioc-governed**: LangGraph owns workflow
+  orchestration while selected graph nodes call aioc for policy-gated execution
+  and portable audit evidence.
+
 ## Test Commands
 
 - `npm run test:unit`
