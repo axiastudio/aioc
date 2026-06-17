@@ -5,12 +5,14 @@
   "description": "Optional LangChain interoperability examples for aioc.",
   "scripts": {
     "aioc-first-rag": "tsx src/aioc-first-rag.ts",
+    "langgraph-node-calls-aioc": "tsx src/langgraph-node-calls-aioc.ts",
     "check": "tsc -p tsconfig.json --noEmit"
   },
   "dependencies": {
     "@axiastudio/aioc": "^0.2.6",
     "@langchain/classic": "^1.0.34",
     "@langchain/core": "^1.1.49",
+    "@langchain/langgraph": "^1.4.2",
     "@langchain/openai": "^1.4.7",
     "dotenv": "^17.2.3",
     "langchain": "^1.4.5",
