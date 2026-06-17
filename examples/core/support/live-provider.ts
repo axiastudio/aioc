@@ -1,4 +1,4 @@
-import { setupMistral, setupOpenAI } from "../../index";
+import { setupMistral, setupOpenAI } from "../../../src/index";
 
 export interface ExampleProviderConfig {
   provider: "openai" | "mistral";

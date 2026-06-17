@@ -10,7 +10,7 @@ import {
   type AgentInputItem,
   type RunRecord,
   type ToolPolicy,
-} from "../../index";
+} from "../../../src/index";
 
 const descriptorV1 = loadAgentHarnessDescriptor(`
 runtime: { entry_agent: explainer, max_turns: 4 }

@@ -5,7 +5,7 @@ import {
   run,
   tool,
   type ToolPolicy,
-} from "../../index";
+} from "../../../src/index";
 import { getExampleProviderConfig } from "../support/live-provider";
 
 async function main(): Promise<void> {

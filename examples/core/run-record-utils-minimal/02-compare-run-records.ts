@@ -1,4 +1,4 @@
-import { compareRunRecords, type RunRecord } from "../../index";
+import { compareRunRecords, type RunRecord } from "../../../src/index";
 
 interface DemoContext {
   actorId: string;

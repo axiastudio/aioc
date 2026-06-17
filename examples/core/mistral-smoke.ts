@@ -7,7 +7,7 @@ import {
   run,
   setupMistral,
   tool,
-} from "../index";
+} from "../../src/index";
 
 async function main() {
   setupMistral();

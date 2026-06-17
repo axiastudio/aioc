@@ -1,5 +1,5 @@
 import "dotenv/config";
-import { Agent, run } from "../../index";
+import { Agent, run } from "../../../src/index";
 import { getExampleProviderConfig } from "../support/live-provider";
 
 async function main(): Promise<void> {

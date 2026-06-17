@@ -8,7 +8,7 @@ import {
   type RunRecord,
   type RunRecordSink,
   type ToolPolicy,
-} from "../../index";
+} from "../../../src/index";
 import { getExampleProviderConfig } from "../support/live-provider";
 
 interface FinanceContext {

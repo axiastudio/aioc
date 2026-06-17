@@ -38,11 +38,11 @@ npm run example:hello
 
 File:
 
-- `src/examples/basic/hello-world.ts`
+- `examples/core/basic/hello-world.ts`
 
 What it demonstrates:
 
-- minimal live-provider setup via `src/examples/support/live-provider.ts`
+- minimal live-provider setup via `examples/core/support/live-provider.ts`
 - single-agent execution with default non-stream mode
 - reading `result.finalOutput`
 
@@ -56,7 +56,7 @@ npm run example:policy
 
 File:
 
-- `src/examples/basic/policy.ts`
+- `examples/core/basic/policy.ts`
 
 What it demonstrates:
 
@@ -75,7 +75,7 @@ npm run example:approval-required
 
 File:
 
-- `src/examples/basic/approval-required.ts`
+- `examples/core/basic/approval-required.ts`
 
 What it demonstrates:
 
@@ -94,7 +94,7 @@ npm run example:tool-policy
 
 File:
 
-- `src/examples/basic/tools.ts`
+- `examples/core/basic/tools.ts`
 
 What it demonstrates:
 
@@ -113,7 +113,7 @@ npm run example:policy-composition
 
 File:
 
-- `src/examples/basic/policy-composition.ts`
+- `examples/core/basic/policy-composition.ts`
 
 What it demonstrates:
 
@@ -133,7 +133,7 @@ npm run example:approval-evidence
 
 File:
 
-- `src/examples/basic/approval-evidence.ts`
+- `examples/core/basic/approval-evidence.ts`
 
 What it demonstrates:
 
@@ -154,7 +154,7 @@ npm run example:run-record
 
 File:
 
-- `src/examples/basic/run-record-sink.ts`
+- `examples/core/basic/run-record-sink.ts`
 
 What it demonstrates:
 
@@ -178,10 +178,10 @@ npm run example:rru:04-replay-hybrid
 
 Files:
 
-- `src/examples/run-record-utils-minimal/01-extract-tool-calls.ts`
-- `src/examples/run-record-utils-minimal/02-compare-run-records.ts`
-- `src/examples/run-record-utils-minimal/03-replay-strict.ts`
-- `src/examples/run-record-utils-minimal/04-replay-hybrid.ts`
+- `examples/core/run-record-utils-minimal/01-extract-tool-calls.ts`
+- `examples/core/run-record-utils-minimal/02-compare-run-records.ts`
+- `examples/core/run-record-utils-minimal/03-replay-strict.ts`
+- `examples/core/run-record-utils-minimal/04-replay-hybrid.ts`
 
 What it demonstrates:
 
@@ -202,7 +202,7 @@ npm run example:harness-rerun
 
 File:
 
-- `src/examples/harness-descriptor/rerun-modified-harness.ts`
+- `examples/core/harness-descriptor/rerun-modified-harness.ts`
 
 What it demonstrates:
 
@@ -221,8 +221,8 @@ npm run example:harness
 
 Files:
 
-- `src/examples/harness-descriptor/customer-support.ts`
-- `src/examples/harness-descriptor/customer-support.yaml`
+- `examples/core/harness-descriptor/customer-support.ts`
+- `examples/core/harness-descriptor/customer-support.yaml`
 
 What it demonstrates:
 
@@ -244,7 +244,7 @@ npm run example:non-regression
 
 File:
 
-- `src/examples/non-regression/v1-v2-runrecord-diff.ts`
+- `examples/core/non-regression/v1-v2-runrecord-diff.ts`
 
 What it demonstrates:
 
@@ -263,7 +263,7 @@ npm run example:run-regression
 
 File:
 
-- `src/examples/run-regression/age-adapted-suite.ts`
+- `examples/core/run-regression/age-adapted-suite.ts`
 
 What it demonstrates:
 

@@ -1,4 +1,4 @@
-import { extractToolCalls, type RunRecord } from "../../index";
+import { extractToolCalls, type RunRecord } from "../../../src/index";
 
 interface DemoContext {
   actorId: string;

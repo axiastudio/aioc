@@ -181,4 +181,4 @@ to avoid storing approval details in clear text.
 See:
 
 - `npm run example:approval-evidence`
-- `src/examples/basic/approval-evidence.ts`
+- `examples/core/basic/approval-evidence.ts`

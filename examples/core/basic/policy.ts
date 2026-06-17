@@ -1,5 +1,5 @@
 import "dotenv/config";
-import { Agent, deny, run, tool, type ToolPolicy } from "../../index";
+import { Agent, deny, run, tool, type ToolPolicy } from "../../../src/index";
 import { getExampleProviderConfig } from "../support/live-provider";
 
 async function main(): Promise<void> {

@@ -10,7 +10,7 @@ import {
   type ProviderRequest,
   type RunRecord,
   type ToolPolicy,
-} from "../../index";
+} from "../../../src/index";
 
 interface DemoContext {
   actorId: string;

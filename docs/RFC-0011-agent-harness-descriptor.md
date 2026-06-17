@@ -820,8 +820,8 @@ The current implementation is:
 - exported from `src/index.ts`
 - covered by `src/tests/unit/harness-descriptor.unit.ts`
 - covered by `src/tests/unit/harness-descriptor-loader.unit.ts`
-- demonstrated by `src/examples/harness-descriptor/customer-support.ts`
-- descriptor example in `src/examples/harness-descriptor/customer-support.yaml`
+- demonstrated by `examples/core/harness-descriptor/customer-support.ts`
+- descriptor example in `examples/core/harness-descriptor/customer-support.yaml`
 - documented by `apps/aioc-docs/src/content/docs/reference/harness-descriptor.md`
 - validated by a Cosmo-shaped unit fixture covering router/specialist graphs,
   registry-backed tools, handoffs, and prompt-readable context references
