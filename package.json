@@ -35,7 +35,7 @@
     "example:rru:04-replay-hybrid": "tsx src/examples/run-record-utils-minimal/04-replay-hybrid.ts",
     "example:non-regression": "tsx src/examples/non-regression/v1-v2-runrecord-diff.ts",
     "example:run-regression": "tsx src/examples/run-regression/age-adapted-suite.ts",
-    "example:run-regression-judge": "tsx packages/aioc-regression-judge/examples/age-adapted-suite-with-judge.ts",
+    "example:run-regression-judge": "npm run regression-judge:build && tsx packages/aioc-regression-judge/examples/age-adapted-suite-with-judge.ts",
     "inspect:samples": "tsx scripts/generate-aioc-inspect-samples.ts",
     "docs:sync": "node scripts/sync-aioc-docs.mjs",
     "docs:dev": "npm run docs:sync && cd apps/aioc-docs && zsh -lc 'npm run dev'",

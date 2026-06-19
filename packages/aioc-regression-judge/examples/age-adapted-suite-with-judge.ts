@@ -15,7 +15,7 @@ import {
 import {
   createRunRegressionJudge,
   type RunRegressionJudgeMessage,
-} from "../src";
+} from "@axiastudio/aioc-regression-judge";
 
 const descriptorV1 = loadAgentHarnessDescriptor(`
 runtime: { entry_agent: explainer, max_turns: 4 }
