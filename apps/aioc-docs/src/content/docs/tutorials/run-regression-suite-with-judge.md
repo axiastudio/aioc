@@ -239,21 +239,68 @@ if (!result) {
   throw new Error("Missing regression result.");
 }
 
-process.stdout.write(`baseline: ${result.baseline.response}\n\n`);
-process.stdout.write(`candidate: ${result.candidate.response}\n\n`);
+const caseSummary = suite.summary.cases[0];
+if (!caseSummary) {
+  throw new Error("Missing regression case summary.");
+}
+
+const yesNo = (value: boolean): "yes" | "no" => (value ? "yes" : "no");
+
+process.stdout.write(`suite: ${suite.summary.suite ?? "unnamed"}\n`);
+process.stdout.write(`status: ${suite.summary.status}\n\n`);
+process.stdout.write("baseline response:\n");
+process.stdout.write(`${result.baseline.response}\n\n`);
+process.stdout.write("candidate response:\n");
+process.stdout.write(`${result.candidate.response}\n\n`);
+process.stdout.write("deterministic signals:\n");
+process.stdout.write(
+  `- final output changed: ${yesNo(caseSummary.signals.finalOutputChanged)}\n`,
+);
+process.stdout.write(
+  `- tool calls changed: ${yesNo(caseSummary.signals.toolsChanged)}\n`,
+);
+process.stdout.write(
+  `- policy decisions changed: ${yesNo(caseSummary.signals.policyChanged)}\n\n`,
+);
 process.stdout.write(
   `judge: ${result.judge?.verdict ?? "missing"} - ${
     result.judge?.summary ?? "No judge summary."
   }\n\n`,
 );
-process.stdout.write("suite summary:\n");
-process.stdout.write(`${JSON.stringify(suite.summary, null, 2)}\n`);
+process.stdout.write(
+  "interpretation: the suite warns because the candidate changed behavior; " +
+    "the judge says the change matches the expectation.\n",
+);
 ```
 
-A sample run can produce a judge line like this:
+A sample run can produce output like this:
 
 ```text
-judge: pass - The candidate adapted the explanation to a simpler, more age-appropriate style using the 'get_age_range' tool, improving wording for younger learners while preserving factual correctness.
+suite: age-adapted-explanation
+status: warn
+
+baseline response:
+Photosynthesis is the process by which green plants, algae, and some bacteria
+convert light energy from the sun into chemical energy stored in glucose...
+
+6 CO2 + 6 H2O + light energy -> C6H12O6 + 6 O2
+
+candidate response:
+Photosynthesis is a special process that plants use to make their own food.
+Think of it like a recipe...
+
+deterministic signals:
+- final output changed: yes
+- tool calls changed: yes
+- policy decisions changed: yes
+
+judge: pass - The candidate response appropriately adapts the explanation of
+photosynthesis to a learner-friendly style using age-appropriate wording, as
+signaled by the use of the 'get_age_range' tool. The factual correctness is
+preserved.
+
+interpretation: the suite warns because the candidate changed behavior; the
+judge says the change matches the expectation.
 ```
 
 The exact text can vary because the judge is an LLM. Treat it as an advisory

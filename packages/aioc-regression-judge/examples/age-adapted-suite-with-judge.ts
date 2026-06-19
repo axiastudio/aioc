@@ -126,15 +126,38 @@ async function main(): Promise<void> {
     throw new Error("Missing regression result.");
   }
 
-  process.stdout.write(`baseline: ${result.baseline.response}\n\n`);
-  process.stdout.write(`candidate: ${result.candidate.response}\n\n`);
+  const caseSummary = suite.summary.cases[0];
+  if (!caseSummary) {
+    throw new Error("Missing regression case summary.");
+  }
+
+  const yesNo = (value: boolean): "yes" | "no" => (value ? "yes" : "no");
+
+  process.stdout.write(`suite: ${suite.summary.suite ?? "unnamed"}\n`);
+  process.stdout.write(`status: ${suite.summary.status}\n\n`);
+  process.stdout.write("baseline response:\n");
+  process.stdout.write(`${result.baseline.response}\n\n`);
+  process.stdout.write("candidate response:\n");
+  process.stdout.write(`${result.candidate.response}\n\n`);
+  process.stdout.write("deterministic signals:\n");
+  process.stdout.write(
+    `- final output changed: ${yesNo(caseSummary.signals.finalOutputChanged)}\n`,
+  );
+  process.stdout.write(
+    `- tool calls changed: ${yesNo(caseSummary.signals.toolsChanged)}\n`,
+  );
+  process.stdout.write(
+    `- policy decisions changed: ${yesNo(caseSummary.signals.policyChanged)}\n\n`,
+  );
   process.stdout.write(
     `judge: ${result.judge?.verdict ?? "missing"} - ${
       result.judge?.summary ?? "No judge summary."
     }\n\n`,
   );
-  process.stdout.write("suite summary:\n");
-  process.stdout.write(`${JSON.stringify(suite.summary, null, 2)}\n`);
+  process.stdout.write(
+    "interpretation: the suite warns because the candidate changed behavior; " +
+      "the judge says the change matches the expectation.\n",
+  );
 }
 
 main().catch((error) => {
