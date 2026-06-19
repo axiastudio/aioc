@@ -35,6 +35,10 @@ export default defineConfig({
           ],
         },
         {
+          label: "Tutorials",
+          items: ["tutorials", "tutorials/run-regression-suite-with-judge"],
+        },
+        {
           label: "Reference",
           items: [
             "reference",

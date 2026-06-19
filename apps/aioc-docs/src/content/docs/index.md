@@ -36,6 +36,9 @@ hero:
     - text: Quickstart
       link: ./quickstart/
       variant: primary
+    - text: Tutorials
+      link: ./tutorials/
+      variant: secondary
     - text: Reference
       link: ./reference/
       variant: secondary
@@ -183,6 +186,7 @@ This site is a documentation app living in `/apps/aioc-docs` and imports those d
 ## Where To Go Next
 
 - Start with [`Quickstart`](./quickstart/) for the minimal setup path.
+- Follow [`Tutorials`](./tutorials/) for guided end-to-end workflows.
 - Read [`Governance-First Design`](./governance-first-design/) for the design position behind the runtime.
 - Use [`Reference`](./reference/) for the current public runtime surface.
 - Use [`Run Records`](./run-records/) if you are evaluating auditability, replay, and regression workflows.
