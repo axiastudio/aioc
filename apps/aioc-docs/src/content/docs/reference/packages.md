@@ -116,4 +116,6 @@ runtime behavior.
 - For the full audit artifact, see [`Run Records`](../run-records/).
 - For the event/exporter design rationale, see
   [`RFC-0009`](../governance/current/rfc-0009-governance-events-and-exporters/).
+- For the regression judge design rationale, see
+  [`RFC-0012`](../governance/current/rfc-0012-run-regression-suites-and-llm-judging/).
 - For the visual inspection app positioning, see [`Reference UI`](../reference-ui/).

@@ -109,7 +109,7 @@ Those tools can be valuable, but tracing and review workflows are not governance
 
 ## Status
 
-The current stable release is `0.2.5`.
+The current stable release is `0.2.7`.
 The stable line started with `0.1.0`.
 
 The current documentation covers:
@@ -139,6 +139,10 @@ The current documentation covers:
 `aioc` `0.2.5` makes replay history-faithful by recording the initial input scope in `RunRecord` and replaying from it by default.
 
 `aioc` `0.2.6` adds descriptor-level conditional agent handoffs with boolean `where` gates that filter unavailable handoff tools before provider requests.
+
+`aioc` `0.2.7` adds run-regression suite utilities and the experimental
+`@axiastudio/aioc-regression-judge` companion package for bounded LLM judge
+inputs and structured judge results.
 
 ## Install
 

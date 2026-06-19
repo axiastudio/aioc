@@ -3,14 +3,14 @@ title: Run Regression
 description: Public helpers for RunRecord-based regression cases and summaries.
 ---
 
-Run-regression helpers support the incremental implementation of RFC-0012.
+Run-regression helpers implement the core RFC-0012 runtime surface.
 
 They let applications replay baseline `RunRecord` values against a candidate
 harness, compare the resulting candidate records, and optionally evaluate a
 suite-level expectation with an application-provided judge.
 
-The current implementation defines the public types, provides single-case and
-multi-case regression runners, and provides a pure CI-summary helper.
+The implementation defines the public types, provides single-case and
+multi-case regression runners, and includes a pure CI-summary helper.
 
 ## `runRegressionCase(...)`
 
@@ -126,8 +126,7 @@ example with `AgentHarnessDescriptor`.
 
 ## Status
 
-This is an incremental implementation step for RFC-0012.
-
-The intended direction remains a suite runner that can replay stored
-`RunRecord` baselines against a candidate harness and produce candidate records,
-comparisons, optional judge results, and CI summaries.
+This is the supported `0.2.7` core surface for RFC-0012. The core package owns
+the deterministic replay, comparison, suite, judge-contract, and summary
+contracts. Provider-backed judge prompt construction lives in the experimental
+`@axiastudio/aioc-regression-judge` companion package.
