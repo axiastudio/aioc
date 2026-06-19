@@ -44,6 +44,6 @@
     "access": "public"
   },
   "peerDependencies": {
-    "@axiastudio/aioc": "^0.2.5"
+    "@axiastudio/aioc": "^0.2.6"
   }
 }

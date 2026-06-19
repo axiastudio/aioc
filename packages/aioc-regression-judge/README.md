@@ -41,6 +41,18 @@ const suite = await runRegressionSuite({
 });
 ```
 
+## Local Example
+
+From the repository root:
+
+```bash
+npm run example:run-regression-judge
+```
+
+The example records a baseline harness, reruns the case against an age-adapted
+harness, and uses `createRunRegressionJudge(...)` to evaluate the candidate
+output with an application-owned OpenAI call. It requires `OPENAI_API_KEY`.
+
 ## Projection Model
 
 The default judge input is bounded. It includes:

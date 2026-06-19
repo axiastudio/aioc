@@ -59,6 +59,7 @@ tool registry binding, and descriptor hashing.
 
 - `npm run example:non-regression`
 - `npm run example:run-regression`
+- `npm run example:run-regression-judge`
 
 `example:non-regression` compares `RunRecord` outputs across two harness
 versions. It uses a live provider and is educational rather than deterministic.
@@ -66,6 +67,10 @@ versions. It uses a live provider and is educational rather than deterministic.
 `example:run-regression` records a baseline `RunRecord`, runs a modified
 OpenAI-backed harness through `runRegressionSuite(...)`, and prints the
 deterministic comparison summary without using a judge.
+
+`example:run-regression-judge` extends the same age-adapted regression flow with
+`createRunRegressionJudge(...)`. The judge package builds the bounded judge
+input and prompt; the example supplies the actual OpenAI-backed model call.
 
 ## Canonical Guide
 

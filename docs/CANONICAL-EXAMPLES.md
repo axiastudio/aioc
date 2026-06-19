@@ -16,9 +16,10 @@ Most live examples use the shared provider helper. Set:
 Optionally set `AIOC_EXAMPLE_MODEL` to override the default model for live examples.
 
 The run-record utility examples are deterministic and do not need a provider.
-`example:harness-rerun` and `example:run-regression` are intentionally
-different: they configure OpenAI from `OPENAI_API_KEY` and declare the model
-inside the inline YAML descriptor.
+`example:harness-rerun`, `example:run-regression`, and
+`example:run-regression-judge` are intentionally different: they configure
+OpenAI from `OPENAI_API_KEY` and declare harness models inside inline YAML
+descriptors.
 
 Then run:
 
@@ -271,3 +272,22 @@ What it demonstrates:
 - running a v2 harness through `runRegressionSuite(...)`
 - attaching one suite-level expectation to a single baseline case
 - reading deterministic comparison and CI summary output without a judge
+
+### 13) Run Regression Suite With Judge
+
+Command:
+
+```bash
+npm run example:run-regression-judge
+```
+
+File:
+
+- `packages/aioc-regression-judge/examples/age-adapted-suite-with-judge.ts`
+
+What it demonstrates:
+
+- recording a baseline `RunRecord` from a minimal v1 harness
+- running a v2 age-adapted harness through `runRegressionSuite(...)`
+- wiring `createRunRegressionJudge(...)` with an application-owned model call
+- reading the structured judge verdict together with the suite CI summary
