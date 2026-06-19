@@ -1,6 +1,6 @@
 ---
 title: Companion Packages
-description: Extra AIOC packages for governance events, OpenTelemetry export, and RunRecord inspection.
+description: Extra AIOC packages for regression judging, governance events, OpenTelemetry export, and RunRecord inspection.
 ---
 
 The core `@axiastudio/aioc` package remains focused on runtime orchestration,
@@ -13,9 +13,33 @@ the runtime contract or pulling observability and UI dependencies into the SDK.
 
 | Package | Role | Status |
 | --- | --- | --- |
+| `@axiastudio/aioc-regression-judge` | Builds bounded LLM judge inputs for run-regression suites and parses judge results. | Experimental |
 | `@axiastudio/aioc-governance-events` | Derives reduced governance events from `RunRecord` artifacts. | Experimental |
 | `@axiastudio/aioc-export-otel` | Maps governance events to OpenTelemetry Logs. | Experimental |
 | `@axiastudio/aioc-inspect-ui` | Provides React components for inspecting and comparing `RunRecord` artifacts. | Companion UI package |
+
+## Regression Judge
+
+Use `@axiastudio/aioc-regression-judge` when a run-regression suite should add
+LLM-as-judge evaluation without sending full `RunRecord` artifacts by default.
+
+```bash
+npm install @axiastudio/aioc-regression-judge @axiastudio/aioc
+```
+
+The package provides:
+
+- `createRunRegressionJudge(...)` to adapt a model invocation function into an
+  AIOC `RunJudge`
+- `toBoundedRunJudgeInput(...)` to project baseline/candidate records into a
+  bounded judge input
+- `createRunRegressionJudgeRequest(...)` to build provider-agnostic judge
+  messages
+- `parseRunJudgeResult(...)` to validate structured model output
+
+The package does not configure or bundle a model provider. Host applications
+own the model call, credentials, retries, and any stronger application-specific
+redaction.
 
 ## Governance Events
 
@@ -73,6 +97,9 @@ runtime behavior.
 ```text
 @axiastudio/aioc
   produces complete RunRecord artifacts
+
+@axiastudio/aioc-regression-judge
+  creates bounded judge inputs for run-regression suites
 
 @axiastudio/aioc-governance-events
   derives reduced operational GovernanceEvent records

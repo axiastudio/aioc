@@ -12,6 +12,11 @@
   `runRegressionSuite(...)`, and `summarizeRunRegressionResults(...)` for
   deterministic case checks, suite-level expectation/judge evaluation, and
   CI-friendly summaries.
+- Added experimental `@axiastudio/aioc-regression-judge` companion package with
+  bounded judge-input projection, prompt construction, and structured
+  `RunJudgeResult` parsing.
+- Added an age-adapted run-regression example that wires
+  `runRegressionSuite(...)` to `createRunRegressionJudge(...)`.
 
 ## 0.2.5 - 2026-06-11
 
