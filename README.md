@@ -23,7 +23,7 @@ Its core job is to make agent execution boundaries explicit, testable, auditable
 
 ## Release Status
 
-Current stable release: `0.2.5`.
+Current stable release: `0.2.7`.
 The stable line started with `0.1.0`.
 The core runtime surface is compatibility-managed. Breaking changes to the stable surface should ship only with explicit migration guidance and release notes.
 
@@ -40,6 +40,9 @@ AIOC `0.2.3` adds RFC-0010 policy composition helpers for exact-name tool and ha
 AIOC `0.2.4` adds experimental governance-event packages and an OpenTelemetry Logs exporter for reduced, operational observability events derived from `RunRecord` values.
 AIOC `0.2.5` makes replay history-faithful by recording the initial input scope in `RunRecord` and replaying from it by default.
 AIOC `0.2.6` adds descriptor-level conditional agent handoffs with boolean `where` gates that filter handoff tools before provider requests.
+AIOC `0.2.7` adds run-regression suite utilities and the experimental
+`@axiastudio/aioc-regression-judge` companion package for bounded LLM judge
+inputs and structured judge results.
 
 ### Experimental Packages
 
@@ -53,8 +56,8 @@ mapper outside the core runtime package. It derives reduced, redacted,
 event-shaped records from `RunRecord` values.
 
 `@axiastudio/aioc-export-otel` maps those governance events to OpenTelemetry
-Logs. Both packages remain experimental while real exporter usage validates the
-schema and operational shape.
+Logs. These packages remain experimental while real usage validates their
+schemas and operational shape.
 
 - Release notes: `CHANGELOG.md`
 - Historical beta contract snapshot: `docs/BETA-CONTRACT.md`
@@ -345,6 +348,7 @@ AIOC adopts the following non-negotiable principles:
 - `docs/RFC-0009-governance-events-and-exporters.md` (`Experimental`)
 - `docs/RFC-0010-policy-composition-helpers.md` (`Accepted`)
 - `docs/RFC-0011-agent-harness-descriptor.md` (`Accepted`)
+- `docs/RFC-0012-run-regression-suites-and-llm-judging.md` (`Accepted`)
 - `docs/PRIVACY-BASELINE.md`
 
 ## Historical Snapshots
