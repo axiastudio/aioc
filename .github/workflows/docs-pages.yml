@@ -41,6 +41,8 @@ jobs:
       - name: Build docs
         run: npm run build
         working-directory: apps/aioc-docs
+        env:
+          AIOC_DOCS_GOOGLE_TAG_ID: ${{ vars.AIOC_DOCS_GOOGLE_TAG_ID }}
 
       - name: Upload Pages artifact
         uses: actions/upload-pages-artifact@v3

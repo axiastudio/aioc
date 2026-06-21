@@ -1,6 +1,41 @@
 import { defineConfig } from "astro/config";
 import starlight from "@astrojs/starlight";
 
+const googleTagId = process.env.AIOC_DOCS_GOOGLE_TAG_ID;
+
+const googleAnalyticsHead = googleTagId
+  ? [
+      {
+        tag: "script",
+        content: `
+window.dataLayer = window.dataLayer || [];
+function gtag(){dataLayer.push(arguments);}
+gtag("consent", "default", {
+  ad_storage: "denied",
+  ad_user_data: "denied",
+  ad_personalization: "denied",
+  analytics_storage: "denied",
+  wait_for_update: 500
+});
+`.trim(),
+      },
+      {
+        tag: "script",
+        attrs: {
+          async: true,
+          src: `https://www.googletagmanager.com/gtag/js?id=${googleTagId}`,
+        },
+      },
+      {
+        tag: "script",
+        content: `
+gtag("js", new Date());
+gtag("config", "${googleTagId}");
+`.trim(),
+      },
+    ]
+  : [];
+
 export default defineConfig({
   site: "https://axiastudio.github.io",
   base: "/aioc",
@@ -9,6 +44,7 @@ export default defineConfig({
       title: "AIOC Docs",
       description:
         "Governance-first SDK for LLM agents with deterministic policy gates and auditable run records.",
+      head: googleAnalyticsHead,
       components: {
         Hero: "./src/components/Hero.astro",
       },
