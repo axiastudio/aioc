@@ -43,6 +43,8 @@ function summarizeRecord(
     agentName: record.agentName,
     question: record.question,
     response: record.response,
+    inputItemCount: record.inputItemCount,
+    items: record.items,
     contextRedacted: record.contextRedacted,
     policyDecisions: record.policyDecisions.length,
     requestFingerprints: record.requestFingerprints.length,

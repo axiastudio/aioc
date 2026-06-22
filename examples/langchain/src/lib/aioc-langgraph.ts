@@ -72,6 +72,14 @@ function inputToHistoryItem(input: unknown): AgentInputItem {
   };
 }
 
+function outputToHistoryItem(output: unknown): AgentInputItem {
+  return {
+    type: "message",
+    role: "assistant",
+    content: stringifyForRecord(output),
+  };
+}
+
 async function writeRunRecord<TContext>(
   options: RunRecordOptions<TContext>,
   record: RunRecord<TContext>,
@@ -151,6 +159,7 @@ export function withAiocRunRecord<
 
         try {
           const output = await target.invoke(input, ...rest);
+          const outputItem = outputToHistoryItem(output);
           const context: LangGraphRunRecordContext<RunInput, RunOutput> = {
             integration: "langgraph" as const,
             runnableName,
@@ -173,7 +182,7 @@ export function withAiocRunRecord<
             response: stringifyForRecord(output),
             contextSnapshot: contextSnapshot.contextSnapshot,
             contextRedacted: contextSnapshot.contextRedacted,
-            items: [inputItem],
+            items: [inputItem, outputItem],
             inputItemCount: 1,
             promptSnapshots: [],
             requestFingerprints: [],

@@ -203,10 +203,7 @@ export function withAiocRunRecord<
 >(
   app: TApp,
   options: WithAiocRunRecordOptions<
-    LangGraphRunRecordContext<
-      RunnableInput<TApp>,
-      RunnableOutput<TApp>
-    >
+    LangGraphRunRecordContext<RunnableInput<TApp>, RunnableOutput<TApp>>
   >,
 ): TApp;
 ```
@@ -227,7 +224,10 @@ For a completed graph run:
 - `response`: serialized graph output
 - `contextSnapshot`: LangGraph wrapper context, optionally redacted through
   `record.contextRedactor`
-- `items`: a minimal input item representing the graph input
+- `items`: a minimal graph-level history containing the serialized input as a
+  `user` message and the serialized output as an `assistant` message
+- `inputItemCount`: `1`, so consumers can distinguish the original graph input
+  from the output item added by the wrapper
 - `policyDecisions`: empty unless the graph itself crosses an aioc-governed
   boundary
 - `promptSnapshots`: empty unless future instrumentation can capture stable
@@ -239,6 +239,8 @@ For a completed graph run:
 For a failed graph run:
 
 - `status`: `failed`
+- `items`: only the serialized input `user` message
+- `inputItemCount`: `1`
 - `errorName` and `errorMessage` are populated
 - original error is rethrown after recording
 
@@ -301,7 +303,7 @@ universal deny shape for arbitrary graph state.
 The two APIs serve different purposes.
 
 ```ts
-withAiocRunRecord(graph.compile(), options)
+withAiocRunRecord(graph.compile(), options);
 ```
 
 - input: compiled LangGraph app;
@@ -311,7 +313,7 @@ withAiocRunRecord(graph.compile(), options)
 - implementation: wrap `invoke(...)` and delegate runtime behavior.
 
 ```ts
-withAiocGovernance(graph, options)
+withAiocGovernance(graph, options);
 ```
 
 - input: uncompiled `StateGraph`;
