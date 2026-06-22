@@ -4,17 +4,17 @@ This folder contains optional examples showing how `aioc` can compose with
 LangChain OSS components without making LangChain a dependency of the core
 runtime package.
 
-The examples cover two integration patterns:
+The examples cover three integration patterns:
 
-| Pattern | Harness / orchestrator | aioc role | LangChain role |
-|---|---|---|---|
-| **aioc-first, LangChain-extended** | `aioc` | Owns the agent run, policy gate, and `RunRecord` | Provides OSS components behind governed aioc tools |
-| **LangGraph-orchestrated, aioc-governed** | LangGraph | Owns the sensitive execution boundary inside a graph node | Owns workflow state, routing, and orchestration |
+| Pattern                                   | Harness / orchestrator | aioc role                                                    | LangChain role                                     |
+| ----------------------------------------- | ---------------------- | ------------------------------------------------------------ | -------------------------------------------------- |
+| **aioc-first, LangChain-extended**        | `aioc`                 | Owns the agent run, policy gate, and `RunRecord`             | Provides OSS components behind governed aioc tools |
+| **LangGraph-orchestrated, aioc-governed** | LangGraph              | Owns the sensitive execution boundary inside a graph node    | Owns workflow state, routing, and orchestration    |
+| **LangGraph-orchestrated, aioc-recorded** | LangGraph              | Wraps the compiled graph and emits a graph-level `RunRecord` | Owns workflow state, routing, and execution        |
 
-In both patterns, the rule is the same: capabilities with real execution impact
-should cross the aioc governance boundary. LangChain can provide breadth and
-orchestration; aioc keeps authorization, default-deny behavior, and audit
-evidence explicit.
+For governed execution, capabilities with real execution impact should cross
+the aioc governance boundary. LangChain can provide breadth and orchestration;
+aioc keeps authorization, default-deny behavior, and audit evidence explicit.
 
 ## aioc-first RAG
 
@@ -72,6 +72,31 @@ Run it with:
 OPENAI_API_KEY=... npm run langgraph-node-calls-aioc
 ```
 
+## LangGraph run record wrapper
+
+The third example is **LangGraph-orchestrated, aioc-recorded**.
+
+```text
+LangGraph workflow
+  -> compiled graph
+      -> withAiocRunRecord(...)
+          -> graph-level RunRecord
+```
+
+The graph remains a LangGraph graph: the wrapper delegates to `invoke(...)`,
+returns the original output, rethrows original errors, and isolates sink
+failures. The emitted `RunRecord` is graph-level evidence for inspection,
+comparison, and regression workflows. It is not a node-level LangGraph trace.
+
+Use this pattern when LangGraph should remain the primary orchestrator, but the
+application still wants portable aioc audit artifacts around the graph run.
+
+Run it with:
+
+```bash
+OPENAI_API_KEY=... npm run langgraph-run-record
+```
+
 ## Setup
 
 From this folder:
@@ -96,3 +121,5 @@ Defaults:
 - It intentionally avoids LangSmith; observability is represented by the aioc
   `RunRecord` printed at the end.
 - The example imports `aioc` from the published `@axiastudio/aioc` package.
+- `src/lib/aioc-langgraph.ts` is a local RFC-0013 prototype, not a published
+  `@axiastudio/aioc-langgraph` package.

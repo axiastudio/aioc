@@ -297,13 +297,16 @@ What it demonstrates:
 Optional LangChain examples live in `examples/langchain` with their own
 `package.json`, so LangChain dependencies stay out of the core runtime package.
 
-They demonstrate two composition patterns:
+They demonstrate three composition patterns:
 
 - **aioc-first, LangChain-extended**: aioc owns the governed agent run while
   LangChain provides OSS components behind aioc tools.
 - **LangGraph-orchestrated, aioc-governed**: LangGraph owns workflow
   orchestration while selected graph nodes call aioc for policy-gated execution
   and portable audit evidence.
+- **LangGraph-orchestrated, aioc-recorded**: LangGraph remains the primary
+  orchestrator while a local RFC-0013 prototype emits a graph-level
+  `RunRecord` around the compiled graph.
 
 These examples are intentionally outside the canonical learning path. They are
 for users who want to compose aioc with LangChain OSS components without moving

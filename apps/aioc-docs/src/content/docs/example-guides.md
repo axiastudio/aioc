@@ -78,7 +78,7 @@ Optional LangChain examples live in `/examples/langchain` and use an isolated
 `package.json`, so LangChain dependencies do not become runtime dependencies of
 `@axiastudio/aioc`.
 
-They demonstrate two composition patterns:
+They demonstrate three composition patterns:
 
 - **aioc-first, LangChain-extended**: aioc owns the governed agent run while
   LangChain provides OSS components behind aioc tools. The RAG example mirrors
@@ -89,8 +89,11 @@ They demonstrate two composition patterns:
   capability execution. The LangGraph example mirrors the calculator quickstart
   domain and routes the governed step through aioc policy and `RunRecord`
   capture.
+- **LangGraph-orchestrated, aioc-recorded**: LangGraph owns workflow
+  orchestration while a local RFC-0013 prototype wraps the compiled graph and
+  emits a graph-level `RunRecord`.
 
-In both patterns, execution-impacting capabilities should cross the aioc
+For governed execution, execution-impacting capabilities should cross the aioc
 governance boundary. LangChain supplies breadth and orchestration; aioc supplies
 default-deny authorization, deterministic policy decisions, and portable audit
 evidence.
