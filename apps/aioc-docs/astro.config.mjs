@@ -2,6 +2,8 @@ import { defineConfig } from "astro/config";
 import starlight from "@astrojs/starlight";
 
 const googleTagId = process.env.AIOC_DOCS_GOOGLE_TAG_ID;
+const analyticsConsentStorageKey = "aioc-docs-analytics-consent";
+const docsBasePath = "/aioc";
 
 const googleAnalyticsHead = googleTagId
   ? [
@@ -10,11 +12,18 @@ const googleAnalyticsHead = googleTagId
         content: `
 window.dataLayer = window.dataLayer || [];
 function gtag(){dataLayer.push(arguments);}
+const aiocAnalyticsConsent = (() => {
+  try {
+    return localStorage.getItem("${analyticsConsentStorageKey}") === "granted" ? "granted" : "denied";
+  } catch {
+    return "denied";
+  }
+})();
 gtag("consent", "default", {
   ad_storage: "denied",
   ad_user_data: "denied",
   ad_personalization: "denied",
-  analytics_storage: "denied",
+  analytics_storage: aiocAnalyticsConsent,
   wait_for_update: 500
 });
 `.trim(),
@@ -32,6 +41,22 @@ gtag("consent", "default", {
 gtag("js", new Date());
 gtag("config", "${googleTagId}");
 `.trim(),
+      },
+      {
+        tag: "link",
+        attrs: {
+          rel: "stylesheet",
+          href: `${docsBasePath}/analytics-consent.css`,
+        },
+      },
+      {
+        tag: "script",
+        attrs: {
+          src: `${docsBasePath}/analytics-consent.js`,
+          defer: true,
+          "data-google-tag-id": googleTagId,
+          "data-storage-key": analyticsConsentStorageKey,
+        },
       },
     ]
   : [];

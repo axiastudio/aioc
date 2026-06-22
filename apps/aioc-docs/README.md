@@ -35,3 +35,16 @@ https://axiastudio.github.io/aioc/
 ```
 
 Deployment is handled by `/Users/tiziano/Projects/aioc/.github/workflows/docs-pages.yml`.
+
+## Analytics
+
+Google Analytics is enabled only when `AIOC_DOCS_GOOGLE_TAG_ID` is available at build time.
+
+For GitHub Pages, configure it as an Actions repository variable:
+
+```text
+AIOC_DOCS_GOOGLE_TAG_ID=G-XXXXXXXXXX
+```
+
+The docs app initializes Google Consent Mode before loading `gtag.js`.
+Analytics storage defaults to denied and is set to granted only after the user accepts the consent banner.
