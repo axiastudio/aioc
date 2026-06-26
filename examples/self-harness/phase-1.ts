@@ -1,7 +1,6 @@
 import "dotenv/config";
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
-import { createRunRegressionJudge } from "@axiastudio/aioc-regression-judge";
 import {
   Agent,
   allow,
@@ -14,7 +13,8 @@ import {
   type RunRecord,
   type RunRegressionExpectation,
   type AgentHarnessDescriptor,
-} from "../../src/index";
+} from "@axiastudio/aioc";
+import { createRunRegressionJudge } from "@axiastudio/aioc-regression-judge";
 
 type ProposalArtifact = {
   diagnosis: string;
