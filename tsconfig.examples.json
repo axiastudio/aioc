@@ -4,6 +4,10 @@
     "rootDir": ".",
     "noEmit": true
   },
-  "include": ["src/**/*.ts", "examples/core/**/*.ts"],
+  "include": [
+    "src/**/*.ts",
+    "examples/core/**/*.ts",
+    "examples/self-harness/**/*.ts"
+  ],
   "exclude": ["src/tests/**/*"]
 }

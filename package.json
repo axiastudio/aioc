@@ -37,6 +37,7 @@
     "example:non-regression": "tsx examples/core/non-regression/v1-v2-runrecord-diff.ts",
     "example:run-regression": "tsx examples/core/run-regression/age-adapted-suite.ts",
     "example:run-regression-judge": "npm run regression-judge:build && tsx packages/aioc-regression-judge/examples/age-adapted-suite-with-judge.ts",
+    "example:self-harness": "npm run regression-judge:build && tsx examples/self-harness/phase-1.ts",
     "inspect:samples": "tsx scripts/generate-aioc-inspect-samples.ts",
     "docs:sync": "node scripts/sync-aioc-docs.mjs",
     "docs:dev": "npm run docs:sync && cd apps/aioc-docs && zsh -lc 'npm run dev'",

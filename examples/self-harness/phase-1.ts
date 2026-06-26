@@ -1,6 +1,7 @@
 import "dotenv/config";
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
+import { createRunRegressionJudge } from "@axiastudio/aioc-regression-judge";
 import {
   Agent,
   allow,
@@ -10,8 +11,6 @@ import {
   runRegressionSuite,
   setupOpenAI,
   tool,
-  type RunJudge,
-  type RunJudgeResult,
   type RunRecord,
   type RunRegressionExpectation,
   type AgentHarnessDescriptor,
@@ -187,22 +186,6 @@ function validateProposalArtifact(
   return issues;
 }
 
-function parseJudgeResult(output: string): RunJudgeResult {
-  const parsed = parseJsonObject<{ verdict?: string; summary?: string }>(output);
-  const verdict =
-    parsed.verdict === "pass" ||
-    parsed.verdict === "warn" ||
-    parsed.verdict === "fail"
-      ? parsed.verdict
-      : "fail";
-
-  return {
-    verdict,
-    summary: parsed.summary ?? "Judge did not provide a summary.",
-    findings: [],
-  };
-}
-
 function usedTool(record: RunRecord, toolName: string): boolean {
   return record.policyDecisions.some(
     (decision) =>
@@ -283,47 +266,25 @@ Do not decide promotion.`,
   process.stdout.write(`${reportedRunRecord.response}\n\n`);
   const toolPolicy = () => allow("allow_example_age_range_tool");
 
-  const judgeAgent = new Agent({
-    name: "Self-Harness Evidence Judge",
-    model: OPENAI_MODEL,
-    instructions: `Return only JSON. No Markdown.
-
-Schema:
-{
-  "verdict": "pass" | "warn" | "fail",
-  "summary": "one short sentence"
-}
-
-Pass only if the candidate appears to satisfy the expectation, used ${AGE_RANGE_TOOL_NAME}, and preserved factual correctness.`,
+  const judge = createRunRegressionJudge({
+    judgeModel: OPENAI_MODEL,
+    generate: async ({ messages }) => {
+      const judgeRun = await run(
+        new Agent({
+          name: "Self-Harness Evidence Judge",
+          model: OPENAI_MODEL,
+          instructions:
+            messages.find((message) => message.role === "system")?.content ??
+            "Return JSON only.",
+        }),
+        messages
+          .filter((message) => message.role === "user")
+          .map((message) => message.content)
+          .join("\n\n"),
+      );
+      return judgeRun.finalOutput;
+    },
   });
-
-  const judge: RunJudge = async ({
-    baseline,
-    candidate,
-    comparison,
-    expectation,
-  }): Promise<RunJudgeResult> => {
-    const judgeRun = await run(
-      judgeAgent,
-      JSON.stringify(
-        {
-          issueReport,
-          expectation,
-          baseline: {
-            response: baseline.response,
-          },
-          candidate: {
-            response: candidate.response,
-            usedGetAgeRange: usedTool(candidate, AGE_RANGE_TOOL_NAME),
-          },
-          deterministicComparison: comparison.summary,
-        },
-        null,
-        2,
-      ),
-    );
-    return parseJudgeResult(judgeRun.finalOutput);
-  };
 
   const rejections: string[] = [];
 
