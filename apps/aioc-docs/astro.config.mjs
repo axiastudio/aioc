@@ -97,7 +97,11 @@ export default defineConfig({
         },
         {
           label: "Tutorials",
-          items: ["tutorials", "tutorials/run-regression-suite-with-judge"],
+          items: [
+            "tutorials",
+            "tutorials/run-regression-suite-with-judge",
+            "tutorials/build-a-self-harness-workflow",
+          ],
         },
         {
           label: "Reference",

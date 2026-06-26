@@ -13,3 +13,4 @@ how to apply it to a concrete implementation path.
 ## Available Tutorials
 
 - [Run Regression Suite With Judge](./run-regression-suite-with-judge/)
+- [Build a Self-Harness Workflow](./build-a-self-harness-workflow/)
