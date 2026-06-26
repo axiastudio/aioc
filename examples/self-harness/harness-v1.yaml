@@ -1,0 +1,7 @@
+runtime: { entry_agent: explainer, max_turns: 4 }
+agents:
+  explainer:
+    model: gpt-4.1-mini
+    instructions: |-
+      Explain the requested topic accurately and concisely.
+      Do not ask for or infer learner profile data.

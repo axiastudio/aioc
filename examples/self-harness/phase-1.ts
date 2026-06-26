@@ -29,10 +29,30 @@ type ProposalArtifact = {
 const issueReport =
   "The learner profile says the learner is 8 years old, but the answer was not adapted to that age.";
 const OPENAI_MODEL = "gpt-4.1-mini";
-const AGE_RANGE_TOOL_NAME = "get_age_range";
-const AGE_RANGE_TOOL_TARGET = "example://tool/get_age_range";
-const MAX_PROPOSAL_RETRIES = 2;
-const MAX_PROPOSAL_ATTEMPTS = MAX_PROPOSAL_RETRIES + 1;
+const TOOL_CAPABILITIES = [
+  {
+    toolName: "get_age_range",
+    target: "example://tool/get_age_range",
+    purpose: "Return the learner age range for the current session.",
+  },
+  {
+    toolName: "get_session_color",
+    target: "example://tool/get_session_color",
+    purpose: "Return the learner's selected UI color for the current session.",
+  },
+  {
+    toolName: "get_classroom_name",
+    target: "example://tool/get_classroom_name",
+    purpose: "Return the classroom name associated with the current session.",
+  },
+];
+const ALLOWED_TOOL_NAMES = new Set(
+  TOOL_CAPABILITIES.map((capability) => capability.toolName),
+);
+const ALLOWED_TOOL_TARGETS = new Set(
+  TOOL_CAPABILITIES.map((capability) => capability.target),
+);
+const MAX_PROPOSAL_ATTEMPTS = 3;
 
 const harnessAuthoringNotes = readFileSync(
   join(__dirname, "harness-authoring-notes.md"),
@@ -41,16 +61,10 @@ const harnessAuthoringNotes = readFileSync(
 const reportedRunRecord = JSON.parse(
   readFileSync(join(__dirname, "reported-runrecord-1.json"), "utf8"),
 ) as RunRecord;
-
-const descriptorV1Text = `
-runtime: { entry_agent: explainer, max_turns: 4 }
-agents:
-  explainer:
-    model: ${OPENAI_MODEL}
-    instructions: |-
-      Explain the requested topic accurately and concisely.
-      Do not ask for or infer learner profile data.
-`;
+const descriptorV1Text = readFileSync(
+  join(__dirname, "harness-v1.yaml"),
+  "utf8",
+);
 
 function createProposalPrompt(options: {
   reportedRunRecord: RunRecord;
@@ -66,11 +80,7 @@ function createProposalPrompt(options: {
         question: options.reportedRunRecord.question,
         response: options.reportedRunRecord.response,
       },
-      allowedCapability: {
-        toolName: AGE_RANGE_TOOL_NAME,
-        target: AGE_RANGE_TOOL_TARGET,
-        purpose: "Return the learner age range for the current session.",
-      },
+      allowedCapabilities: TOOL_CAPABILITIES,
       candidateConstraints: {
         candidateName: "v2",
         model: OPENAI_MODEL,
@@ -134,9 +144,6 @@ function validateProposalArtifact(
   const toolEntries = Array.isArray(descriptorTools)
     ? []
     : Object.entries(descriptorTools);
-  const ageRangeTool = toolEntries.find(
-    ([, toolDescriptor]) => toolDescriptor.target === AGE_RANGE_TOOL_TARGET,
-  );
   const entryAgent = descriptor.agents[descriptor.runtime.entry_agent];
   const entryAgentTools = entryAgent?.tools ?? [];
   const instructions = instructionText(descriptor);
@@ -152,7 +159,7 @@ function validateProposalArtifact(
   }
 
   for (const [toolName, toolDescriptor] of toolEntries) {
-    if (toolDescriptor.target !== AGE_RANGE_TOOL_TARGET) {
+    if (!ALLOWED_TOOL_TARGETS.has(toolDescriptor.target)) {
       issues.push(
         `candidate descriptor declares unsupported tool target ${toolDescriptor.target} for ${toolName}`,
       );
@@ -167,18 +174,24 @@ function validateProposalArtifact(
     }
   }
 
-  if (instructions.includes(AGE_RANGE_TOOL_NAME) && !ageRangeTool) {
-    issues.push(
-      `candidate instructions mention ${AGE_RANGE_TOOL_NAME} but descriptor does not declare a matching tool target`,
+  for (const capability of TOOL_CAPABILITIES) {
+    const descriptorTool = toolEntries.find(
+      ([, toolDescriptor]) => toolDescriptor.target === capability.target,
     );
-  } else if (ageRangeTool && !entryAgentTools.includes(ageRangeTool[0])) {
-    issues.push(
-      `candidate descriptor declares ${AGE_RANGE_TOOL_NAME} but does not attach it to the explainer agent`,
-    );
+
+    if (instructions.includes(capability.toolName) && !descriptorTool) {
+      issues.push(
+        `candidate instructions mention ${capability.toolName} but descriptor does not declare a matching tool target`,
+      );
+    } else if (descriptorTool && !entryAgentTools.includes(descriptorTool[0])) {
+      issues.push(
+        `candidate descriptor declares ${capability.toolName} but does not attach it to the explainer agent`,
+      );
+    }
   }
 
   for (const toolName of proposal.suite.expectation.shouldUseTools ?? []) {
-    if (toolName !== AGE_RANGE_TOOL_NAME) {
+    if (!ALLOWED_TOOL_NAMES.has(toolName)) {
       issues.push(`expectation references unsupported tool ${toolName}`);
     }
   }
@@ -195,19 +208,48 @@ function usedTool(record: RunRecord, toolName: string): boolean {
   );
 }
 
-function yesNo(value: boolean): "yes" | "no" {
-  return value ? "yes" : "no";
+function missingExpectedTools(
+  record: RunRecord,
+  expectation: RunRegressionExpectation,
+): string[] {
+  return (expectation.shouldUseTools ?? []).filter(
+    (toolName) => !usedTool(record, toolName),
+  );
 }
 
-function printProposalAttempt(attempt: number, proposal: ProposalArtifact): void {
+function finalVerdictSummary(options: {
+  promote: boolean;
+  judgeVerdict?: string;
+  missingTools: string[];
+}): string {
+  if (options.promote) {
+    return "The candidate evidence is acceptable: the judge passed and every expected tool was observed.";
+  }
+
+  if (options.judgeVerdict !== "pass" && options.missingTools.length > 0) {
+    return `The candidate is not ready: the judge did not pass and the run missed expected tool usage (${options.missingTools.join(", ")}).`;
+  }
+
+  if (options.judgeVerdict !== "pass") {
+    return "The candidate is not ready: the judge did not accept the expected behavior.";
+  }
+
+  return `The candidate is not ready: the judge passed, but the run missed expected tool usage (${options.missingTools.join(", ")}).`;
+}
+
+function printProposalAttempt(
+  attempt: number,
+  proposal: ProposalArtifact,
+): void {
   process.stdout.write(
     `=== Proposal attempt ${attempt}/${MAX_PROPOSAL_ATTEMPTS} ===\n`,
   );
   process.stdout.write(`diagnosis: ${proposal.diagnosis}\n`);
   process.stdout.write(`candidate: ${proposal.candidateName}\n`);
   process.stdout.write(`suite: ${proposal.suite.name}\n`);
+  process.stdout.write("expectation:\n");
   process.stdout.write(
-    `expectation: ${proposal.suite.expectation.intent}\n\n`,
+    `${JSON.stringify(proposal.suite.expectation, null, 2)}\n\n`,
   );
   process.stdout.write("=== Candidate descriptor ===\n");
   process.stdout.write(`${proposal.candidateDescriptorSource.trim()}\n\n`);
@@ -248,23 +290,34 @@ Schema:
   }
 }
 
-You may use the allowed capability if it is the best fix. You may also propose an instruction-only change.
+You may use any allowed capability if it is the best fix. You may also propose an instruction-only change.
 If the candidate uses a tool, the descriptor must declare the tool target and attach the tool to the agent.
-If the candidate uses profile data from a tool, it must not ask the user for the same data.
+If the candidate uses data from a tool, it must not ask the user for the same data.
+If using a tool is part of the intended improvement, include that tool name in expectation.shouldUseTools.
 Use the harness authoring notes in the prompt payload for descriptor YAML syntax.
 The candidate descriptor must define one entry agent named explainer and use model ${OPENAI_MODEL}.
 Do not decide promotion.`,
   });
 
   const getAgeRange = tool({
-    name: AGE_RANGE_TOOL_NAME,
+    name: "get_age_range",
     description: "Return the learner age range for this session.",
     execute: async () => ({ ageRange: "8" }),
+  });
+  const getSessionColor = tool({
+    name: "get_session_color",
+    description: "Return the learner's selected UI color for this session.",
+    execute: async () => ({ color: "green" }),
+  });
+  const getClassroomName = tool({
+    name: "get_classroom_name",
+    description: "Return the classroom name for this session.",
+    execute: async () => ({ classroomName: "Oak Room" }),
   });
 
   process.stdout.write("=== Reported RunRecord #1 ===\n");
   process.stdout.write(`${reportedRunRecord.response}\n\n`);
-  const toolPolicy = () => allow("allow_example_age_range_tool");
+  const toolPolicy = () => allow("allow_example_tool");
 
   const judge = createRunRegressionJudge({
     judgeModel: OPENAI_MODEL,
@@ -351,7 +404,9 @@ Do not decide promotion.`,
 
     const harnessV2 = buildAgentHarness(descriptorV2, {
       tools: {
-        [AGE_RANGE_TOOL_TARGET]: getAgeRange,
+        "example://tool/get_age_range": getAgeRange,
+        "example://tool/get_session_color": getSessionColor,
+        "example://tool/get_classroom_name": getClassroomName,
       },
     });
 
@@ -380,41 +435,40 @@ Do not decide promotion.`,
     });
 
     const result = validation.results[0];
-    const summary = validation.summary.cases[0];
-    if (!result || !summary) {
+    if (!result) {
       throw new Error("Missing validation result.");
     }
 
+    const missingTools = missingExpectedTools(
+      result.candidate,
+      proposal.suite.expectation,
+    );
     const promote =
-      result.judge?.verdict === "pass" &&
-      usedTool(result.candidate, AGE_RANGE_TOOL_NAME);
+      result.judge?.verdict === "pass" && missingTools.length === 0;
 
-    process.stdout.write("=== Candidate RunRecord #1 ===\n");
-    process.stdout.write(`${result.candidate.response}\n\n`);
-
-    process.stdout.write("=== AIOC validation ===\n");
-    process.stdout.write(`summary status: ${validation.summary.status}\n`);
-    process.stdout.write(
-      `final output changed: ${yesNo(summary.signals.finalOutputChanged)}\n`,
-    );
-    process.stdout.write(
-      `tool calls changed: ${yesNo(summary.signals.toolsChanged)}\n`,
-    );
+    process.stdout.write("=== Final verdict ===\n");
     process.stdout.write(`judge: ${result.judge?.verdict ?? "missing"}\n`);
-    process.stdout.write(`decision: ${promote ? "promote v2" : "reject"}\n\n`);
+    process.stdout.write(`decision: ${promote ? "promote v2" : "reject"}\n`);
+    process.stdout.write(
+      `summary: ${finalVerdictSummary({
+        promote,
+        judgeVerdict: result.judge?.verdict,
+        missingTools,
+      })}\n\n`,
+    );
 
     if (promote) {
       return;
     }
 
     rejections.push(
-      `attempt ${attempt}: judge verdict ${result.judge?.verdict ?? "missing"}; used ${AGE_RANGE_TOOL_NAME}: ${yesNo(usedTool(result.candidate, AGE_RANGE_TOOL_NAME))}`,
+      `attempt ${attempt}: judge verdict ${result.judge?.verdict ?? "missing"}; missing expected tools: ${missingTools.length > 0 ? missingTools.join(", ") : "none"}`,
     );
   }
 
   process.stdout.write("=== Retry limit reached ===\n");
   process.stdout.write(
-    `No proposal was accepted after ${MAX_PROPOSAL_ATTEMPTS} attempts (${MAX_PROPOSAL_RETRIES} retries).\n`,
+    `No proposal was accepted after ${MAX_PROPOSAL_ATTEMPTS} attempts.\n`,
   );
   process.stdout.write("decision: reject\n");
 }

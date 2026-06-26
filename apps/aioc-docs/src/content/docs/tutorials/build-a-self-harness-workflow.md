@@ -350,22 +350,121 @@ That is the core claim:
 
 Self-harness proposals can be bold. Promotion should be boring.
 
+## Phase 1 Implementation
+
+The runnable Phase 1 example lives in the repository:
+
+```text
+examples/self-harness/phase-1.ts
+```
+
+It starts from a stored report:
+
+```text
+examples/self-harness/reported-runrecord-1.json
+```
+
+and a baseline harness descriptor:
+
+```text
+examples/self-harness/harness-v1.yaml
+```
+
+The JSON report stands in for production persistence, issue intake, or any
+other place where the application stores the behavior it wants to investigate.
+In this example, the record contains a photosynthesis question and the original
+answer. The answer is factually useful, but it is not adapted to an eight-year
+old learner.
+
+Run the example from the repository root:
+
+```bash
+OPENAI_API_KEY=... npm run example:self-harness
+```
+
+By default, the example is a dry run. It does not execute the candidate harness.
+It only asks the proposal harness to draft:
+
+- a diagnosis;
+- a candidate `v2` harness descriptor;
+- a suite name;
+- an expectation for the reported case.
+
+The proposal harness receives the smallest useful context:
+
+- the baseline `v1` descriptor;
+- the reported `RunRecord`;
+- the issue report;
+- the AIOC descriptor authoring notes used by this example;
+- the allowed capabilities, including `get_age_range`;
+- previous rejection reasons, when the proposal is being retried.
+
+The candidate is not hardcoded. The proposal harness may decide that the best
+candidate is instruction-only, or it may decide to use the allowed tool. The
+application does not assume the proposal is correct. It parses the proposed
+descriptor, checks that it uses only supported capabilities, verifies that tool
+references are declared correctly, and rejects malformed proposals before any
+candidate replay happens.
+
+The extra capabilities are intentionally not useful for this issue. They make
+the choice visible: the proposal harness must decide that `get_age_range` is the
+capability that actually explains and fixes the reported behavior.
+
+Rejected proposals are fed back into the next attempt. The example uses one
+initial proposal plus two retries, and it prints every rejected proposal so the
+reader can inspect how the loop evolves.
+
+If the static proposal check passes, the default run stops at the dry-run
+boundary:
+
+```text
+=== Dry run boundary ===
+Candidate replay is blocked by default. Re-run with --force to execute v2 against RunRecord #1.
+```
+
+This boundary is intentional. Even in a deliberately aggressive automation
+model, candidate execution is a separate step.
+
+To execute the candidate replay, pass `--force`:
+
+```bash
+OPENAI_API_KEY=... npm run example:self-harness -- --force
+```
+
+With `--force`, the application builds the candidate harness, binds the example
+tool targets to local tool implementations, and calls `runRegressionSuite(...)`
+with the stored `RunRecord` as the baseline case.
+
+AIOC then:
+
+- replays `RunRecord #1` against the candidate harness;
+- captures the candidate `RunRecord`;
+- compares baseline and candidate behavior;
+- invokes `@axiastudio/aioc-regression-judge` for the expectation verdict.
+
+The example prints only the final verdict:
+
+```text
+=== Final verdict ===
+judge: pass
+decision: promote v2
+summary: The candidate evidence is acceptable: the judge passed and every expected tool was observed.
+```
+
+The judge verdict is evidence, not promotion authority. Promotion remains
+application-owned. In this example, the application promotes only if the judge
+passes and the candidate actually used every tool declared by the proposed
+expectation's `shouldUseTools` field.
+
 ## What Comes Next
 
-The rest of this tutorial will implement this story with the smallest possible
-example:
+Phase 1 creates suite #1: the first accepted behavioral memory. Phase 2 will
+start from a new problematic `RunRecord #2`, ask for a `v3` candidate, and rerun
+suite #1 as non-regression memory before accepting the new candidate.
 
-- `v1`: an explainer answers a photosynthesis question directly;
-- `RunRecord #1`: the answer is not adapted to the learner's age;
-- `v2`: the candidate harness adds `get_age_range` and age-adaptation
-  instructions;
-- suite #1: checks the age-adaptation expectation;
-- `RunRecord #2`: a later issue shows the candidate over-simplified too much;
-- `v3`: the next candidate must improve scientific completeness while preserving
-  suite #1.
-
-The implementation will stay intentionally small. The point is to show how an
-accepted harness change becomes future non-regression memory.
+The implementation stays intentionally small. The point is to show how an
+accepted harness change becomes future non-regression memory, not to build a
+production-grade self-improvement system.
 
 <style>
   .self-harness-disclaimer {
