@@ -39,6 +39,9 @@ const harnessAuthoringNotes = readFileSync(
   join(__dirname, "harness-authoring-notes.md"),
   "utf8",
 );
+const reportedRunRecord = JSON.parse(
+  readFileSync(join(__dirname, "reported-runrecord-1.json"), "utf8"),
+) as RunRecord;
 
 const descriptorV1Text = `
 runtime: { entry_agent: explainer, max_turns: 4 }
@@ -240,27 +243,6 @@ async function main(): Promise<void> {
   setupOpenAI();
 
   const descriptorV1 = loadAgentHarnessDescriptor(descriptorV1Text);
-  const harnessV1 = buildAgentHarness(descriptorV1);
-  const input = "Explain photosynthesis.";
-
-  let reportedRunRecord: RunRecord | undefined;
-  await run(harnessV1.entryAgent, input, {
-    ...harnessV1.runOptions,
-    record: {
-      metadata: {
-        provider: "openai",
-        harness: harnessV1.metadata,
-        issue: issueReport,
-      },
-      sink: (record) => {
-        reportedRunRecord = record;
-      },
-    },
-  });
-
-  if (!reportedRunRecord) {
-    throw new Error("Missing reported RunRecord.");
-  }
 
   const proposalAuthor = new Agent({
     name: "Self-Harness Proposal Author",
