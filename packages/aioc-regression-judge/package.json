@@ -3,12 +3,14 @@
   "version": "0.1.0",
   "description": "Experimental LLM judge helpers for AIOC run regression suites.",
   "type": "module",
-  "main": "./dist/index.js",
+  "main": "./dist/index.cjs",
+  "module": "./dist/index.js",
   "types": "./dist/index.d.ts",
   "exports": {
     ".": {
       "types": "./dist/index.d.ts",
-      "import": "./dist/index.js"
+      "import": "./dist/index.js",
+      "require": "./dist/index.cjs"
     }
   },
   "files": [
@@ -16,8 +18,8 @@
     "README.md"
   ],
   "scripts": {
-    "clean": "node -e \"require('fs').rmSync('dist',{recursive:true,force:true})\"",
-    "build": "npm run clean && tsc -p tsconfig.build.json",
+    "clean": "node -e \"const fs=require('fs'); for (const dir of ['dist','dist-cjs']) fs.rmSync(dir,{recursive:true,force:true})\"",
+    "build": "npm run clean && tsc -p tsconfig.build.json && tsc -p tsconfig.cjs.json && node -e \"const fs=require('fs'); fs.copyFileSync('dist-cjs/index.js','dist/index.cjs'); fs.rmSync('dist-cjs',{recursive:true,force:true})\"",
     "test": "node -e \"require('fs').rmSync('dist-tests',{recursive:true,force:true})\" && tsc -p tsconfig.test.json && node dist-tests/tests/index.js",
     "prepack": "npm run build"
   },
