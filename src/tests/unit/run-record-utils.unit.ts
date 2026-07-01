@@ -750,6 +750,110 @@ export async function runRunRecordUtilsUnitTests(): Promise<void> {
 
   {
     const sourceRunRecord = createRunRecord({
+      question: "handoff replay",
+      items: [
+        {
+          type: "message",
+          role: "user",
+          content: "Route this request",
+        },
+      ],
+      inputItemCount: 1,
+    });
+
+    const provider = new ScriptedProvider([
+      [{ type: "completed", message: "router-complete" }],
+    ]);
+    setDefaultProvider(provider);
+
+    const targetAgent = new Agent<TestContext>({
+      name: "Replay Target",
+      handoffDescription: "Handles replay target work.",
+      model: "fake-model",
+    });
+    const routerAgent = new Agent<TestContext>({
+      name: "Replay Router",
+      model: "fake-model",
+      handoffs: [
+        {
+          agent: targetAgent,
+          enabled: (runContext) => runContext.context.actorId === "actor-1",
+        },
+      ],
+    });
+
+    const replay = await replayFromRunRecord({
+      sourceRunRecord,
+      agent: routerAgent,
+      mode: "strict",
+      runOptions: {
+        record: {
+          sink: () => {},
+        },
+      },
+    });
+
+    const toolNames =
+      provider.requests[0]?.tools.map((item) => item.name) ?? [];
+    assert.deepEqual(toolNames, ["handoff_to_replay_target"]);
+    assert.equal(replay.replayRunRecord?.requestFingerprints[0]?.toolCount, 1);
+    assert.equal(replay.result.finalOutput, "router-complete");
+  }
+
+  {
+    const sourceRunRecord = createRunRecord({
+      question: "disabled handoff replay",
+      items: [
+        {
+          type: "message",
+          role: "user",
+          content: "Route this request if allowed",
+        },
+      ],
+      inputItemCount: 1,
+    });
+
+    const provider = new ScriptedProvider([
+      [{ type: "completed", message: "disabled-router-complete" }],
+    ]);
+    setDefaultProvider(provider);
+
+    const targetAgent = new Agent<TestContext>({
+      name: "Disabled Replay Target",
+      handoffDescription: "Should not be exposed.",
+      model: "fake-model",
+    });
+    const routerAgent = new Agent<TestContext>({
+      name: "Disabled Replay Router",
+      model: "fake-model",
+      handoffs: [
+        {
+          agent: targetAgent,
+          enabled: (runContext) => runContext.context.actorId === "actor-2",
+        },
+      ],
+    });
+
+    const replay = await replayFromRunRecord({
+      sourceRunRecord,
+      agent: routerAgent,
+      mode: "strict",
+      runOptions: {
+        record: {
+          sink: () => {},
+        },
+      },
+    });
+
+    const toolNames =
+      provider.requests[0]?.tools.map((item) => item.name) ?? [];
+    assert.deepEqual(toolNames, []);
+    assert.equal(replay.replayRunRecord?.requestFingerprints[0]?.toolCount, 0);
+    assert.equal(replay.result.finalOutput, "disabled-router-complete");
+  }
+
+  {
+    const sourceRunRecord = createRunRecord({
       question: "live replay",
     });
 

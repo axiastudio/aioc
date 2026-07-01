@@ -1,4 +1,4 @@
-import { Agent } from "./agent";
+import { Agent, type AgentHandoff } from "./agent";
 import { hashCanonicalJson, toCanonicalJson } from "./canonical-json";
 import { run } from "./run";
 import type { RunRecord, RunRecordOptions, RunRecordSink } from "./run-record";
@@ -688,19 +688,32 @@ function cloneAgentWithReplayedTools<TContext>(
     },
   );
 
-  const wrappedHandoffs = sourceAgent.handoffs.map((handoffAgent) =>
-    cloneAgentWithReplayedTools(
-      handoffAgent,
-      mode,
-      queues,
-      replayStats,
-      onMissingToolCall,
-      cache,
-    ),
-  );
+  const wrappedHandoffRules: AgentHandoff<TContext>[] =
+    sourceAgent.handoffRules.map((handoffRule) => {
+      const clonedHandoffAgent = cloneAgentWithReplayedTools(
+        handoffRule.agent,
+        mode,
+        queues,
+        replayStats,
+        onMissingToolCall,
+        cache,
+      );
+
+      if (handoffRule.enabled) {
+        return {
+          agent: clonedHandoffAgent,
+          enabled: handoffRule.enabled,
+        };
+      }
+
+      return {
+        agent: clonedHandoffAgent,
+      };
+    });
 
   cloned.tools = wrappedTools;
-  cloned.handoffs = wrappedHandoffs;
+  cloned.handoffRules = wrappedHandoffRules;
+  cloned.handoffs = wrappedHandoffRules.map((rule) => rule.agent);
   return cloned;
 }
 
