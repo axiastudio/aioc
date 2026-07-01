@@ -126,7 +126,7 @@ example with `AgentHarnessDescriptor`.
 
 ## Status
 
-This is the supported `0.2.7` core surface for RFC-0012. The core package owns
+This is the supported `0.2.x` core surface for RFC-0012. The core package owns
 the deterministic replay, comparison, suite, judge-contract, and summary
 contracts. Provider-backed judge prompt construction lives in the experimental
 `@axiastudio/aioc-regression-judge` companion package.

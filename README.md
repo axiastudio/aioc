@@ -23,7 +23,7 @@ Its core job is to make agent execution boundaries explicit, testable, auditable
 
 ## Release Status
 
-Current stable release: `0.2.7`.
+Current stable release: `0.2.8`.
 The stable line started with `0.1.0`.
 The core runtime surface is compatibility-managed. Breaking changes to the stable surface should ship only with explicit migration guidance and release notes.
 
@@ -43,6 +43,8 @@ AIOC `0.2.6` adds descriptor-level conditional agent handoffs with boolean `wher
 AIOC `0.2.7` adds run-regression suite utilities and the experimental
 `@axiastudio/aioc-regression-judge` companion package for bounded LLM judge
 inputs and structured judge results.
+AIOC `0.2.8` fixes replay agent cloning so strict and hybrid replay preserve
+conditional handoff rules and expose enabled `handoff_to_*` tools.
 
 ### Experimental Packages
 
@@ -160,9 +162,18 @@ The Agent Harness Descriptor is included in the supported `0.2.x` API surface as
 ## Policy Gate (Minimal)
 
 ```ts
-import { Agent, allow, deny, run, tool, type ToolPolicy } from "@axiastudio/aioc";
+import {
+  Agent,
+  allow,
+  deny,
+  run,
+  tool,
+  type ToolPolicy,
+} from "@axiastudio/aioc";
 
-const toolPolicy: ToolPolicy<{ actor: { groups: string[] } }> = ({ runContext }) => {
+const toolPolicy: ToolPolicy<{ actor: { groups: string[] } }> = ({
+  runContext,
+}) => {
   if (!runContext.context.actor.groups.includes("finance")) {
     return deny("deny_missing_finance_group", {
       resultMode: "tool_result",
@@ -224,7 +235,13 @@ console.log(calls[0]?.name, calls[0]?.argsHash, calls[0]?.hasOutput);
 import { compareRunRecords } from "@axiastudio/aioc";
 
 const comparison = compareRunRecords(runRecordA, runRecordB, {
-  includeSections: ["response", "toolCalls", "policy", "guardrails", "metadata"],
+  includeSections: [
+    "response",
+    "toolCalls",
+    "policy",
+    "guardrails",
+    "metadata",
+  ],
   responseMatchMode: "exact",
 });
 
@@ -254,6 +271,9 @@ console.log(replay.replayStats);
 ```
 
 `replayFromRunRecord(...)` does not bypass policy enforcement: in `strict` and `hybrid`, provide `runOptions.policies` when tool/handoff execution must be authorized.
+Strict and hybrid replay preserve conditional handoff rules from the source
+agent, so enabled handoffs remain visible to the provider as `handoff_to_*`
+tools during replay.
 
 ## Reference UI Example
 
@@ -277,23 +297,23 @@ tool-policy, and policy-composition. Use run-record and harness examples after
 the basics; `example:non-regression`, `example:run-regression`, and
 `example:run-regression-judge` are advanced workflows.
 
-| Command | Purpose | Needs API key |
-|---|---|---|
-| `npm run example:hello` | Minimal single-agent run | Yes (`AIOC_EXAMPLE_PROVIDER` + matching provider API key) |
-| `npm run example:policy` | Minimal denied tool + policy flow | Yes (`AIOC_EXAMPLE_PROVIDER` + matching provider API key) |
-| `npm run example:approval-required` | Minimal approval-required tool + policy flow | Yes (`AIOC_EXAMPLE_PROVIDER` + matching provider API key) |
-| `npm run example:approval-evidence` | Approval evidence passed through context and reevaluated by policy | Yes (`AIOC_EXAMPLE_PROVIDER` + matching provider API key) |
-| `npm run example:tool-policy` | Straight tool + policy flow with allowed execution | Yes (`AIOC_EXAMPLE_PROVIDER` + matching provider API key) |
-| `npm run example:policy-composition` | Exact-name tool policy dispatch with fallback deny | Yes (`AIOC_EXAMPLE_PROVIDER` + matching provider API key) |
-| `npm run example:harness-rerun` | Replay against a modified harness with a mocked new tool output | Yes (`OPENAI_API_KEY`) |
-| `npm run example:run-record` | Run-record persistence with redaction + audit | Yes (`AIOC_EXAMPLE_PROVIDER` + matching provider API key) |
-| `npm run example:rru:01-extract` | Minimal `extractToolCalls(...)` | No |
-| `npm run example:rru:02-compare` | Minimal `compareRunRecords(...)` | No |
-| `npm run example:rru:03-replay-strict` | Minimal strict replay | No |
-| `npm run example:rru:04-replay-hybrid` | Minimal hybrid replay | No |
-| `npm run example:non-regression` | Advanced v1/v2 run-record diff | Yes (`AIOC_EXAMPLE_PROVIDER` + matching provider API key) |
-| `npm run example:run-regression` | Local `runRegressionSuite(...)` over a modified harness | Yes (`OPENAI_API_KEY`) |
-| `npm run example:run-regression-judge` | Local `runRegressionSuite(...)` with an LLM judge | Yes (`OPENAI_API_KEY`) |
+| Command                                | Purpose                                                            | Needs API key                                             |
+| -------------------------------------- | ------------------------------------------------------------------ | --------------------------------------------------------- |
+| `npm run example:hello`                | Minimal single-agent run                                           | Yes (`AIOC_EXAMPLE_PROVIDER` + matching provider API key) |
+| `npm run example:policy`               | Minimal denied tool + policy flow                                  | Yes (`AIOC_EXAMPLE_PROVIDER` + matching provider API key) |
+| `npm run example:approval-required`    | Minimal approval-required tool + policy flow                       | Yes (`AIOC_EXAMPLE_PROVIDER` + matching provider API key) |
+| `npm run example:approval-evidence`    | Approval evidence passed through context and reevaluated by policy | Yes (`AIOC_EXAMPLE_PROVIDER` + matching provider API key) |
+| `npm run example:tool-policy`          | Straight tool + policy flow with allowed execution                 | Yes (`AIOC_EXAMPLE_PROVIDER` + matching provider API key) |
+| `npm run example:policy-composition`   | Exact-name tool policy dispatch with fallback deny                 | Yes (`AIOC_EXAMPLE_PROVIDER` + matching provider API key) |
+| `npm run example:harness-rerun`        | Replay against a modified harness with a mocked new tool output    | Yes (`OPENAI_API_KEY`)                                    |
+| `npm run example:run-record`           | Run-record persistence with redaction + audit                      | Yes (`AIOC_EXAMPLE_PROVIDER` + matching provider API key) |
+| `npm run example:rru:01-extract`       | Minimal `extractToolCalls(...)`                                    | No                                                        |
+| `npm run example:rru:02-compare`       | Minimal `compareRunRecords(...)`                                   | No                                                        |
+| `npm run example:rru:03-replay-strict` | Minimal strict replay                                              | No                                                        |
+| `npm run example:rru:04-replay-hybrid` | Minimal hybrid replay                                              | No                                                        |
+| `npm run example:non-regression`       | Advanced v1/v2 run-record diff                                     | Yes (`AIOC_EXAMPLE_PROVIDER` + matching provider API key) |
+| `npm run example:run-regression`       | Local `runRegressionSuite(...)` over a modified harness            | Yes (`OPENAI_API_KEY`)                                    |
+| `npm run example:run-regression-judge` | Local `runRegressionSuite(...)` with an LLM judge                  | Yes (`OPENAI_API_KEY`)                                    |
 
 Notes:
 
@@ -309,13 +329,16 @@ Optional LangChain interoperability examples live in `examples/langchain`.
 They use their own `package.json` so LangChain dependencies do not become
 dependencies of the core `@axiastudio/aioc` runtime package.
 
-They demonstrate two composition patterns:
+They demonstrate three composition patterns:
 
 - **aioc-first, LangChain-extended**: aioc owns the governed agent run while
   LangChain provides OSS components behind aioc tools, such as retrieval.
 - **LangGraph-orchestrated, aioc-governed**: LangGraph owns workflow
   orchestration while selected graph nodes call aioc for policy-gated execution
   and portable audit evidence.
+- **LangGraph-orchestrated, aioc-recorded**: LangGraph remains the primary
+  orchestrator while a local RFC-0013 prototype emits a graph-level
+  `RunRecord` around the compiled graph.
 
 ## Test Commands
 

@@ -8,8 +8,8 @@ These utilities exist to reduce application boilerplate around `RunRecord` analy
 ## `extractToolCalls(...)`
 
 ```ts
-extractToolCalls(runRecord)
-extractToolCalls(items)
+extractToolCalls(runRecord);
+extractToolCalls(items);
 ```
 
 Returns an ordered list of normalized tool-call records, including:
@@ -60,7 +60,7 @@ await replayFromRunRecord({
   runOptions,
   metadataOverrides,
   onMissingToolCall,
-})
+});
 ```
 
 ### Modes
@@ -77,7 +77,7 @@ That means the new run starts from the same initial normalized input as the
 recorded run:
 
 ```ts
-sourceRunRecord.items.slice(0, sourceRunRecord.inputItemCount)
+sourceRunRecord.items.slice(0, sourceRunRecord.inputItemCount);
 ```
 
 For legacy records without `inputItemCount`, replay falls back to
@@ -99,6 +99,11 @@ instead of history-faithful replay.
 Replay does not bypass policy enforcement.
 
 If replayed tools or handoffs still need authorization in your runtime, provide the relevant policies in `runOptions`.
+
+In `strict` and `hybrid` mode, replay preserves the source agent's handoff
+rules. Conditional handoffs are still evaluated against the replay
+`runContext`; enabled handoffs are exposed to the provider as `handoff_to_*`
+tools, while disabled handoffs remain hidden.
 
 Recorded tool outputs are stored as normalized envelopes in `RunRecord.items`.
 When strict or hybrid replay reuses a recorded allow output, `aioc` unwraps the

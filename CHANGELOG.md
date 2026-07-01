@@ -2,6 +2,14 @@
 
 ## Unreleased
 
+## 0.2.8 - 2026-07-01
+
+### Fixed
+
+- Fixed `replayFromRunRecord(...)` agent cloning so strict and hybrid replay
+  preserve conditional handoff rules and expose the expected `handoff_to_*`
+  tools when enabled by context.
+
 ## 0.2.7 - 2026-06-19
 
 ### Added
